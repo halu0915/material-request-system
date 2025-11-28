@@ -1,0 +1,35 @@
+叫料系統 - 部署準備完成
+=====================
+
+✅ 所有檔案已準備就緒
+✅ Git 倉庫已初始化
+✅ 部署配置已完成
+
+📝 下一步操作：
+
+1. 執行部署腳本（推薦）：
+   ./deploy-commands.sh
+
+2. 或手動執行以下指令：
+
+   # 1. 在 GitHub 建立新儲存庫
+   #    前往: https://github.com/new
+
+   # 2. 連接並推送
+   git add .
+   git commit -m "Initial commit: 叫料系統"
+   git branch -M main
+   git remote add origin https://github.com/您的帳號/儲存庫名稱.git
+   git push -u origin main
+
+   # 3. 在 Render 建立服務
+   #    詳細步驟請參考: QUICK_DEPLOY.md
+
+📚 相關文件：
+- QUICK_DEPLOY.md - 快速部署指南（推薦先看這個）
+- DEPLOY.md - 詳細部署說明
+- README.md - 完整專案文檔
+- ENV_SETUP.md - 環境變數設定說明
+
+🚀 祝部署順利！
+
