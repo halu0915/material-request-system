@@ -295,8 +295,8 @@ router.post('/:id/send-email', authenticateToken, async (req: AuthRequest, res: 
 
     // Generate filename
     const workArea = fullRequest.work_area || '未指定工區';
-    const requestDate = new Date(fullRequest.created_at);
-    const dateStr = `${requestDate.getFullYear()}${String(requestDate.getMonth() + 1).padStart(2, '0')}${String(requestDate.getDate()).padStart(2, '0')}`;
+    const requestDateForEmail = new Date(fullRequest.created_at);
+    const dateStr = `${requestDateForEmail.getFullYear()}${String(requestDateForEmail.getMonth() + 1).padStart(2, '0')}${String(requestDateForEmail.getDate()).padStart(2, '0')}`;
     const constructionCategoryName = fullRequest.construction_category_name || '未指定';
     const excelFilename = `${workArea}叫料單_${dateStr}_(${constructionCategoryName}).xlsx`;
 

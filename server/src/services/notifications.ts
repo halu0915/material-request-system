@@ -214,7 +214,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       categoryName,
       stat.name,
       stat.spec,
-      stat.total,
+      String(stat.total), // Convert number to string for Excel
       stat.unit
     ]);
   }
@@ -483,7 +483,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
       categoryName,
       stat.name,
       stat.spec,
-      stat.total,
+      String(stat.total), // Convert number to string for Excel
       stat.unit
     ]);
   }
