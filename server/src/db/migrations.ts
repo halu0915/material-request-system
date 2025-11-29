@@ -102,11 +102,17 @@ export const createTables = async (): Promise<void> => {
     
     // Create unique index that includes specification (allows same name with different specs)
     // This index ensures uniqueness based on category, name, and specification
-    // If specification is NULL, it's treated as empty string for uniqueness check
+    // Use NULLIF to handle empty strings as NULL, then COALESCE to ensure consistent comparison
+    // This ensures that "1.2" and "1.6" are treated as different values
     await query(`
       DROP INDEX IF EXISTS materials_unique_with_spec;
       CREATE UNIQUE INDEX materials_unique_with_spec 
-      ON materials (construction_category_id, material_category_id, name, COALESCE(specification, ''))
+      ON materials (
+        construction_category_id, 
+        material_category_id, 
+        name, 
+        COALESCE(NULLIF(TRIM(specification), ''), '')
+      )
     `);
 
     // Delivery addresses table (create before material_requests to avoid foreign key issues)

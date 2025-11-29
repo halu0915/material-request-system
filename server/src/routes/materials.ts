@@ -253,23 +253,27 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     }
 
     // Check if material with same category, name and specification already exists
+    // Trim specification to handle whitespace, and ensure exact string comparison
+    const specValue = specification ? specification.trim() : null;
     const checkExisting = await query(
       `SELECT id FROM materials 
        WHERE construction_category_id = $1 
          AND material_category_id = $2 
          AND name = $3 
-         AND COALESCE(specification, '') = COALESCE($4, '')`,
-      [construction_category_id, material_category_id, name, specification || null]
+         AND COALESCE(NULLIF(TRIM(specification), ''), '') = COALESCE(NULLIF(TRIM($4), ''), '')`,
+      [construction_category_id, material_category_id, name, specValue]
     );
 
     if (checkExisting.rows.length > 0) {
       return res.status(400).json({ error: '此材料（相同類別、名稱和規格）已存在' });
     }
 
+    // Trim specification before inserting to ensure consistency
+    const specValue = specification ? specification.trim() : null;
     const result = await query(
       `INSERT INTO materials (construction_category_id, material_category_id, name, specification, unit, description)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [construction_category_id, material_category_id, name, specification || null, unit || null, description || null]
+      [construction_category_id, material_category_id, name, specValue, unit || null, description || null]
     );
 
     res.status(201).json({ material: result.rows[0] });
@@ -378,26 +382,30 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
     }
 
     // Check if another material with same category, name and specification already exists (excluding current one)
+    // Trim specification to handle whitespace, and ensure exact string comparison
+    const specValue = specification ? specification.trim() : null;
     const checkExisting = await query(
       `SELECT id FROM materials 
        WHERE construction_category_id = $1 
          AND material_category_id = $2 
          AND name = $3 
-         AND COALESCE(specification, '') = COALESCE($4, '')
+         AND COALESCE(NULLIF(TRIM(specification), ''), '') = COALESCE(NULLIF(TRIM($4), ''), '')
          AND id != $5`,
-      [construction_category_id, material_category_id, name, specification || null, id]
+      [construction_category_id, material_category_id, name, specValue, id]
     );
 
     if (checkExisting.rows.length > 0) {
       return res.status(400).json({ error: '此材料（相同類別、名稱和規格）已存在' });
     }
 
+    // Trim specification before updating to ensure consistency
+    const specValue = specification ? specification.trim() : null;
     const result = await query(
       `UPDATE materials 
        SET construction_category_id = $1, material_category_id = $2, name = $3, 
            specification = $4, unit = $5, description = $6
        WHERE id = $7 RETURNING *`,
-      [construction_category_id, material_category_id, name, specification || null, unit || null, description || null, id]
+      [construction_category_id, material_category_id, name, specValue, unit || null, description || null, id]
     );
 
     if (result.rows.length === 0) {
