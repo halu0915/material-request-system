@@ -326,26 +326,44 @@ router.post('/:id/send-email', authenticateToken, async (req: AuthRequest, res: 
     }
 
     // Send email
-    await sendEmail({
-      to: recipients,
-      request: fullRequest,
-      excelBuffer,
-      filename: excelFilename
-    });
+    try {
+      await sendEmail({
+        to: recipients,
+        request: fullRequest,
+        excelBuffer,
+        filename: excelFilename
+      });
 
-    // Update email_sent status
-    await query(
-      'UPDATE material_requests SET email_sent = true WHERE id = $1',
-      [parseInt(id)]
-    );
+      // Update email_sent status
+      await query(
+        'UPDATE material_requests SET email_sent = true WHERE id = $1',
+        [parseInt(id)]
+      );
 
-    res.json({
-      message: `郵件已發送給 ${recipients.length} 位收件人`,
-      recipients: recipients
-    });
+      res.json({
+        message: `郵件已發送給 ${recipients.length} 位收件人`,
+        recipients: recipients
+      });
+    } catch (emailError: any) {
+      console.error('發送郵件錯誤:', emailError);
+      // Don't update email_sent status if sending failed
+      const errorMessage = emailError.message || '請檢查 SMTP 設定和環境變數';
+      console.error('錯誤詳情:', {
+        message: errorMessage,
+        code: emailError.code || 'UNKNOWN',
+        command: emailError.command || '無',
+        response: emailError.response || '無'
+      });
+      res.status(500).json({ 
+        error: '發送郵件失敗',
+        details: errorMessage,
+        hint: '請確認已設定 SMTP_HOST, SMTP_USER, SMTP_PASS 環境變數'
+      });
+      return;
+    }
   } catch (error) {
-    console.error('發送郵件錯誤:', error);
-    res.status(500).json({ error: '發送郵件失敗' });
+    console.error('處理請求錯誤:', error);
+    res.status(500).json({ error: '處理請求失敗' });
   }
 });
 

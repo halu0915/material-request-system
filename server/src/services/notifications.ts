@@ -643,9 +643,18 @@ export async function sendEmail(options: {
   filename?: string;
 }): Promise<void> {
   try {
+    // Check required environment variables
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
-      console.warn('郵件服務未配置');
-      return;
+      const missingVars = [];
+      if (!process.env.SMTP_HOST) missingVars.push('SMTP_HOST');
+      if (!process.env.SMTP_USER) missingVars.push('SMTP_USER');
+      const errorMsg = `郵件服務未配置：缺少環境變數 ${missingVars.join(', ')}`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    if (!process.env.SMTP_PASS) {
+      console.warn('警告：SMTP_PASS 未設定，郵件發送可能會失敗');
     }
 
     const transporter = nodemailer.createTransport({
@@ -655,8 +664,21 @@ export async function sendEmail(options: {
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
-      }
+      },
+      // Add timeout and connection options
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000,
+      socketTimeout: 10000
     });
+    
+    // Verify connection
+    try {
+      await transporter.verify();
+      console.log('SMTP 連線驗證成功');
+    } catch (verifyError: any) {
+      console.error('SMTP 連線驗證失敗:', verifyError);
+      throw new Error(`SMTP 連線失敗: ${verifyError.message || '無法連接到郵件伺服器'}`);
+    }
 
     // Get material names for subject
     const materialNames = options.request.items
@@ -741,9 +763,18 @@ export async function sendEmail(options: {
       await transporter.sendMail(mailOptions);
       console.log('郵件發送成功:', recipient);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('發送郵件失敗:', error);
-    throw error;
+    const errorMessage = error.message || '未知錯誤';
+    const errorCode = error.code || 'UNKNOWN';
+    console.error('錯誤詳情:', {
+      code: errorCode,
+      message: errorMessage,
+      response: error.response?.data || '無回應資料',
+      command: error.command || '無命令',
+      responseCode: error.responseCode || '無回應碼'
+    });
+    throw new Error(`發送郵件失敗: ${errorMessage} (錯誤代碼: ${errorCode})`);
   }
 }
 
