@@ -5,22 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>叫料系統 - 主頁</title>
     <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #95a5a6;
+            --accent-color: #3498db;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --background-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: #f5f5f5;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
             min-height: 100vh;
         }
+
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: var(--card-bg);
+            color: var(--text-color);
+            padding: 15px 30px;
+            box-shadow: var(--box-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
+
         .header-content {
             max-width: 1200px;
             margin: 0 auto;
@@ -28,267 +49,229 @@
             justify-content: space-between;
             align-items: center;
         }
+
         .header h1 {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
             cursor: pointer;
+            letter-spacing: -0.5px;
         }
+
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
+            font-size: 0.9rem;
+            color: var(--secondary-color);
         }
+
         .container {
             max-width: 1200px;
-            margin: 40px auto;
+            margin: 30px auto;
             padding: 0 20px;
         }
+
+        /* Cards */
+        .welcome-card, .section, .feature-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
         .welcome-card {
-            background: white;
-            border-radius: 12px;
             padding: 40px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             text-align: center;
             margin-bottom: 30px;
         }
+
         .welcome-card h2 {
-            color: #333;
+            color: var(--primary-color);
             margin-bottom: 10px;
-            font-size: 2rem;
+            font-size: 1.75rem;
         }
-        .welcome-card p {
-            color: #666;
-            font-size: 1.1rem;
-        }
+
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
             margin-top: 30px;
         }
+
         .feature-card {
-            background: white;
-            border-radius: 12px;
             padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             text-align: center;
-            transition: transform 0.3s;
+            transition: all 0.3s ease;
             cursor: pointer;
         }
+
         .feature-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
         }
+
         .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
-        .feature-card h3 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .feature-card p {
-            color: #666;
-            font-size: 0.9rem;
-        }
-        .section {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-top: 30px;
-        }
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            font-size: 2.5rem;
             margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-            flex-wrap: wrap;
-            gap: 10px;
+            color: var(--accent-color);
         }
-        .section-header h2 {
-            color: #333;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .back-btn {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .back-btn:hover {
-            background: #5a6268;
-        }
-        .btn-primary {
-            background: #667eea;
-            color: white;
+
+        /* Buttons */
+        .btn-primary, .btn-secondary, .btn-danger, .back-btn {
             border: none;
             padding: 10px 20px;
-            border-radius: 6px;
+            border-radius: var(--border-radius);
             cursor: pointer;
             font-size: 0.9rem;
-            font-weight: 600;
-            transition: all 0.3s;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
         .btn-primary:hover {
-            background: #5568d3;
+            background: #1a252f;
+            transform: translateY(-1px);
         }
+
         .btn-secondary {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
+            background: #f1f3f5;
+            color: var(--text-color);
+            border: 1px solid #e9ecef;
         }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+
         .btn-danger {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
+            background: #fff5f5;
+            color: var(--danger-color);
+            border: 1px solid #ffc9c9;
         }
-        .btn-small {
+
+        .btn-danger:hover {
+            background: #ffe3e3;
+        }
+
+        .back-btn {
+            background: transparent;
+            color: var(--secondary-color);
             padding: 5px 10px;
-            font-size: 0.8rem;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+
+        .back-btn:hover {
+            color: var(--primary-color);
+            background: #f1f3f5;
         }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #333;
-        }
-        tr:hover {
-            background: #f8f9fa;
-        }
+
+        /* Forms */
         .form-group {
             margin-bottom: 20px;
         }
+
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #333;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+            font-size: 0.9rem;
         }
+
         .form-group input,
         .form-group select,
         .form-group textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 0.9rem;
+            padding: 12px;
+            border: 1px solid #e9ecef;
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+            background: #f8f9fa;
         }
-        .form-group textarea {
-            min-height: 100px;
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        .modal-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
             background: white;
-            padding: 30px;
-            border-radius: 12px;
-            max-width: 700px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
         }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 20px;
         }
-        .modal-header h3 {
-            color: #333;
-        }
-        .close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #666;
-        }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-        }
-        .alert {
+
+        th {
+            background: #f8f9fa;
             padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e9ecef;
         }
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
         }
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+
+        tr:last-child td {
+            border-bottom: none;
         }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Request Items */
         .request-item {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 2fr auto;
+            gap: 15px;
             align-items: center;
         }
-        .request-item select,
-        .request-item input {
-            flex: 1;
+
+        .request-item input, .request-item select {
+            background: white;
+            margin-bottom: 0;
         }
-        .request-item input[type="number"] {
-            width: 100px;
+
+        /* Modals */
+        .modal-content {
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: none;
         }
-        .request-item input[type="text"] {
-            width: 100px;
+
+        .modal-header {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 20px;
+        }
+
+        .section-header {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
         }
     </style>
 </head>
@@ -336,8 +319,8 @@
                     <span>物料管理</span>
                 </h2>
                 <div>
-                    <button class="btn-secondary" onclick="showAddCategoryForm('construction')" style="margin-right: 10px;">新增施工類別</button>
-                    <button class="btn-secondary" onclick="showAddCategoryForm('material')" style="margin-right: 10px;">新增材料類別</button>
+                    <button class="btn-secondary" onclick="showCategoryManager('construction')" style="margin-right: 10px;">管理施工類別</button>
+                    <button class="btn-secondary" onclick="showCategoryManager('material')" style="margin-right: 10px;">管理材料類別</button>
                 <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
                 </div>
             </div>
@@ -461,14 +444,18 @@
                 </div>
                 <div class="form-group">
                     <label>材料項目 *</label>
+                    <!-- Datalists for history -->
+                    <datalist id="unit-history"></datalist>
+                    <datalist id="notes-history"></datalist>
+                    
                     <div id="request-items">
                         <div class="request-item">
                             <select class="item-material" required>
                                 <option value="">選擇物料</option>
                             </select>
-                            <input type="number" class="item-quantity" placeholder="數量" step="0.01" required>
-                            <input type="text" class="item-unit" placeholder="單位">
-                            <input type="text" class="item-notes" placeholder="備註">
+                            <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" oninput="this.value = Math.max(0, Math.round(this.value))" required title="請輸入整數，間距為10">
+                            <input type="text" class="item-unit" placeholder="單位" list="unit-history" onchange="saveHistory('unit-history', this.value)">
+                            <input type="text" class="item-notes" placeholder="備註" list="notes-history" onchange="saveHistory('notes-history', this.value)">
                             <button type="button" class="btn-danger btn-small" onclick="removeRequestItem(this)">刪除</button>
                         </div>
                     </div>
@@ -634,8 +621,7 @@
                         <td>${material.specification || '-'}</td>
                         <td>${material.unit || '-'}</td>
                         <td>
-                            <button class="btn-primary btn-small" onclick="editMaterial(${material.id})" style="margin-right: 5px;">更改</button>
-                            <button class="btn-danger btn-small" onclick="deleteMaterial(${material.id})">刪除</button>
+                            <button class="btn-danger" onclick="deleteMaterial(${material.id})">刪除</button>
                         </td>
                     </tr>
                 `;
@@ -689,15 +675,9 @@
         }
 
         // Show add material form
-        async function showAddMaterialForm(isEdit = false) {
-            if (!isEdit) {
-                document.getElementById('material-modal-title').textContent = '新增物料';
-                document.getElementById('material-form').reset();
-                document.getElementById('material-id').value = '';
-            }
-            
-            // Load unit history
-            updateUnitDatalist();
+        async function showAddMaterialForm() {
+            document.getElementById('material-modal-title').textContent = '新增物料';
+            document.getElementById('material-form').reset();
             
             // Load categories
             try {
