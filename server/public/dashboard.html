@@ -877,7 +877,7 @@
                             <select class="item-material" required>
                                 <option value="">選擇物料</option>
                             </select>
-                            <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" required>
+                            <input type="number" class="item-quantity" placeholder="數量" step="10" required>
                             <input type="text" class="item-unit" placeholder="單位" list="unit-history">
                             <input type="text" class="item-notes" placeholder="備註">
                             <input type="url" class="item-image-url" placeholder="圖片網址（可選）">
@@ -1135,7 +1135,7 @@
                         const data = await retryResponse.json();
                         allMaterials = data.materials || [];
                         displayMaterials(allMaterials);
-                    } else {
+                } else {
                         const errorText = await retryResponse.text();
                         let errorMessage = '無法載入物料資料';
                         try {
@@ -1713,7 +1713,7 @@
                                 <select class="item-material" required>
                                     <option value="">請先選擇施工類別</option>
                                 </select>
-                                <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" required>
+                                <input type="number" class="item-quantity" placeholder="數量" step="10" required>
                                 <input type="text" class="item-unit" id="unit-input-0" placeholder="單位" list="unit-history">
                             </div>
                             <div class="request-item-row-full">
@@ -1839,7 +1839,7 @@
                     <select class="item-material" required>
                         ${materialOptions}
                     </select>
-                    <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" required>
+                                <input type="number" class="item-quantity" placeholder="數量" step="10" required>
                     <input type="text" class="item-unit" id="unit-input-${itemCount}" placeholder="單位" list="unit-history">
                 </div>
                 <div class="request-item-row-full">
@@ -1879,6 +1879,9 @@
             
             // Setup unit history for this input
             setupUnitHistory(newItem.querySelector('.item-unit'));
+            
+            // Setup quantity validation for the new quantity input
+            setupQuantityValidation(newItem.querySelector('.item-quantity'));
         }
         
         // Handle image upload
@@ -1971,6 +1974,18 @@
             }
         }
 
+        // Setup quantity validation - auto-adjust to 5 if < 1
+        function setupQuantityValidation(input) {
+            if (!input) return;
+            
+            input.addEventListener('blur', function() {
+                const value = parseFloat(this.value);
+                if (!isNaN(value) && value < 1) {
+                    this.value = 5;
+                }
+            });
+        }
+        
         // Setup unit history for input field
         function setupUnitHistory(input) {
             if (!input) return;
@@ -2056,7 +2071,7 @@
                 const linkUrl = item.querySelector('.item-link-url').value || null;
                 
                 if (materialId && quantity) {
-                    if (quantity < 1) {
+                    if (quantity <= 1) {
                         hasInvalidQuantity = true;
                         return;
                     }
@@ -2072,7 +2087,7 @@
             });
             
             if (hasInvalidQuantity) {
-                alert('數量必須至少為1');
+                alert('數量必須大於1');
                 return;
             }
             
