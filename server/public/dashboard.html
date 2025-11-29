@@ -998,6 +998,11 @@
         function displayMaterials(materials) {
             const content = document.getElementById('materials-content');
             
+            if (!content) {
+                console.error('無法找到 materials-content 元素');
+                return;
+            }
+            
             if (materials.length === 0) {
                 content.innerHTML = '<div class="empty-state">尚無物料資料，請先建立類別，然後點擊「新增物料」開始添加</div>';
                 return;
@@ -1010,11 +1015,11 @@
                 // Desktop table row
                 tableHtml += `
                     <tr>
-                        <td>${material.construction_category_name || '-'}</td>
-                        <td>${material.material_category_name || '-'}</td>
-                        <td>${material.name}</td>
-                        <td>${material.specification || '-'}</td>
-                        <td>${material.unit || '-'}</td>
+                        <td>${escapeHtml(material.construction_category_name || '-')}</td>
+                        <td>${escapeHtml(material.material_category_name || '-')}</td>
+                        <td>${escapeHtml(material.name)}</td>
+                        <td>${escapeHtml(material.specification || '-')}</td>
+                        <td>${escapeHtml(material.unit || '-')}</td>
                         <td>
                             <button class="btn-secondary btn-small" onclick="editMaterialById(${material.id})" style="margin-right: 5px;">編輯</button>
                             <button class="btn-danger btn-small" onclick="deleteMaterial(${material.id})">刪除</button>
@@ -1025,22 +1030,22 @@
                 // Mobile card
                 cardHtml += `
                     <div class="mobile-card-item">
-                        <div class="mobile-card-item-header">${material.name}</div>
+                        <div class="mobile-card-item-header">${escapeHtml(material.name)}</div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">施工類別</span>
-                            <span class="mobile-card-item-value">${material.construction_category_name || '-'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(material.construction_category_name || '-')}</span>
                         </div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">材料類別</span>
-                            <span class="mobile-card-item-value">${material.material_category_name || '-'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(material.material_category_name || '-')}</span>
                         </div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">材料規格</span>
-                            <span class="mobile-card-item-value">${material.specification || '-'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(material.specification || '-')}</span>
                         </div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">單位</span>
-                            <span class="mobile-card-item-value">${material.unit || '-'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(material.unit || '-')}</span>
                         </div>
                         <div class="mobile-card-item-actions">
                             <button class="btn-secondary btn-small" onclick="editMaterialById(${material.id})">編輯</button>
@@ -1053,6 +1058,14 @@
             tableHtml += '</tbody></table>';
             cardHtml += '</div>';
             content.innerHTML = tableHtml + cardHtml;
+        }
+        
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            if (text == null) return '-';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         let currentManageType = null;
@@ -1088,6 +1101,11 @@
         function displayCategoryList(categories, type) {
             const content = document.getElementById('category-list-content');
             
+            if (!content) {
+                console.error('無法找到 category-list-content 元素');
+                return;
+            }
+            
             if (categories.length === 0) {
                 content.innerHTML = '<div class="empty-state">尚無類別，請點擊「新增類別」</div>';
                 return;
@@ -1100,8 +1118,8 @@
                 // Desktop table row
                 tableHtml += `
                     <tr>
-                        <td>${cat.name}</td>
-                        <td>${cat.description || '-'}</td>
+                        <td>${escapeHtml(cat.name)}</td>
+                        <td>${escapeHtml(cat.description || '-')}</td>
                         <td>
                             <button class="btn-secondary btn-small" onclick="editCategoryById(${cat.id}, '${type}')" style="margin-right: 5px;">編輯</button>
                             <button class="btn-danger btn-small" onclick="deleteCategory(${cat.id}, '${type}')">刪除</button>
@@ -1112,10 +1130,10 @@
                 // Mobile card
                 cardHtml += `
                     <div class="mobile-card-item">
-                        <div class="mobile-card-item-header">${cat.name}</div>
+                        <div class="mobile-card-item-header">${escapeHtml(cat.name)}</div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">描述</span>
-                            <span class="mobile-card-item-value">${cat.description || '-'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(cat.description || '-')}</span>
                         </div>
                         <div class="mobile-card-item-actions">
                             <button class="btn-secondary btn-small" onclick="editCategoryById(${cat.id}, '${type}')">編輯</button>
@@ -1416,6 +1434,11 @@
         function displayRequests(requests) {
             const content = document.getElementById('requests-content');
             
+            if (!content) {
+                console.error('無法找到 requests-content 元素');
+                return;
+            }
+            
             if (requests.length === 0) {
                 content.innerHTML = '<div class="empty-state">尚無叫料單，請點擊「新增叫料單」開始創建</div>';
                 return;
@@ -1430,11 +1453,11 @@
                 // Desktop table row
                 tableHtml += `
                     <tr>
-                        <td>${request.request_number}</td>
-                        <td>${request.work_area || '-'}</td>
-                        <td>${request.construction_category_name || '-'}</td>
-                        <td>${request.status || 'pending'}</td>
-                        <td>${createdDate}</td>
+                        <td>${escapeHtml(request.request_number)}</td>
+                        <td>${escapeHtml(request.work_area || '-')}</td>
+                        <td>${escapeHtml(request.construction_category_name || '-')}</td>
+                        <td>${escapeHtml(request.status || 'pending')}</td>
+                        <td>${escapeHtml(createdDate)}</td>
                         <td>
                             <button class="btn-secondary" onclick="viewRequest(${request.id})" style="margin-right: 5px;">查看</button>
                             <button class="btn-primary" onclick="sendRequestEmail(${request.id})" style="margin-right: 5px;">📧 發送郵件</button>
@@ -1447,22 +1470,22 @@
                 // Mobile card
                 cardHtml += `
                     <div class="mobile-card-item">
-                        <div class="mobile-card-item-header">${request.request_number}</div>
+                        <div class="mobile-card-item-header">${escapeHtml(request.request_number)}</div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">工區</span>
-                            <span class="mobile-card-item-value">${request.work_area || '-'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(request.work_area || '-')}</span>
                         </div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">施工類別</span>
-                            <span class="mobile-card-item-value">${request.construction_category_name || '-'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(request.construction_category_name || '-')}</span>
                         </div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">狀態</span>
-                            <span class="mobile-card-item-value">${request.status || 'pending'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(request.status || 'pending')}</span>
                         </div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">建立時間</span>
-                            <span class="mobile-card-item-value">${createdDate}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(createdDate)}</span>
                         </div>
                         <div class="mobile-card-item-actions">
                             <button class="btn-secondary" onclick="viewRequest(${request.id})">查看</button>
@@ -2003,6 +2026,11 @@
         function displayAddressList(addresses) {
             const content = document.getElementById('address-list-content');
             
+            if (!content) {
+                console.error('無法找到 address-list-content 元素');
+                return;
+            }
+            
             if (addresses.length === 0) {
                 content.innerHTML = '<div class="empty-state">尚無地址，請點擊「新增地址」</div>';
                 return;
@@ -2017,10 +2045,10 @@
                 // Desktop table row
                 tableHtml += `
                     <tr>
-                        <td>${addr.name}${defaultBadge}</td>
-                        <td>${addr.address || '-'}</td>
-                        <td>${addr.contact_person || '-'}</td>
-                        <td>${addr.contact_phone || '-'}</td>
+                        <td>${escapeHtml(addr.name)}${defaultBadge}</td>
+                        <td>${escapeHtml(addr.address || '-')}</td>
+                        <td>${escapeHtml(addr.contact_person || '-')}</td>
+                        <td>${escapeHtml(addr.contact_phone || '-')}</td>
                         <td>${addr.is_default ? '是' : '否'}</td>
                         <td>
                             <button class="btn-secondary btn-small" onclick="editAddressById(${addr.id})" style="margin-right: 5px;">編輯</button>
@@ -2032,18 +2060,18 @@
                 // Mobile card
                 cardHtml += `
                     <div class="mobile-card-item">
-                        <div class="mobile-card-item-header">${addr.name}${defaultBadge}</div>
+                        <div class="mobile-card-item-header">${escapeHtml(addr.name)}${defaultBadge}</div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">地址</span>
-                            <span class="mobile-card-item-value">${addr.address || '-'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(addr.address || '-')}</span>
                         </div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">聯絡人</span>
-                            <span class="mobile-card-item-value">${addr.contact_person || '-'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(addr.contact_person || '-')}</span>
                         </div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">聯絡電話</span>
-                            <span class="mobile-card-item-value">${addr.contact_phone || '-'}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(addr.contact_phone || '-')}</span>
                         </div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">預設</span>
