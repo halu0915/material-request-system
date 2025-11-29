@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { initializeDatabase } from './db/connection';
 import authRoutes from './routes/auth';
 import materialRoutes from './routes/materials';
@@ -41,11 +42,33 @@ app.get('/health', (req, res) => {
 // Serve static files from client build in production
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '../../client/dist');
-  app.use(express.static(clientBuildPath));
   
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientBuildPath, 'index.html'));
-  });
+  // Check if client build exists before serving
+  if (fs.existsSync(clientBuildPath) && fs.existsSync(path.join(clientBuildPath, 'index.html'))) {
+    app.use(express.static(clientBuildPath));
+    
+    app.get('*', (req, res, next) => {
+      // Don't serve client files for API routes
+      if (req.path.startsWith('/api')) {
+        return next();
+      }
+      res.sendFile(path.join(clientBuildPath, 'index.html'));
+    });
+  } else {
+    // If client build doesn't exist, just show API info
+    app.get('/', (req, res) => {
+      res.json({
+        message: '叫料系統 API 服務運行中',
+        version: '1.0.0',
+        status: 'ok',
+        endpoints: {
+          health: '/health',
+          api: '/api',
+          docs: 'API 服務已啟動，前端尚未構建'
+        }
+      });
+    });
+  }
 }
 
 // Error handling
