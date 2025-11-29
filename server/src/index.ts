@@ -52,11 +52,14 @@ if (process.env.NODE_ENV === 'production') {
     console.log('✅ 找到前端構建文件，路徑:', clientBuildPath);
     
     // Serve static files (CSS, JS, images, etc.)
-    app.use(express.static(clientBuildPath, {
-      maxAge: '1y',
-      etag: true,
-      fallthrough: true
-    }));
+    // Only set up static middleware if directory exists
+    if (fs.existsSync(clientBuildPath)) {
+      app.use(express.static(clientBuildPath, {
+        maxAge: '1y',
+        etag: true,
+        fallthrough: true
+      }));
+    }
     
     // Serve index.html for all non-API routes (SPA routing)
     app.get('*', (req, res, next) => {
@@ -65,12 +68,18 @@ if (process.env.NODE_ENV === 'production') {
       }
       
       const indexPath = path.join(clientBuildPath, 'index.html');
-      res.sendFile(indexPath, (err) => {
-        if (err) {
-          console.error('發送 index.html 錯誤:', err.message);
-          next(err);
-        }
-      });
+      // Double check file exists before sending
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath, (err) => {
+          if (err && err.code !== 'ENOENT') {
+            console.error('發送 index.html 錯誤:', err.message);
+            next(err);
+          }
+        });
+      } else {
+        // File doesn't exist, fall through to backup handler
+        next();
+      }
     });
     
     console.log('✅ 前端靜態文件服務已啟動');
