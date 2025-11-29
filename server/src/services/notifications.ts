@@ -33,7 +33,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     ['聯繫電話', request.contact_phone || ''],
     ['工區', workArea],
     ['施工類別', request.construction_category_name || ''],
-    ['送貨地址', request.delivery_address || ''],
+    ['送貨地址', request.delivery_address_name ? `${request.delivery_address_name} - ${request.delivery_address || ''}` : ''],
     ['狀態', request.status],
     [],
     // Table header (without image and link columns - they will be added vertically)
