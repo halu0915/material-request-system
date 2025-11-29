@@ -90,10 +90,9 @@ if (process.env.NODE_ENV === 'production') {
     // Always try to serve backup HTML
     if (publicHtmlExists) {
       console.warn('📋 將使用備用 HTML 頁面');
-      app.use(express.static(publicPath));
       console.log('✅ 備用 HTML 頁面已設置:', publicPath);
       
-      // Serve backup HTML for all non-API routes
+      // Serve backup HTML for all non-API routes (BEFORE static files)
       app.get('*', (req, res, next) => {
         if (req.path.startsWith('/api') || req.path === '/health') {
           return next();
@@ -106,6 +105,9 @@ if (process.env.NODE_ENV === 'production') {
           }
         });
       });
+      
+      // Serve static files from public directory (for CSS, JS, images, etc.)
+      app.use(express.static(publicPath));
     } else {
       console.warn('⚠️ 備用 HTML 頁面也不存在！');
       // Fallback: simple JSON response for root
