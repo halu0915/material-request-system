@@ -60,13 +60,15 @@ if (process.env.NODE_ENV === 'production') {
     console.log('✅ 找到前端構建文件，開始設置靜態文件服務...');
     console.log('📍 前端構建文件路徑:', clientBuildPath);
     
-    // Serve static files
+    // Serve static files (CSS, JS, images, etc.) - but don't handle 404s
     app.use(express.static(clientBuildPath, {
       maxAge: '1y', // Cache static assets
-      etag: true
+      etag: true,
+      fallthrough: true // Continue to next middleware if file not found
     }));
     
     // Serve index.html for all non-API routes (SPA routing)
+    // This catches all routes that don't match static files
     app.get('*', (req, res, next) => {
       // Don't serve client files for API routes or health check
       if (req.path.startsWith('/api') || req.path === '/health') {
