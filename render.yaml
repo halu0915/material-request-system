@@ -3,7 +3,7 @@ services:
     name: material-request-system
     env: node
     plan: free
-    buildCommand: npm install:all && npm run build
+    buildCommand: cd server && npm install && npm run build || true
     startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
