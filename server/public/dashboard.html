@@ -1112,7 +1112,7 @@
             }
             
             let tableHtml = '<table><thead><tr><th>施工類別</th><th>材料類別</th><th>材料名稱</th><th>材料規格</th><th>單位</th><th>操作</th></tr></thead><tbody>';
-            let cardHtml = '<div class="mobile-card">';
+            let cardHtml = '';
             
             materials.forEach(material => {
                 // Desktop table row
@@ -1159,8 +1159,8 @@
             });
             
             tableHtml += '</tbody></table>';
-            cardHtml += '</div>';
-            content.innerHTML = tableHtml + cardHtml;
+            const mobileCardWrapper = cardHtml ? `<div class="mobile-card">${cardHtml}</div>` : '';
+            content.innerHTML = tableHtml + mobileCardWrapper;
         }
         
         // Helper function to escape HTML
