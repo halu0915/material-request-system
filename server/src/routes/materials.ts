@@ -123,6 +123,126 @@ router.post('/material-categories', authenticateToken, async (req: AuthRequest, 
   }
 });
 
+// Update construction category
+router.put('/construction-categories/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: '名稱必填' });
+    }
+
+    const result = await query(
+      'UPDATE construction_categories SET name = $1, description = $2 WHERE id = $3 RETURNING *',
+      [name, description || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到施工類別' });
+    }
+
+    res.json({ category: result.rows[0] });
+  } catch (error: any) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: '此施工類別名稱已存在' });
+    }
+    console.error('更新施工類別錯誤:', error);
+    res.status(500).json({ error: '更新施工類別失敗' });
+  }
+});
+
+// Update material category
+router.put('/material-categories/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: '名稱必填' });
+    }
+
+    const result = await query(
+      'UPDATE material_categories SET name = $1, description = $2 WHERE id = $3 RETURNING *',
+      [name, description || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到材料類別' });
+    }
+
+    res.json({ category: result.rows[0] });
+  } catch (error: any) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: '此材料類別名稱已存在' });
+    }
+    console.error('更新材料類別錯誤:', error);
+    res.status(500).json({ error: '更新材料類別失敗' });
+  }
+});
+
+// Delete construction category
+router.delete('/construction-categories/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if category is used in any materials
+    const checkMaterials = await query(
+      'SELECT id FROM materials WHERE construction_category_id = $1 LIMIT 1',
+      [id]
+    );
+
+    if (checkMaterials.rows.length > 0) {
+      return res.status(400).json({ error: '此施工類別已被使用，無法刪除' });
+    }
+
+    const result = await query(
+      'DELETE FROM construction_categories WHERE id = $1 RETURNING *',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到施工類別' });
+    }
+
+    res.json({ message: '施工類別已刪除', category: result.rows[0] });
+  } catch (error) {
+    console.error('刪除施工類別錯誤:', error);
+    res.status(500).json({ error: '刪除施工類別失敗' });
+  }
+});
+
+// Delete material category
+router.delete('/material-categories/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if category is used in any materials
+    const checkMaterials = await query(
+      'SELECT id FROM materials WHERE material_category_id = $1 LIMIT 1',
+      [id]
+    );
+
+    if (checkMaterials.rows.length > 0) {
+      return res.status(400).json({ error: '此材料類別已被使用，無法刪除' });
+    }
+
+    const result = await query(
+      'DELETE FROM material_categories WHERE id = $1 RETURNING *',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到材料類別' });
+    }
+
+    res.json({ message: '材料類別已刪除', category: result.rows[0] });
+  } catch (error) {
+    console.error('刪除材料類別錯誤:', error);
+    res.status(500).json({ error: '刪除材料類別失敗' });
+  }
+});
+
 // Create material
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
