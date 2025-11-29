@@ -79,6 +79,33 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
   }
 });
 
+// Generate request number: W00111292005
+// Format: W + 序號(3位) + MMDD + YYYY
+async function generateRequestNumber(): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const dateStr = month + day; // MMDD format
+  
+  // Get start and end of current month
+  const startOfMonth = new Date(year, now.getMonth(), 1);
+  const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
+  
+  // Count existing requests in current month
+  const countResult = await query(
+    `SELECT COUNT(*) as count 
+     FROM material_requests 
+     WHERE created_at >= $1 AND created_at <= $2`,
+    [startOfMonth, endOfMonth]
+  );
+  
+  const currentCount = parseInt(countResult.rows[0].count || '0');
+  const sequence = String(currentCount + 1).padStart(3, '0'); // 001, 002, 003...
+  
+  return `W${sequence}${dateStr}${year}`;
+}
+
 // Create material request
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -88,8 +115,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: '施工類別和材料項目必填' });
     }
 
-    // Generate request number
-    const requestNumber = `MR-${Date.now()}-${uuidv4().substring(0, 8).toUpperCase()}`;
+    // Generate request number: W00111292005
+    const requestNumber = await generateRequestNumber();
 
     // Get database client for transaction
     const { getClient } = await import('../db/connection');
