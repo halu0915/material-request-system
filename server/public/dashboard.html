@@ -109,6 +109,24 @@
         .section-header h2 {
             color: #333;
             font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .back-btn:hover {
+            background: #5a6268;
         }
         .btn-primary {
             background: #667eea;
@@ -313,11 +331,14 @@
         <!-- Materials Section -->
         <div id="materials-section" class="section" style="display: none;">
             <div class="section-header">
-                <h2>物料管理</h2>
+                <h2>
+                    <button class="back-btn" onclick="showHome()">← 返回</button>
+                    <span>物料管理</span>
+                </h2>
                 <div>
                     <button class="btn-secondary" onclick="showAddCategoryForm('construction')" style="margin-right: 10px;">新增施工類別</button>
                     <button class="btn-secondary" onclick="showAddCategoryForm('material')" style="margin-right: 10px;">新增材料類別</button>
-                <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
+                    <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
                 </div>
             </div>
             <div id="materials-content">
@@ -328,7 +349,10 @@
         <!-- Requests Section -->
         <div id="requests-section" class="section" style="display: none;">
             <div class="section-header">
-                <h2>叫料單管理</h2>
+                <h2>
+                    <button class="back-btn" onclick="showHome()">← 返回</button>
+                    <span>叫料單管理</span>
+                </h2>
                 <button class="btn-primary" onclick="showCreateRequestForm()">新增叫料單</button>
             </div>
             <div id="requests-content">
@@ -339,7 +363,10 @@
         <!-- Reports Section -->
         <div id="reports-section" class="section" style="display: none;">
             <div class="section-header">
-                <h2>報表統計</h2>
+                <h2>
+                    <button class="back-btn" onclick="showHome()">← 返回</button>
+                    <span>報表統計</span>
+                </h2>
             </div>
             <div id="reports-content">
                 <div class="loading">載入中...</div>
@@ -493,31 +520,69 @@
 
         // Show home view
         function showHome() {
-            document.getElementById('home-view').style.display = 'block';
-            ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                document.getElementById(id).style.display = 'none';
-            });
-            currentSection = null;
+            navigateToSection(null);
+        }
+
+        // Navigate to section with browser history support
+        function navigateToSection(section) {
+            // Update display
+            if (section === null) {
+                document.getElementById('home-view').style.display = 'block';
+                ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
+                    document.getElementById(id).style.display = 'none';
+                });
+                currentSection = null;
+            } else {
+                document.getElementById('home-view').style.display = 'none';
+                ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
+                    document.getElementById(id).style.display = 'none';
+                });
+                
+                currentSection = section;
+                const sectionEl = document.getElementById(section + '-section');
+                sectionEl.style.display = 'block';
+                
+                // Load section data
+                if (section === 'materials') {
+                    loadMaterials();
+                } else if (section === 'requests') {
+                    loadRequests();
+                } else if (section === 'reports') {
+                    loadReports();
+                }
+            }
+            
+            // Update browser history
+            const url = section ? `#${section}` : '#';
+            if (window.location.hash !== url) {
+                if (section === null && window.location.hash) {
+                    // Going back to home
+                    history.pushState({ section: null }, '', window.location.pathname);
+                } else if (section) {
+                    // Going to a section
+                    history.pushState({ section: section }, '', `#${section}`);
+                }
+            }
         }
 
         // Open section
         function openSection(section) {
-            document.getElementById('home-view').style.display = 'none';
-            ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                document.getElementById(id).style.display = 'none';
-            });
-            
-            currentSection = section;
-            const sectionEl = document.getElementById(section + '-section');
-            sectionEl.style.display = 'block';
-            
-            if (section === 'materials') {
-                loadMaterials();
-            } else if (section === 'requests') {
-                loadRequests();
-            } else if (section === 'reports') {
-                loadReports();
+            navigateToSection(section);
+        }
+
+        // Handle browser back/forward buttons
+        function handlePopState(event) {
+            const section = event.state ? event.state.section : getSectionFromHash();
+            navigateToSection(section);
+        }
+
+        // Get section from URL hash
+        function getSectionFromHash() {
+            const hash = window.location.hash.replace('#', '');
+            if (hash === 'materials' || hash === 'requests' || hash === 'reports') {
+                return hash;
             }
+            return null;
         }
 
         // Load materials
@@ -1019,6 +1084,18 @@
             await init();
             document.getElementById('userName').textContent = '使用者';
             document.getElementById('welcomeMessage').textContent = '歡迎使用叫料系統！';
+            
+            // Handle browser back/forward buttons
+            window.addEventListener('popstate', handlePopState);
+            
+            // Check URL hash on load
+            const section = getSectionFromHash();
+            if (section) {
+                navigateToSection(section);
+            } else {
+                // Initialize history for home
+                history.replaceState({ section: null }, '', window.location.pathname);
+            }
         });
     </script>
 </body>
