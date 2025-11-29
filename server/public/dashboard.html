@@ -275,29 +275,103 @@
             border: 1px solid #f5c6cb;
         }
         .request-item {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+            border-radius: 12px;
+            border: 1px solid #e1e8ed;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .request-item-row {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1.5fr 2fr 2fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 12px;
+            align-items: start;
+        }
+        .request-item-row-full {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .request-item-row-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .image-upload-area {
+            position: relative;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .image-upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .image-upload-area.dragover {
+            border-color: #667eea;
+            background: #eef2ff;
+        }
+        .image-upload-area input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .image-preview {
+            margin-top: 10px;
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .image-preview-container {
+            position: relative;
+            display: inline-block;
+        }
+        .remove-image-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
             align-items: center;
-            padding: 10px;
-            background: #f9f9f9;
-            border-radius: 6px;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        .request-item select {
-            min-width: 0;
+        .link-input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
-        .request-item input[type="number"] {
-            min-width: 80px;
+        .link-input-group input {
+            flex: 1;
         }
-        .request-item input[type="text"],
-        .request-item input[type="url"] {
-            min-width: 0;
+        .link-icon {
+            color: #667eea;
+            font-size: 18px;
         }
-        @media (max-width: 1200px) {
-            .request-item {
+        @media (max-width: 768px) {
+            .request-item-row,
+            .request-item-row-2col {
                 grid-template-columns: 1fr;
-                gap: 8px;
             }
         }
     </style>
@@ -1065,17 +1139,40 @@
                     // Reset items
                     const itemsContainer = document.getElementById('request-items');
                     itemsContainer.innerHTML = `
-                        <div class="request-item">
-                            <select class="item-material" required>
-                                <option value="">選擇物料</option>
-                                ${allMaterials.map(m => `<option value="${m.id}" data-unit="${m.unit || ''}">${m.construction_category_name || ''} - ${m.material_category_name || ''} - ${m.name}</option>`).join('')}
-                            </select>
-                            <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
-                            <input type="text" class="item-unit" placeholder="單位" list="unit-history">
-                            <input type="text" class="item-notes" placeholder="備註">
-                            <input type="url" class="item-image-url" placeholder="圖片網址（可選）">
-                            <input type="url" class="item-link-url" placeholder="連結網址（可選）">
-                            <button type="button" class="btn-danger btn-small" onclick="removeRequestItem(this)">刪除</button>
+                        <div class="request-item" data-item-index="0">
+                            <div class="request-item-row">
+                                <select class="item-material" required>
+                                    <option value="">選擇物料</option>
+                                    ${allMaterials.map(m => `<option value="${m.id}" data-unit="${m.unit || ''}">${m.construction_category_name || ''} - ${m.material_category_name || ''} - ${m.name}</option>`).join('')}
+                                </select>
+                                <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
+                                <input type="text" class="item-unit" id="unit-input-0" placeholder="單位" list="unit-history">
+                            </div>
+                            <div class="request-item-row-full">
+                                <input type="text" class="item-notes" placeholder="備註（可選）">
+                            </div>
+                            <div class="request-item-row-2col">
+                                <div class="image-upload-area" data-item-index="0">
+                                    <input type="file" class="item-image-file" accept="image/*" onchange="handleImageUpload(this, 0)">
+                                    <div class="upload-content">
+                                        <div style="font-size: 32px; margin-bottom: 8px;">📷</div>
+                                        <div style="color: #667eea; font-weight: 500;">點擊或拖放圖片上傳</div>
+                                        <div style="color: #94a3b8; font-size: 12px; margin-top: 4px;">支援 JPG、PNG、GIF（最大 10MB）</div>
+                                    </div>
+                                    <div class="image-preview-container" style="display: none;">
+                                        <img class="image-preview" src="" alt="預覽">
+                                        <button type="button" class="remove-image-btn" onclick="removeImage(0)">×</button>
+                                    </div>
+                                    <input type="hidden" class="item-image-url" value="">
+                                </div>
+                                <div class="link-input-group">
+                                    <span class="link-icon">🔗</span>
+                                    <input type="url" class="item-link-url" placeholder="輸入連結網址（可選）">
+                                </div>
+                            </div>
+                            <div style="text-align: right; margin-top: 10px;">
+                                <button type="button" class="btn-danger btn-small" onclick="removeRequestItem(this)">刪除項目</button>
+                            </div>
                         </div>
                     `;
                     
@@ -1094,6 +1191,12 @@
                         firstUnitInput.id = 'unit-input-0';
                         setupUnitHistory(firstUnitInput);
                     }
+                    
+                    // Setup drag and drop for image upload
+                    const firstUploadArea = itemsContainer.querySelector('.image-upload-area');
+                    if (firstUploadArea) {
+                        setupImageDragAndDrop(firstUploadArea, 0);
+                    }
                 }
             } catch (error) {
                 alert('無法載入物料資料');
@@ -1109,17 +1212,41 @@
             const itemCount = itemsContainer.children.length;
             const newItem = document.createElement('div');
             newItem.className = 'request-item';
+            newItem.setAttribute('data-item-index', itemCount.toString());
             newItem.innerHTML = `
-                <select class="item-material" required>
-                    <option value="">選擇物料</option>
-                    ${allMaterials.map(m => `<option value="${m.id}" data-unit="${m.unit || ''}">${m.construction_category_name || ''} - ${m.material_category_name || ''} - ${m.name}</option>`).join('')}
-                </select>
-                <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
-                <input type="text" class="item-unit" id="unit-input-${itemCount}" placeholder="單位" list="unit-history">
-                <input type="text" class="item-notes" placeholder="備註">
-                <input type="url" class="item-image-url" placeholder="圖片網址（可選）">
-                <input type="url" class="item-link-url" placeholder="連結網址（可選）">
-                <button type="button" class="btn-danger btn-small" onclick="removeRequestItem(this)">刪除</button>
+                <div class="request-item-row">
+                    <select class="item-material" required>
+                        <option value="">選擇物料</option>
+                        ${allMaterials.map(m => `<option value="${m.id}" data-unit="${m.unit || ''}">${m.construction_category_name || ''} - ${m.material_category_name || ''} - ${m.name}</option>`).join('')}
+                    </select>
+                    <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
+                    <input type="text" class="item-unit" id="unit-input-${itemCount}" placeholder="單位" list="unit-history">
+                </div>
+                <div class="request-item-row-full">
+                    <input type="text" class="item-notes" placeholder="備註（可選）">
+                </div>
+                <div class="request-item-row-2col">
+                    <div class="image-upload-area" data-item-index="${itemCount}">
+                        <input type="file" class="item-image-file" accept="image/*" onchange="handleImageUpload(this, ${itemCount})">
+                        <div class="upload-content">
+                            <div style="font-size: 32px; margin-bottom: 8px;">📷</div>
+                            <div style="color: #667eea; font-weight: 500;">點擊或拖放圖片上傳</div>
+                            <div style="color: #94a3b8; font-size: 12px; margin-top: 4px;">支援 JPG、PNG、GIF（最大 10MB）</div>
+                        </div>
+                        <div class="image-preview-container" style="display: none;">
+                            <img class="image-preview" src="" alt="預覽">
+                            <button type="button" class="remove-image-btn" onclick="removeImage(${itemCount})">×</button>
+                        </div>
+                        <input type="hidden" class="item-image-url" value="">
+                    </div>
+                    <div class="link-input-group">
+                        <span class="link-icon">🔗</span>
+                        <input type="url" class="item-link-url" placeholder="輸入連結網址（可選）">
+                    </div>
+                </div>
+                <div style="text-align: right; margin-top: 10px;">
+                    <button type="button" class="btn-danger btn-small" onclick="removeRequestItem(this)">刪除項目</button>
+                </div>
             `;
             itemsContainer.appendChild(newItem);
             
@@ -1132,6 +1259,118 @@
             
             // Setup unit history for this input
             setupUnitHistory(newItem.querySelector('.item-unit'));
+            
+            // Setup drag and drop for image upload
+            setupImageDragAndDrop(newItem.querySelector('.image-upload-area'), itemCount);
+        }
+        
+        // Handle image upload
+        async function handleImageUpload(input, itemIndex) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('請選擇圖片檔案');
+                input.value = '';
+                return;
+            }
+            
+            // Validate file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('圖片大小不能超過 10MB');
+                input.value = '';
+                return;
+            }
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const uploadArea = input.closest('.image-upload-area');
+                const previewContainer = uploadArea.querySelector('.image-preview-container');
+                const previewImg = uploadArea.querySelector('.image-preview');
+                const uploadContent = uploadArea.querySelector('.upload-content');
+                
+                previewImg.src = e.target.result;
+                previewContainer.style.display = 'block';
+                uploadContent.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload to server
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                
+                const token = guestToken || localStorage.getItem('token');
+                const response = await fetch('/api/uploads/image', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const imageUrlInput = input.closest('.image-upload-area').querySelector('.item-image-url');
+                    imageUrlInput.value = data.url;
+                } else {
+                    const error = await response.json();
+                    alert('上傳失敗：' + (error.error || '未知錯誤'));
+                    removeImage(itemIndex);
+                }
+            } catch (error) {
+                alert('上傳失敗：' + error.message);
+                removeImage(itemIndex);
+            }
+        }
+        
+        // Remove image
+        function removeImage(itemIndex) {
+            const item = document.querySelector(`.request-item[data-item-index="${itemIndex}"]`);
+            if (!item) return;
+            
+            const uploadArea = item.querySelector('.image-upload-area');
+            const previewContainer = uploadArea.querySelector('.image-preview-container');
+            const uploadContent = uploadArea.querySelector('.upload-content');
+            const fileInput = uploadArea.querySelector('.item-image-file');
+            const imageUrlInput = uploadArea.querySelector('.item-image-url');
+            
+            previewContainer.style.display = 'none';
+            uploadContent.style.display = 'block';
+            fileInput.value = '';
+            imageUrlInput.value = '';
+        }
+        
+        // Setup drag and drop for image upload
+        function setupImageDragAndDrop(uploadArea, itemIndex) {
+            if (!uploadArea) return;
+            
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const fileInput = this.querySelector('.item-image-file');
+                    fileInput.files = files;
+                    handleImageUpload(fileInput, itemIndex);
+                }
+            });
         }
 
         // Remove request item
@@ -1196,12 +1435,13 @@
             const notes = document.getElementById('request-notes').value || null;
             
             const items = [];
-            document.querySelectorAll('.request-item').forEach(item => {
+            document.querySelectorAll('.request-item').forEach((item, index) => {
                 const materialId = item.querySelector('.item-material').value;
                 const quantity = parseFloat(item.querySelector('.item-quantity').value);
                 const unit = item.querySelector('.item-unit').value || null;
                 const itemNotes = item.querySelector('.item-notes').value || null;
-                const imageUrl = item.querySelector('.item-image-url').value || null;
+                const imageUrlInput = item.querySelector('.item-image-url');
+                const imageUrl = imageUrlInput ? imageUrlInput.value || null : null;
                 const linkUrl = item.querySelector('.item-link-url').value || null;
                 
                 if (materialId && quantity) {
@@ -1378,9 +1618,13 @@
             
             items.forEach(item => {
                 const imageDisplay = item.image_url ? 
-                    `<a href="${item.image_url}" target="_blank" style="color: #667eea;">查看圖片</a>` : '-';
+                    `<a href="${item.image_url}" target="_blank" style="color: #667eea; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        <span>🖼️</span> 查看圖片
+                    </a>` : '-';
                 const linkDisplay = item.link_url ? 
-                    `<a href="${item.link_url}" target="_blank" style="color: #667eea;">開啟連結</a>` : '-';
+                    `<a href="${item.link_url}" target="_blank" style="color: #667eea; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        <span>🔗</span> 開啟連結
+                    </a>` : '-';
                 html += `
                     <tr>
                         <td>${item.material_name || '-'}</td>

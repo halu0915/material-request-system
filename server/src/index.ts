@@ -9,6 +9,7 @@ import { initializeDatabase } from './db/connection';
 import authRoutes from './routes/auth';
 import materialRoutes from './routes/materials';
 import requestRoutes from './routes/requests';
+import uploadRoutes from './routes/upload';
 import { errorHandler } from './middleware/errorHandler';
 import { findClientBuild } from './utils/findClientBuild';
 
@@ -36,6 +37,7 @@ initializeDatabase();
 app.use('/api/auth', authRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
