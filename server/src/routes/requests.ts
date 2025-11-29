@@ -391,6 +391,7 @@ async function getFullRequest(requestId: number) {
     `SELECT 
       mri.*,
       m.name as material_name,
+      m.specification as material_specification,
       m.unit as material_unit,
       mc.name as material_category_name
     FROM material_request_items mri

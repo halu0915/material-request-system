@@ -420,6 +420,10 @@
                     <input type="text" id="material-name" required>
                 </div>
                 <div class="form-group">
+                    <label>材料規格</label>
+                    <input type="text" id="material-specification" placeholder="例如：C30、Φ12mm等">
+                </div>
+                <div class="form-group">
                     <label>單位</label>
                     <input type="text" id="material-unit">
                 </div>
@@ -619,7 +623,7 @@
                 return;
             }
             
-            let html = '<table><thead><tr><th>施工類別</th><th>材料類別</th><th>材料名稱</th><th>單位</th><th>操作</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>施工類別</th><th>材料類別</th><th>材料名稱</th><th>材料規格</th><th>單位</th><th>操作</th></tr></thead><tbody>';
             
             materials.forEach(material => {
                 html += `
@@ -627,6 +631,7 @@
                         <td>${material.construction_category_name || '-'}</td>
                         <td>${material.material_category_name || '-'}</td>
                         <td>${material.name}</td>
+                        <td>${material.specification || '-'}</td>
                         <td>${material.unit || '-'}</td>
                         <td>
                             <button class="btn-danger" onclick="deleteMaterial(${material.id})">刪除</button>
@@ -731,6 +736,7 @@
                 construction_category_id: parseInt(document.getElementById('construction-category').value),
                 material_category_id: parseInt(document.getElementById('material-category').value),
                 name: document.getElementById('material-name').value,
+                specification: document.getElementById('material-specification').value || null,
                 unit: document.getElementById('material-unit').value || null,
                 description: document.getElementById('material-description').value || null
             };

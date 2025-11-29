@@ -126,16 +126,16 @@ router.post('/material-categories', authenticateToken, async (req: AuthRequest, 
 // Create material
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { construction_category_id, material_category_id, name, unit, description } = req.body;
+    const { construction_category_id, material_category_id, name, specification, unit, description } = req.body;
 
     if (!construction_category_id || !material_category_id || !name) {
       return res.status(400).json({ error: '施工類別、材料類別和材料名稱必填' });
     }
 
     const result = await query(
-      `INSERT INTO materials (construction_category_id, material_category_id, name, unit, description)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [construction_category_id, material_category_id, name, unit || null, description || null]
+      `INSERT INTO materials (construction_category_id, material_category_id, name, specification, unit, description)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [construction_category_id, material_category_id, name, specification || null, unit || null, description || null]
     );
 
     res.status(201).json({ material: result.rows[0] });

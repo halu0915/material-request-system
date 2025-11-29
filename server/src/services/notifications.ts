@@ -26,7 +26,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     ['狀態', request.status],
     [],
     // Table header
-    ['工區', '施工類別', '材料類別', '單位', '數量', '備註']
+    ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註']
   ];
 
   // Add material items
@@ -35,6 +35,8 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       workArea,
       request.construction_category_name || '',
       item.material_category_name || '',
+      item.material_name || '',
+      item.material_specification || '',
       item.unit || item.material_unit || '',
       item.quantity,
       item.notes || ''
@@ -48,6 +50,8 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     { wch: 15 }, // 工區
     { wch: 15 }, // 施工類別
     { wch: 15 }, // 材料類別
+    { wch: 20 }, // 材料名稱
+    { wch: 20 }, // 材料規格
     { wch: 10 }, // 單位
     { wch: 12 }, // 數量
     { wch: 30 }  // 備註
@@ -55,10 +59,67 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
 
   // Merge cells for company header
   if (!mainSheet['!merges']) mainSheet['!merges'] = [];
-  mainSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }); // Company name
-  mainSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }); // Tax ID
+  mainSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }); // Company name
+  mainSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }); // Tax ID
 
   XLSX.utils.book_append_sheet(workbook, mainSheet, '叫料單');
+  
+  // Add monthly statistics sheet
+  const now = new Date(request.created_at);
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const startOfMonth = new Date(year, month - 1, 1);
+  const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+  
+  // Get monthly statistics (this would need to be passed from the route)
+  // For now, we'll add a placeholder statistics sheet
+  const statsData = [
+    ['月統計'],
+    ['統計月份', `${year}年${month}月`],
+    [],
+    ['材料類別', '材料名稱', '材料規格', '總數量', '單位']
+  ];
+  
+  // Group items by material and sum quantities
+  const materialStats: { [key: string]: { name: string; spec: string; unit: string; total: number } } = {};
+  for (const item of request.items) {
+    const key = `${item.material_category_name || ''}_${item.material_name || ''}`;
+    if (!materialStats[key]) {
+      materialStats[key] = {
+        name: item.material_name || '',
+        spec: item.material_specification || '',
+        unit: item.unit || item.material_unit || '',
+        total: 0
+      };
+    }
+    materialStats[key].total += parseFloat(item.quantity) || 0;
+  }
+  
+  for (const key in materialStats) {
+    const stat = materialStats[key];
+    const categoryName = key.split('_')[0];
+    statsData.push([
+      categoryName,
+      stat.name,
+      stat.spec,
+      stat.total,
+      stat.unit
+    ]);
+  }
+  
+  const statsSheet = XLSX.utils.aoa_to_sheet(statsData);
+  statsSheet['!cols'] = [
+    { wch: 15 }, // 材料類別
+    { wch: 20 }, // 材料名稱
+    { wch: 20 }, // 材料規格
+    { wch: 12 }, // 總數量
+    { wch: 10 }  // 單位
+  ];
+  
+  if (!statsSheet['!merges']) statsSheet['!merges'] = [];
+  statsSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }); // Title
+  
+  XLSX.utils.book_append_sheet(workbook, statsSheet, '月統計');
 
   // Generate buffer
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
@@ -80,7 +141,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
     ['報表期間', startDate && endDate ? `${startDate} 至 ${endDate}` : (startDate ? `自 ${startDate}` : '全部資料')],
     ['報表日期', new Date().toLocaleString('zh-TW')],
     [],
-    ['叫料單號', '建立日期', '工區', '施工類別', '材料類別', '材料名稱', '單位', '數量', '備註']
+    ['叫料單號', '建立日期', '工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註']
   ];
 
   // Add all request items
@@ -96,6 +157,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
           request.construction_category_name || '',
           item.material_category_name || '',
           item.material_name || '',
+          item.material_specification || '',
           item.unit || item.material_unit || '',
           item.quantity,
           item.notes || ''
@@ -108,6 +170,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
         new Date(request.created_at).toLocaleDateString('zh-TW'),
         workArea,
         request.construction_category_name || '',
+        '',
         '',
         '',
         '',
@@ -127,6 +190,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
     { wch: 15 }, // 施工類別
     { wch: 15 }, // 材料類別
     { wch: 20 }, // 材料名稱
+    { wch: 20 }, // 材料規格
     { wch: 10 }, // 單位
     { wch: 12 }, // 數量
     { wch: 30 }  // 備註
@@ -134,10 +198,64 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
 
   // Merge cells for header
   if (!reportSheet['!merges']) reportSheet['!merges'] = [];
-  reportSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }); // Company name
-  reportSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 8 } }); // Tax ID
+  reportSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 9 } }); // Company name
+  reportSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 9 } }); // Tax ID
 
   XLSX.utils.book_append_sheet(workbook, reportSheet, '報表');
+  
+  // Add monthly statistics sheet
+  const statsData = [
+    ['月統計'],
+    ['統計期間', startDate && endDate ? `${startDate} 至 ${endDate}` : (startDate ? `自 ${startDate}` : '全部資料')],
+    [],
+    ['材料類別', '材料名稱', '材料規格', '總數量', '單位']
+  ];
+  
+  // Group items by material and sum quantities
+  const materialStats: { [key: string]: { name: string; spec: string; unit: string; total: number } } = {};
+  for (const request of requests) {
+    if (request.items && request.items.length > 0) {
+      for (const item of request.items) {
+        const key = `${item.material_category_name || ''}_${item.material_name || ''}_${item.material_specification || ''}`;
+        if (!materialStats[key]) {
+          materialStats[key] = {
+            name: item.material_name || '',
+            spec: item.material_specification || '',
+            unit: item.unit || item.material_unit || '',
+            total: 0
+          };
+        }
+        materialStats[key].total += parseFloat(item.quantity) || 0;
+      }
+    }
+  }
+  
+  for (const key in materialStats) {
+    const stat = materialStats[key];
+    const parts = key.split('_');
+    const categoryName = parts[0];
+    statsData.push([
+      categoryName,
+      stat.name,
+      stat.spec,
+      stat.total,
+      stat.unit
+    ]);
+  }
+  
+  const statsSheet = XLSX.utils.aoa_to_sheet(statsData);
+  statsSheet['!cols'] = [
+    { wch: 15 }, // 材料類別
+    { wch: 20 }, // 材料名稱
+    { wch: 20 }, // 材料規格
+    { wch: 12 }, // 總數量
+    { wch: 10 }  // 單位
+  ];
+  
+  if (!statsSheet['!merges']) statsSheet['!merges'] = [];
+  statsSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }); // Title
+  
+  XLSX.utils.book_append_sheet(workbook, statsSheet, '月統計');
 
   // Generate buffer
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });

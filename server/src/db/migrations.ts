@@ -46,12 +46,26 @@ export const createTables = async (): Promise<void> => {
         construction_category_id INTEGER REFERENCES construction_categories(id),
         material_category_id INTEGER REFERENCES material_categories(id),
         name VARCHAR(255) NOT NULL,
+        specification VARCHAR(255),
         unit VARCHAR(50),
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(construction_category_id, material_category_id, name)
       )
+    `);
+    
+    // Add specification column if it doesn't exist (for existing databases)
+    await query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'materials' AND column_name = 'specification'
+        ) THEN
+          ALTER TABLE materials ADD COLUMN specification VARCHAR(255);
+        END IF;
+      END $$;
     `);
 
     // Material requests table
