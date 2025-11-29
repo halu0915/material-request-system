@@ -368,6 +368,10 @@
         .mobile-card {
             display: none;
         }
+        /* Desktop: show table, hide cards */
+        table {
+            display: table;
+        }
         .mobile-card-item {
             background: white;
             border: 1px solid #e1e8ed;
@@ -465,10 +469,10 @@
             }
             /* Hide desktop table, show mobile cards */
             table {
-                display: none;
+                display: none !important;
             }
             .mobile-card {
-                display: block;
+                display: block !important;
             }
             .request-item-row,
             .request-item-row-2col {
