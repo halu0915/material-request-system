@@ -14,17 +14,17 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_req: any, _file: Express.Multer.File, cb: multer.StorageEngine) => {
     cb(null, uploadsDir);
   },
-  filename: (req, file, cb) => {
+  filename: (_req: any, file: Express.Multer.File, cb: multer.StorageEngine) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
     cb(null, `image-${uniqueSuffix}${ext}`);
   }
 });
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   // Accept only image files
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);

@@ -38,7 +38,7 @@ router.get('/material-categories', authenticateToken, async (req: AuthRequest, r
 // Get all materials
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { constructionCategory, materialCategory } = req.query;
+    const { constructionCategory, materialCategory } = req.query as { constructionCategory?: string; materialCategory?: string };
 
     let sql = `
       SELECT 
@@ -267,9 +267,6 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     if (checkExisting.rows.length > 0) {
       return res.status(400).json({ error: '此材料（相同類別、名稱和規格）已存在' });
     }
-
-    // Trim specification before inserting to ensure consistency
-    const specValue = specification ? specification.trim() : null;
     const result = await query(
       `INSERT INTO materials (construction_category_id, material_category_id, name, specification, unit, description)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
@@ -287,7 +284,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 });
 
 // Import materials from Excel
-router.post('/import', authenticateToken, upload.single('file'), async (req, res: Response) => {
+router.post('/import', authenticateToken, upload.single('file'), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: '請上傳檔案' });
@@ -397,9 +394,6 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
     if (checkExisting.rows.length > 0) {
       return res.status(400).json({ error: '此材料（相同類別、名稱和規格）已存在' });
     }
-
-    // Trim specification before updating to ensure consistency
-    const specValue = specification ? specification.trim() : null;
     const result = await query(
       `UPDATE materials 
        SET construction_category_id = $1, material_category_id = $2, name = $3, 

@@ -7,6 +7,10 @@ export interface AuthRequest extends Request {
     email: string;
     name?: string;
   };
+  body: any;
+  params: any;
+  query: any;
+  file?: Express.Multer.File;
 }
 
 export const authenticateToken = (
