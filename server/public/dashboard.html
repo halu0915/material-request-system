@@ -756,11 +756,13 @@
             <form id="request-form" onsubmit="saveRequest(event)">
                 <div class="form-group">
                     <label>申請人 *</label>
-                    <input type="text" id="request-applicant-name" placeholder="請輸入申請人姓名" required>
+                    <input type="text" id="request-applicant-name" placeholder="選擇地址後自動填入" readonly>
+                    <small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">將根據選擇的送貨地址自動填入</small>
                 </div>
                 <div class="form-group">
                     <label>聯繫電話 *</label>
-                    <input type="tel" id="request-contact-phone" placeholder="請輸入聯繫電話" required>
+                    <input type="tel" id="request-contact-phone" placeholder="選擇地址後自動填入" readonly>
+                    <small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">將根據選擇的送貨地址自動填入</small>
                 </div>
                 <div class="form-group">
                     <label>工區 *</label>
@@ -1883,6 +1885,9 @@
         }
         
         // Load delivery addresses
+        // Store addresses data for auto-fill
+        let addressesData = [];
+        
         async function loadDeliveryAddresses() {
             try {
                 const response = await fetch('/api/addresses', {
@@ -1891,10 +1896,11 @@
                 
                 if (response.ok) {
                     const data = await response.json();
+                    addressesData = data.addresses || [];
                     const addressSelect = document.getElementById('request-delivery-address');
                     addressSelect.innerHTML = '<option value="">請選擇送貨地址</option>';
                     
-                    data.addresses.forEach(addr => {
+                    addressesData.forEach(addr => {
                         const option = document.createElement('option');
                         option.value = addr.id;
                         option.textContent = `${addr.name}${addr.is_default ? ' (預設)' : ''}`;
