@@ -2,7 +2,7 @@ import express, { Response } from 'express';
 import XLSX from 'xlsx';
 import { query } from '../db/connection';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { generateExcel, uploadToCloud, sendEmail, sendLineNotify } from '../services/notifications';
+import { generateExcel, generateReportExcel, uploadToCloud, sendEmail, sendLineNotify } from '../services/notifications';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
@@ -82,7 +82,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
 // Create material request
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { construction_category_id, items, notes } = req.body;
+    const { construction_category_id, items, notes, work_area } = req.body;
 
     if (!construction_category_id || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: '施工類別和材料項目必填' });
@@ -101,9 +101,9 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       // Create request
       const requestResult = await client.query(
         `INSERT INTO material_requests 
-         (user_id, request_number, construction_category_id, notes, status)
-         VALUES ($1, $2, $3, $4, 'pending') RETURNING *`,
-        [req.user?.id, requestNumber, construction_category_id, notes || null]
+         (user_id, request_number, construction_category_id, notes, status, work_area)
+         VALUES ($1, $2, $3, $4, 'pending', $5) RETURNING *`,
+        [req.user?.id, requestNumber, construction_category_id, notes || null, work_area || null]
       );
 
       const request = requestResult.rows[0];
@@ -215,6 +215,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const { company_name, tax_id } = req.query;
 
     const fullRequest = await getFullRequest(parseInt(id));
 
@@ -222,7 +223,11 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
       return res.status(404).json({ error: '找不到叫料單' });
     }
 
-    const excelBuffer = await generateExcel(fullRequest);
+    const excelBuffer = await generateExcel(
+      fullRequest,
+      company_name as string,
+      tax_id as string
+    );
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${fullRequest.request_number}.xlsx"`);
@@ -230,6 +235,108 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
   } catch (error) {
     console.error('產生Excel錯誤:', error);
     res.status(500).json({ error: '產生Excel失敗' });
+  }
+});
+
+// Generate monthly report
+router.get('/reports/monthly/:year/:month', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { year, month } = req.params;
+    const { company_name, tax_id } = req.query;
+
+    const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+
+    const result = await query(
+      `SELECT 
+        mr.*,
+        cc.name as construction_category_name,
+        u.name as user_name,
+        u.email as user_email
+      FROM material_requests mr
+      LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
+      LEFT JOIN users u ON mr.user_id = u.id
+      WHERE mr.user_id = $1 
+        AND mr.created_at >= $2 
+        AND mr.created_at <= $3
+      ORDER BY mr.created_at DESC`,
+      [req.user?.id, startDate, endDate]
+    );
+
+    const requests = [];
+    for (const request of result.rows) {
+      const fullRequest = await getFullRequest(request.id);
+      if (fullRequest) requests.push(fullRequest);
+    }
+
+    const excelBuffer = await generateReportExcel(
+      requests,
+      startDate.toISOString().split('T')[0],
+      endDate.toISOString().split('T')[0],
+      company_name as string,
+      tax_id as string
+    );
+
+    const filename = `叫料單月報表_${year}年${month}月.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('產生月報表錯誤:', error);
+    res.status(500).json({ error: '產生月報表失敗' });
+  }
+});
+
+// Generate date range report
+router.get('/reports/range', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { start_date, end_date, company_name, tax_id } = req.query;
+
+    if (!start_date || !end_date) {
+      return res.status(400).json({ error: '請提供開始日期和結束日期' });
+    }
+
+    const startDate = new Date(start_date as string);
+    const endDate = new Date(end_date as string);
+    endDate.setHours(23, 59, 59, 999);
+
+    const result = await query(
+      `SELECT 
+        mr.*,
+        cc.name as construction_category_name,
+        u.name as user_name,
+        u.email as user_email
+      FROM material_requests mr
+      LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
+      LEFT JOIN users u ON mr.user_id = u.id
+      WHERE mr.user_id = $1 
+        AND mr.created_at >= $2 
+        AND mr.created_at <= $3
+      ORDER BY mr.created_at DESC`,
+      [req.user?.id, startDate, endDate]
+    );
+
+    const requests = [];
+    for (const request of result.rows) {
+      const fullRequest = await getFullRequest(request.id);
+      if (fullRequest) requests.push(fullRequest);
+    }
+
+    const excelBuffer = await generateReportExcel(
+      requests,
+      start_date as string,
+      end_date as string,
+      company_name as string,
+      tax_id as string
+    );
+
+    const filename = `叫料單報表_${start_date}_${end_date}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('產生時間區間報表錯誤:', error);
+    res.status(500).json({ error: '產生報表失敗' });
   }
 });
 

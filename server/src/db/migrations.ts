@@ -61,6 +61,7 @@ export const createTables = async (): Promise<void> => {
         user_id INTEGER REFERENCES users(id),
         request_number VARCHAR(100) UNIQUE NOT NULL,
         construction_category_id INTEGER REFERENCES construction_categories(id),
+        work_area VARCHAR(255),
         status VARCHAR(50) DEFAULT 'pending',
         notes TEXT,
         excel_file_url VARCHAR(500),
@@ -70,6 +71,19 @@ export const createTables = async (): Promise<void> => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+    
+    // Add work_area column if it doesn't exist (for existing databases)
+    await query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'material_requests' AND column_name = 'work_area'
+        ) THEN
+          ALTER TABLE material_requests ADD COLUMN work_area VARCHAR(255);
+        END IF;
+      END $$;
     `);
 
     // Material request items table

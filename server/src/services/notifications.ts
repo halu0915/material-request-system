@@ -3,53 +3,141 @@ import nodemailer from 'nodemailer';
 import axios from 'axios';
 import { google } from 'googleapis';
 
-// Generate Excel file
-export async function generateExcel(request: any): Promise<Buffer> {
+// Generate Excel file with company header
+export async function generateExcel(request: any, companyName?: string, taxId?: string): Promise<Buffer> {
   const workbook = XLSX.utils.book_new();
+  
+  // Get company info from environment or use defaults
+  const company = companyName || process.env.COMPANY_NAME || '公司名稱';
+  const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || '統編：00000000';
+  const workArea = request.work_area || request.construction_category_name || '';
 
-  // Summary sheet
-  const summaryData = [
-    ['叫料單資訊'],
+  // Main data sheet with company header
+  const mainData = [
+    // Company header
+    [company],
+    ['統編：' + taxIdNumber],
+    [],
+    // Request info
     ['叫料單號', request.request_number],
     ['建立日期', new Date(request.created_at).toLocaleString('zh-TW')],
-    ['施工類別', request.construction_category_name],
+    ['工區', workArea],
+    ['施工類別', request.construction_category_name || ''],
     ['狀態', request.status],
-    ['備註', request.notes || ''],
     [],
-    ['建立人', request.user_name],
-    ['電子郵件', request.user_email]
+    // Table header
+    ['工區', '施工類別', '材料類別', '單位', '數量', '備註']
   ];
 
-  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-  XLSX.utils.book_append_sheet(workbook, summarySheet, '叫料單資訊');
-
-  // Materials sheet
-  const materialsData = [
-    ['材料類別', '材料名稱', '數量', '單位', '備註']
-  ];
-
+  // Add material items
   for (const item of request.items) {
-    materialsData.push([
+    mainData.push([
+      workArea,
+      request.construction_category_name || '',
       item.material_category_name || '',
-      item.material_name || '',
-      item.quantity,
       item.unit || item.material_unit || '',
+      item.quantity,
       item.notes || ''
     ]);
   }
 
-  const materialsSheet = XLSX.utils.aoa_to_sheet(materialsData);
+  const mainSheet = XLSX.utils.aoa_to_sheet(mainData);
 
   // Set column widths
-  materialsSheet['!cols'] = [
-    { wch: 15 },
-    { wch: 25 },
-    { wch: 10 },
-    { wch: 10 },
-    { wch: 30 }
+  mainSheet['!cols'] = [
+    { wch: 15 }, // 工區
+    { wch: 15 }, // 施工類別
+    { wch: 15 }, // 材料類別
+    { wch: 10 }, // 單位
+    { wch: 12 }, // 數量
+    { wch: 30 }  // 備註
   ];
 
-  XLSX.utils.book_append_sheet(workbook, materialsSheet, '材料明細');
+  // Merge cells for company header
+  if (!mainSheet['!merges']) mainSheet['!merges'] = [];
+  mainSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }); // Company name
+  mainSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }); // Tax ID
+
+  XLSX.utils.book_append_sheet(workbook, mainSheet, '叫料單');
+
+  // Generate buffer
+  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  return buffer;
+}
+
+// Generate report Excel (monthly or date range)
+export async function generateReportExcel(requests: any[], startDate?: string, endDate?: string, companyName?: string, taxId?: string): Promise<Buffer> {
+  const workbook = XLSX.utils.book_new();
+  
+  const company = companyName || process.env.COMPANY_NAME || '公司名稱';
+  const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || '統編：00000000';
+  
+  // Report header
+  const reportData = [
+    [company],
+    ['統編：' + taxIdNumber],
+    [],
+    ['報表期間', startDate && endDate ? `${startDate} 至 ${endDate}` : (startDate ? `自 ${startDate}` : '全部資料')],
+    ['報表日期', new Date().toLocaleString('zh-TW')],
+    [],
+    ['叫料單號', '建立日期', '工區', '施工類別', '材料類別', '材料名稱', '單位', '數量', '備註']
+  ];
+
+  // Add all request items
+  for (const request of requests) {
+    const workArea = request.work_area || request.construction_category_name || '';
+    
+    if (request.items && request.items.length > 0) {
+      for (const item of request.items) {
+        reportData.push([
+          request.request_number,
+          new Date(request.created_at).toLocaleDateString('zh-TW'),
+          workArea,
+          request.construction_category_name || '',
+          item.material_category_name || '',
+          item.material_name || '',
+          item.unit || item.material_unit || '',
+          item.quantity,
+          item.notes || ''
+        ]);
+      }
+    } else {
+      // If no items, still show request info
+      reportData.push([
+        request.request_number,
+        new Date(request.created_at).toLocaleDateString('zh-TW'),
+        workArea,
+        request.construction_category_name || '',
+        '',
+        '',
+        '',
+        '',
+        request.notes || ''
+      ]);
+    }
+  }
+
+  const reportSheet = XLSX.utils.aoa_to_sheet(reportData);
+
+  // Set column widths
+  reportSheet['!cols'] = [
+    { wch: 20 }, // 叫料單號
+    { wch: 15 }, // 建立日期
+    { wch: 15 }, // 工區
+    { wch: 15 }, // 施工類別
+    { wch: 15 }, // 材料類別
+    { wch: 20 }, // 材料名稱
+    { wch: 10 }, // 單位
+    { wch: 12 }, // 數量
+    { wch: 30 }  // 備註
+  ];
+
+  // Merge cells for header
+  if (!reportSheet['!merges']) reportSheet['!merges'] = [];
+  reportSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }); // Company name
+  reportSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 8 } }); // Tax ID
+
+  XLSX.utils.book_append_sheet(workbook, reportSheet, '報表');
 
   // Generate buffer
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });

@@ -338,7 +338,7 @@
                 <div>
                     <button class="btn-secondary" onclick="showAddCategoryForm('construction')" style="margin-right: 10px;">新增施工類別</button>
                     <button class="btn-secondary" onclick="showAddCategoryForm('material')" style="margin-right: 10px;">新增材料類別</button>
-                    <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
+                <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
                 </div>
             </div>
             <div id="materials-content">
@@ -444,6 +444,10 @@
             </div>
             <form id="request-form" onsubmit="saveRequest(event)">
                 <div class="form-group">
+                    <label>工區 *</label>
+                    <input type="text" id="request-work-area" placeholder="例如：A區、B區" required>
+                </div>
+                <div class="form-group">
                     <label>施工類別 *</label>
                     <select id="request-construction-category" required></select>
                 </div>
@@ -527,29 +531,29 @@
         function navigateToSection(section) {
             // Update display
             if (section === null) {
-                document.getElementById('home-view').style.display = 'block';
-                ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                    document.getElementById(id).style.display = 'none';
-                });
-                currentSection = null;
+            document.getElementById('home-view').style.display = 'block';
+            ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            currentSection = null;
             } else {
-                document.getElementById('home-view').style.display = 'none';
-                ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                    document.getElementById(id).style.display = 'none';
-                });
-                
-                currentSection = section;
-                const sectionEl = document.getElementById(section + '-section');
-                sectionEl.style.display = 'block';
-                
+            document.getElementById('home-view').style.display = 'none';
+            ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            
+            currentSection = section;
+            const sectionEl = document.getElementById(section + '-section');
+            sectionEl.style.display = 'block';
+            
                 // Load section data
-                if (section === 'materials') {
-                    loadMaterials();
-                } else if (section === 'requests') {
-                    loadRequests();
-                } else if (section === 'reports') {
-                    loadReports();
-                }
+            if (section === 'materials') {
+                loadMaterials();
+            } else if (section === 'requests') {
+                loadRequests();
+            } else if (section === 'reports') {
+                loadReports();
+            }
             }
             
             // Update browser history
@@ -799,17 +803,19 @@
                 return;
             }
             
-            let html = '<table><thead><tr><th>單號</th><th>施工類別</th><th>狀態</th><th>建立時間</th><th>操作</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>單號</th><th>工區</th><th>施工類別</th><th>狀態</th><th>建立時間</th><th>操作</th></tr></thead><tbody>';
             
             requests.forEach(request => {
                 html += `
                     <tr>
                         <td>${request.request_number}</td>
+                        <td>${request.work_area || '-'}</td>
                         <td>${request.construction_category_name || '-'}</td>
                         <td>${request.status || 'pending'}</td>
                         <td>${new Date(request.created_at).toLocaleString('zh-TW')}</td>
                         <td>
-                            <button class="btn-secondary" onclick="viewRequest(${request.id})">查看</button>
+                            <button class="btn-secondary" onclick="viewRequest(${request.id})" style="margin-right: 5px;">查看</button>
+                            <button class="btn-primary" onclick="downloadRequestExcel(${request.id})">下載Excel</button>
                         </td>
                     </tr>
                 `;
@@ -917,6 +923,7 @@
         async function saveRequest(e) {
             e.preventDefault();
             
+            const work_area = document.getElementById('request-work-area').value;
             const construction_category_id = parseInt(document.getElementById('request-construction-category').value);
             const notes = document.getElementById('request-notes').value || null;
             
@@ -947,6 +954,7 @@
                     method: 'POST',
                     headers: getHeaders(),
                     body: JSON.stringify({
+                        work_area,
                         construction_category_id,
                         items,
                         notes
@@ -963,6 +971,39 @@
                 }
             } catch (error) {
                 alert('建立失敗：' + error.message);
+            }
+        }
+
+        // Download Excel for request
+        async function downloadRequestExcel(id) {
+            const companyName = prompt('請輸入公司名稱（可選，留空使用預設值）：') || '';
+            const taxId = prompt('請輸入統編（可選，留空使用預設值）：') || '';
+            
+            try {
+                const params = new URLSearchParams();
+                if (companyName) params.append('company_name', companyName);
+                if (taxId) params.append('tax_id', taxId);
+                
+                const url = `/api/requests/${id}/excel${params.toString() ? '?' + params.toString() : ''}`;
+                const response = await fetch(url, {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = `叫料單_${id}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(downloadUrl);
+                } else {
+                    alert('下載失敗');
+                }
+            } catch (error) {
+                alert('下載失敗：' + error.message);
             }
         }
 
@@ -995,6 +1036,10 @@
                 <div class="form-group">
                     <label>單號</label>
                     <p>${request.request_number}</p>
+                </div>
+                <div class="form-group">
+                    <label>工區</label>
+                    <p>${request.work_area || '-'}</p>
                 </div>
                 <div class="form-group">
                     <label>施工類別</label>
