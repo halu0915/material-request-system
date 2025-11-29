@@ -821,7 +821,8 @@
                         <td>${new Date(request.created_at).toLocaleString('zh-TW')}</td>
                         <td>
                             <button class="btn-secondary" onclick="viewRequest(${request.id})" style="margin-right: 5px;">查看</button>
-                            <button class="btn-primary" onclick="downloadRequestExcel(${request.id})">下載Excel</button>
+                            <button class="btn-primary" onclick="sendRequestEmail(${request.id})" style="margin-right: 5px;">📧 發送郵件</button>
+                            <button class="btn-primary" onclick="downloadRequestExcel(${request.id})">📥 下載Excel</button>
                         </td>
                     </tr>
                 `;
@@ -1091,6 +1092,10 @@
             html += `
                         </tbody>
                     </table>
+                </div>
+                <div style="margin-top: 20px; text-align: center; padding-top: 20px; border-top: 1px solid #ddd;">
+                    <button class="btn-primary" onclick="sendRequestEmail(${request.id})" style="margin-right: 10px;">📧 發送郵件</button>
+                    <button class="btn-primary" onclick="downloadRequestExcel(${request.id})">📥 下載Excel</button>
                 </div>
             `;
             

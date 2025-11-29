@@ -274,6 +274,81 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Send email for request manually
+router.post('/:id/send-email', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { company_name, tax_id } = req.query;
+
+    const fullRequest = await getFullRequest(parseInt(id));
+
+    if (!fullRequest || fullRequest.user_id !== req.user?.id) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // Generate Excel buffer
+    const excelBuffer = await generateExcel(
+      fullRequest,
+      company_name as string,
+      tax_id as string
+    );
+
+    // Generate filename
+    const workArea = fullRequest.work_area || '未指定工區';
+    const requestDate = new Date(fullRequest.created_at);
+    const dateStr = `${requestDate.getFullYear()}${String(requestDate.getMonth() + 1).padStart(2, '0')}${String(requestDate.getDate()).padStart(2, '0')}`;
+    const constructionCategoryName = fullRequest.construction_category_name || '未指定';
+    const excelFilename = `${workArea}叫料單_${dateStr}_(${constructionCategoryName}).xlsx`;
+
+    // Get recipients from environment variable
+    const recipientsEnv = process.env.PURCHASE_EMAIL_RECIPIENTS;
+    let recipients: string[] = [];
+    
+    if (recipientsEnv) {
+      recipients = recipientsEnv.split(',')
+        .map(email => email.trim())
+        .filter(email => email.length > 0);
+    }
+    
+    // If no recipients configured, send to the user who created the request
+    if (recipients.length === 0) {
+      const userResult = await query(
+        'SELECT email, name FROM users WHERE id = $1',
+        [req.user?.id]
+      );
+      if (userResult.rows.length > 0) {
+        recipients = [userResult.rows[0].email];
+      }
+    }
+
+    if (recipients.length === 0) {
+      return res.status(400).json({ error: '未設定郵件收件人' });
+    }
+
+    // Send email
+    await sendEmail({
+      to: recipients,
+      request: fullRequest,
+      excelBuffer,
+      filename: excelFilename
+    });
+
+    // Update email_sent status
+    await query(
+      'UPDATE material_requests SET email_sent = true WHERE id = $1',
+      [parseInt(id)]
+    );
+
+    res.json({
+      message: `郵件已發送給 ${recipients.length} 位收件人`,
+      recipients: recipients
+    });
+  } catch (error) {
+    console.error('發送郵件錯誤:', error);
+    res.status(500).json({ error: '發送郵件失敗' });
+  }
+});
+
 // Download Excel for request
 router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
