@@ -94,18 +94,13 @@ if (process.env.NODE_ENV === 'production') {
       console.warn('📋 將使用備用 HTML 頁面');
       console.log('✅ 備用 HTML 頁面已設置:', publicPath);
       
-      // Serve backup HTML for specific routes
+      // Serve dashboard as main page (no login required)
       app.get('/', (req, res) => {
-        // Check if user has token, redirect to dashboard
-        const token = req.headers.authorization?.replace('Bearer ', '') || 
-                     req.query.token as string;
-        if (token) {
-          const dashboardPath = path.join(publicPath, 'dashboard.html');
-          if (fs.existsSync(dashboardPath)) {
-            return res.sendFile(dashboardPath);
-          }
+        const dashboardPath = path.join(publicPath, 'dashboard.html');
+        if (fs.existsSync(dashboardPath)) {
+          return res.sendFile(dashboardPath);
         }
-        // Otherwise serve login page
+        // Fallback to index if dashboard doesn't exist
         const backupHtml = path.join(publicPath, 'index.html');
         res.sendFile(backupHtml);
       });
@@ -115,18 +110,17 @@ if (process.env.NODE_ENV === 'production') {
         res.sendFile(dashboardPath);
       });
 
-      // Serve backup HTML for login and other routes
-      app.get('/login', (req, res) => {
-        const backupHtml = path.join(publicPath, 'index.html');
-        res.sendFile(backupHtml);
-      });
-
-      // Fallback for all other routes
+      // Fallback for all other routes (serve dashboard)
       app.get('*', (req, res, next) => {
         if (req.path.startsWith('/api') || req.path === '/health') {
           return next();
         }
-        // Default to login page
+        // Default to dashboard (no login required)
+        const dashboardPath = path.join(publicPath, 'dashboard.html');
+        if (fs.existsSync(dashboardPath)) {
+          return res.sendFile(dashboardPath);
+        }
+        // Fallback to index
         const backupHtml = path.join(publicPath, 'index.html');
         res.sendFile(backupHtml, (err) => {
           if (err) {

@@ -128,12 +128,11 @@
     </style>
 </head>
 <body>
-    <div class="header">
+        <div class="header">
         <div class="header-content">
             <h1>叫料系統</h1>
             <div class="user-info">
-                <span id="userName">載入中...</span>
-                <button class="logout-btn" onclick="handleLogout()">登出</button>
+                <span id="userName">使用者</span>
             </div>
         </div>
     </div>
@@ -175,47 +174,18 @@
     </div>
 
     <script>
-        // Check authentication and load user info
-        async function loadUserInfo() {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const user = data.user;
-                    
-                    document.getElementById('userName').textContent = user.name || user.email || '使用者';
-                    document.getElementById('welcomeMessage').textContent = `歡迎，${user.name || user.email || '使用者'}！`;
-                } else {
-                    throw new Error('無法取得使用者資訊');
-                }
-            } catch (error) {
-                console.error('載入使用者資訊錯誤:', error);
-                alert('認證失敗，將跳轉到登入頁面');
-                localStorage.removeItem('token');
-                window.location.href = '/login';
-            }
-        }
+        // No authentication required - direct access
+        window.addEventListener('DOMContentLoaded', () => {
+            // Set default user info (no login required)
+            document.getElementById('userName').textContent = '使用者';
+            document.getElementById('welcomeMessage').textContent = '歡迎使用叫料系統！';
+        });
 
         function handleLogout() {
-            if (confirm('確定要登出嗎？')) {
-                localStorage.removeItem('token');
-                window.location.href = '/login';
-            }
+            // No logout needed since no login is required
+            // Just reload the page
+            window.location.reload();
         }
-
-        // Load user info on page load
-        window.addEventListener('DOMContentLoaded', loadUserInfo);
     </script>
 </body>
 </html>

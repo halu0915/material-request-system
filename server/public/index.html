@@ -80,65 +80,15 @@
     <div class="container">
         <h1>叫料系統</h1>
         <p>Material Request System</p>
-        <p style="font-size: 0.9rem; color: #999;">正在載入系統...</p>
-        <div style="margin-top: 30px;">
-            <a href="/login" class="btn" onclick="handleGuestLogin(event)">以訪客身份試用</a>
-            <a href="/login" class="btn btn-secondary">登入系統</a>
-        </div>
-        <div id="status" style="margin-top: 20px; color: #999; font-size: 0.85rem;"></div>
+        <p style="font-size: 0.9rem; color: #999;">正在跳轉到主頁面...</p>
     </div>
 
     <script>
-        // Try to create guest account and login
-        async function handleGuestLogin(e) {
-            e.preventDefault();
-            const statusEl = document.getElementById('status');
-            statusEl.innerHTML = '正在創建訪客帳號...<span class="loading"></span>';
-
-            try {
-                const response = await fetch('/api/auth/guest', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    localStorage.setItem('token', data.token);
-                    statusEl.innerHTML = '✅ 訪客帳號創建成功，正在跳轉...';
-                    setTimeout(() => {
-                        // Check if we're on backup HTML, redirect to dashboard.html
-                        window.location.href = '/dashboard.html';
-                    }, 1000);
-                } else {
-                    throw new Error('創建訪客帳號失敗');
-                }
-            } catch (error) {
-                statusEl.innerHTML = '⚠️ ' + error.message + '，請稍後再試';
-                console.error('Guest login error:', error);
-            }
-        }
-
-        // Check if already logged in
+        // Automatically redirect to dashboard (no login required)
         window.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                })
-                .then(res => {
-                    if (res.ok) {
-                        // Check if we're on backup HTML, redirect to dashboard.html
-                        window.location.href = '/dashboard.html';
-                    }
-                })
-                .catch(() => {
-                    localStorage.removeItem('token');
-                });
-            }
+            setTimeout(() => {
+                window.location.href = '/dashboard.html';
+            }, 500);
         });
     </script>
 </body>
