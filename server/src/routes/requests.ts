@@ -249,10 +249,33 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
       return res.status(404).json({ error: '找不到叫料單' });
     }
 
+    // Get all requests from the same month for monthly statistics
+    const requestDate = new Date(fullRequest.created_at);
+    const year = requestDate.getFullYear();
+    const month = requestDate.getMonth() + 1;
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+    
+    const monthlyRequestsResult = await query(
+      `SELECT id FROM material_requests 
+       WHERE user_id = $1 
+         AND created_at >= $2 
+         AND created_at <= $3
+       ORDER BY created_at`,
+      [req.user?.id, startOfMonth, endOfMonth]
+    );
+    
+    const monthlyRequests = [];
+    for (const req of monthlyRequestsResult.rows) {
+      const fullReq = await getFullRequest(req.id);
+      if (fullReq) monthlyRequests.push(fullReq);
+    }
+
     const excelBuffer = await generateExcel(
       fullRequest,
       company_name as string,
-      tax_id as string
+      tax_id as string,
+      monthlyRequests
     );
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
