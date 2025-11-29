@@ -224,12 +224,71 @@ router.post('/apple', async (req: Request, res: Response) => {
 // Guest authentication endpoint
 router.post('/guest', async (req: Request, res: Response) => {
   try {
-    // Create or get guest user
+    // Try to reuse existing guest user from the same session/browser
+    // First, check if there's a token in the request (from Authorization header)
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+        
+        // Verify user exists and is a guest user
+        const userResult = await query(
+          'SELECT id, email, name FROM users WHERE id = $1 AND provider = $2',
+          [decoded.id, 'guest']
+        );
+        
+        if (userResult.rows.length > 0) {
+          // Reuse existing guest user
+          const user = userResult.rows[0];
+          const newToken = generateToken({ id: user.id, email: user.email, name: user.name });
+          return res.json({
+            message: '訪客帳號已存在',
+            token: newToken,
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name
+            }
+          });
+        }
+      } catch (tokenError) {
+        // Token invalid or expired, continue to create/reuse guest user
+        console.log('Token 驗證失敗，將創建或重用訪客帳號');
+      }
+    }
+    
+    // If no valid token, try to reuse the most recent guest user (within last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const existingResult = await query(
+      `SELECT id, email, name FROM users 
+       WHERE provider = $1 AND created_at > $2 
+       ORDER BY created_at DESC LIMIT 1`,
+      ['guest', sevenDaysAgo]
+    );
+    
+    if (existingResult.rows.length > 0) {
+      // Reuse existing guest user
+      const user = existingResult.rows[0];
+      const newToken = generateToken({ id: user.id, email: user.email, name: user.name });
+      return res.json({
+        message: '訪客帳號已重用',
+        token: newToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name
+        }
+      });
+    }
+    
+    // Create new guest user only if no recent guest user exists
     const guestEmail = `guest_${Date.now()}@guest.local`;
     const guestName = '訪客使用者';
     
-    // Check if guest user exists (optional - you can also always create new)
-    // For simplicity, we'll create a new guest user each time
     const result = await query(
       `INSERT INTO users (email, name, provider)
        VALUES ($1, $2, $3) RETURNING id, email, name`,
@@ -237,11 +296,11 @@ router.post('/guest', async (req: Request, res: Response) => {
     );
 
     const user = result.rows[0];
-    const token = generateToken({ id: user.id, email: user.email, name: user.name });
+    const newToken = generateToken({ id: user.id, email: user.email, name: user.name });
 
     res.json({
       message: '訪客帳號建立成功',
-      token,
+      token: newToken,
       user: {
         id: user.id,
         email: user.email,
@@ -250,30 +309,6 @@ router.post('/guest', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('建立訪客帳號錯誤:', error);
-    // If user already exists or other error, try to get existing guest user
-    try {
-      const existingResult = await query(
-        'SELECT id, email, name FROM users WHERE provider = $1 ORDER BY created_at DESC LIMIT 1',
-        ['guest']
-      );
-      
-      if (existingResult.rows.length > 0) {
-        const user = existingResult.rows[0];
-        const token = generateToken({ id: user.id, email: user.email, name: user.name });
-        return res.json({
-          message: '訪客帳號建立成功',
-          token,
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name
-          }
-        });
-      }
-    } catch (fallbackError) {
-      console.error('取得訪客帳號錯誤:', fallbackError);
-    }
-    
     res.status(500).json({ error: '建立訪客帳號失敗' });
   }
 });
