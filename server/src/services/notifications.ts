@@ -640,6 +640,7 @@ export async function sendEmail(options: {
   subject: string;
   request: any;
   excelBuffer?: Buffer;
+  filename?: string;
 }): Promise<void> {
   try {
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
@@ -696,7 +697,7 @@ export async function sendEmail(options: {
 
     if (options.excelBuffer) {
       mailOptions.attachments = [{
-        filename: `${options.request.request_number}.xlsx`,
+        filename: options.filename || `${options.request.request_number}.xlsx`,
         content: options.excelBuffer
       }];
     }

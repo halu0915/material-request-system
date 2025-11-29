@@ -159,11 +159,17 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       // Generate Excel
       const excelBuffer = await generateExcel(fullRequest);
 
+      // Generate filename: 工區+叫料單號+日期
+      const workAreaForFile = work_area || '未指定工區';
+      const requestDateForFile = new Date(request.created_at);
+      const dateStrForFile = `${requestDateForFile.getFullYear()}${String(requestDateForFile.getMonth() + 1).padStart(2, '0')}${String(requestDateForFile.getDate()).padStart(2, '0')}`;
+      const excelFilename = `${workAreaForFile}_${requestNumber}_${dateStrForFile}.xlsx`;
+
       // Upload to cloud
       let cloudFileId = null;
       let excelFileUrl = null;
       try {
-        const cloudResult = await uploadToCloud(excelBuffer, `${requestNumber}.xlsx`);
+        const cloudResult = await uploadToCloud(excelBuffer, excelFilename);
         cloudFileId = cloudResult.fileId;
         excelFileUrl = cloudResult.url;
 
@@ -278,8 +284,14 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
       monthlyRequests
     );
 
+    // Generate filename: 工區+叫料單號+日期
+    const workArea = fullRequest.work_area || '未指定工區';
+    const requestDate = new Date(fullRequest.created_at);
+    const dateStr = `${requestDate.getFullYear()}${String(requestDate.getMonth() + 1).padStart(2, '0')}${String(requestDate.getDate()).padStart(2, '0')}`;
+    const filename = `${workArea}_${fullRequest.request_number}_${dateStr}.xlsx`;
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${fullRequest.request_number}.xlsx"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
     res.send(excelBuffer);
   } catch (error) {
     console.error('產生Excel錯誤:', error);
