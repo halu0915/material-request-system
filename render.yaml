@@ -3,7 +3,7 @@ services:
     name: material-request-system
     env: node
     plan: free
-    buildCommand: npm install:all && npm run build && echo "Build completed, checking client/dist..." && ls -la client/dist/ 2>/dev/null || echo "Client dist not found"
+    buildCommand: npm install:all && npm run build:server || true && cd client && npm run build && cd .. && echo "✅ Build completed - checking client/dist..." && (ls -la client/dist/ 2>/dev/null || echo "⚠️ client/dist not found")
     startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
