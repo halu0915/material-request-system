@@ -118,6 +118,27 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`伺服器運行於端口 ${PORT}`);
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('🔍 檢查前端構建文件狀態...');
+  console.log('═══════════════════════════════════════════════════════');
+  
+  if (process.env.NODE_ENV === 'production') {
+    const clientPath = path.join(__dirname, '../../client/dist');
+    const publicPath = path.join(__dirname, '../public');
+    
+    console.log('檢查 client/dist:', clientPath);
+    console.log('  存在:', fs.existsSync(clientPath));
+    if (fs.existsSync(clientPath)) {
+      console.log('  index.html:', fs.existsSync(path.join(clientPath, 'index.html')));
+    }
+    
+    console.log('檢查 server/public:', publicPath);
+    console.log('  存在:', fs.existsSync(publicPath));
+    if (fs.existsSync(publicPath)) {
+      console.log('  index.html:', fs.existsSync(path.join(publicPath, 'index.html')));
+    }
+  }
+  console.log('═══════════════════════════════════════════════════════');
 });
 
 export default app;
