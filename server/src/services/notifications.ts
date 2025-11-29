@@ -677,6 +677,27 @@ export async function sendEmail(options: {
       console.log('SMTP 連線驗證成功');
     } catch (verifyError: any) {
       console.error('SMTP 連線驗證失敗:', verifyError);
+      
+      // Provide specific error messages for common issues
+      if (verifyError.code === 'EAUTH' || verifyError.responseCode === 535) {
+        const isGmail = process.env.SMTP_HOST?.includes('gmail.com');
+        if (isGmail) {
+          throw new Error(
+            'Gmail 認證失敗：\n' +
+            '1. 請確認已啟用兩步驟驗證\n' +
+            '2. 請使用「應用程式密碼」而非 Gmail 帳號密碼\n' +
+            '3. 產生應用程式密碼：https://myaccount.google.com/apppasswords\n' +
+            '4. 在 Render 環境變數中設定 SMTP_PASS 為 16 位應用程式密碼（不含空格）\n' +
+            `原始錯誤：${verifyError.message || '未知錯誤'}`
+          );
+        } else {
+          throw new Error(
+            `SMTP 認證失敗：請檢查 SMTP_USER 和 SMTP_PASS 是否正確\n` +
+            `原始錯誤：${verifyError.message || '未知錯誤'}`
+          );
+        }
+      }
+      
       throw new Error(`SMTP 連線失敗: ${verifyError.message || '無法連接到郵件伺服器'}`);
     }
 
