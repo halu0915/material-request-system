@@ -172,7 +172,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   // Company name - Large, bold, centered (適中偏大)
   const companyStyle = {
     font: { name: '標楷體', sz: 28, bold: true, color: { rgb: '000000' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
     fill: { fgColor: { rgb: 'FFFFFF' } }
   };
   applyCellStyle(mainSheet, 'A1', companyStyle);
@@ -180,7 +180,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   // Tax ID - Large, bold, centered (適中偏大)
   const taxIdStyle = {
     font: { name: '標楷體', sz: 20, bold: true, color: { rgb: '000000' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
     fill: { fgColor: { rgb: 'FFFFFF' } }
   };
   applyCellStyle(mainSheet, 'A2', taxIdStyle);
@@ -188,12 +188,12 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   // Request info labels - Bold, larger font (適中偏大)
   const labelStyle = {
     font: { name: '微軟正黑體', sz: 12, bold: true },
-    alignment: { vertical: 'center' },
+    alignment: { vertical: 'center', wrapText: false },
     fill: { fgColor: { rgb: 'F0F0F0' } }
   };
   const valueStyle = {
     font: { name: '微軟正黑體', sz: 12 },
-    alignment: { vertical: 'center', wrapText: true }
+    alignment: { vertical: 'center', wrapText: false }
   };
   
   // Apply styles to all info rows (including delivery address - same as phone)
@@ -212,7 +212,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   // Table header - Bold, centered, with background (適中偏大)
   const headerStyle = {
     font: { name: '微軟正黑體', sz: 12, bold: true, color: { rgb: 'FFFFFF' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
     fill: { fgColor: { rgb: '4472C4' } },
     border: {
       top: { style: 'medium', color: { rgb: '000000' } },
@@ -230,7 +230,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   // Data rows - Normal style with borders (適中偏大)
   const dataStyle = {
     font: { name: '微軟正黑體', sz: 11 },
-    alignment: { vertical: 'center', wrapText: true },
+    alignment: { vertical: 'center', wrapText: false },
     border: {
       top: { style: 'thin', color: { rgb: '666666' } },
       bottom: { style: 'thin', color: { rgb: '666666' } },
@@ -242,7 +242,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   // Style for image/link rows - slightly different to distinguish
   const imageLinkStyle = {
     font: { name: '微軟正黑體', sz: 10, color: { rgb: '0066CC' } },
-    alignment: { vertical: 'center', wrapText: true },
+    alignment: { vertical: 'center', wrapText: false },
     fill: { fgColor: { rgb: 'F0F8FF' } }, // Light blue background
     border: {
       top: { style: 'thin', color: { rgb: 'CCCCCC' } },
@@ -291,7 +291,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   // Center align quantity and unit columns for all data rows
   const centerStyle = {
     ...dataStyle,
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
   };
   for (let r = headerRow + 1; r <= numRows; r++) {
     applyCellStyle(mainSheet, `F${r}`, centerStyle); // 單位
@@ -387,7 +387,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   
   const reportStatsHeaderStyle = {
     font: { name: '微軟正黑體', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
     fill: { fgColor: { rgb: '4472C4' } },
     border: {
       top: { style: 'thin', color: { rgb: '000000' } },
@@ -403,7 +403,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   
   const reportStatsDataStyle = {
     font: { name: '微軟正黑體', sz: 10 },
-    alignment: { vertical: 'center', wrapText: true },
+    alignment: { vertical: 'center', wrapText: false },
     border: {
       top: { style: 'thin', color: { rgb: 'CCCCCC' } },
       bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
@@ -421,7 +421,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   for (let r = reportStatsHeaderRow + 1; r <= statsData.length; r++) {
     const quantityStyle = {
       ...reportStatsDataStyle,
-      alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
     };
     applyCellStyle(statsSheet, `D${r}`, quantityStyle);
   }
@@ -527,21 +527,21 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
   // Apply styles
   const reportCompanyStyle = {
     font: { name: '標楷體', sz: 24, bold: true, color: { rgb: '000000' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
     fill: { fgColor: { rgb: 'FFFFFF' } }
   };
   applyCellStyle(reportSheet, 'A1', reportCompanyStyle);
 
   const reportTaxIdStyle = {
     font: { name: '標楷體', sz: 18, bold: true, color: { rgb: '000000' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
     fill: { fgColor: { rgb: 'FFFFFF' } }
   };
   applyCellStyle(reportSheet, 'A2', reportTaxIdStyle);
 
   const reportHeaderStyle = {
     font: { name: '微軟正黑體', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
     fill: { fgColor: { rgb: '4472C4' } },
     border: {
       top: { style: 'thin', color: { rgb: '000000' } },
@@ -557,7 +557,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
 
   const reportDataStyle = {
     font: { name: '微軟正黑體', sz: 9 },
-    alignment: { vertical: 'center', wrapText: true },
+    alignment: { vertical: 'center', wrapText: false },
     border: {
       top: { style: 'thin', color: { rgb: 'CCCCCC' } },
       bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
@@ -656,7 +656,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
   
   const reportStatsHeaderStyle = {
     font: { name: '微軟正黑體', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
     fill: { fgColor: { rgb: '4472C4' } },
     border: {
       top: { style: 'thin', color: { rgb: '000000' } },
@@ -672,7 +672,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
   
   const reportStatsDataStyle = {
     font: { name: '微軟正黑體', sz: 10 },
-    alignment: { vertical: 'center', wrapText: true },
+    alignment: { vertical: 'center', wrapText: false },
     border: {
       top: { style: 'thin', color: { rgb: 'CCCCCC' } },
       bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
@@ -690,7 +690,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
   for (let r = reportStatsHeaderRow + 1; r <= statsData.length; r++) {
     const quantityStyle = {
       ...reportStatsDataStyle,
-      alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
     };
     applyCellStyle(statsSheet, `D${r}`, quantityStyle);
   }
