@@ -23,7 +23,32 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       [req.user?.id]
     );
 
-    res.json({ requests: result.rows });
+    // Get material items for each request
+    const requestsWithItems = await Promise.all(
+      result.rows.map(async (request) => {
+        const itemsResult = await query(
+          `SELECT 
+            mri.*,
+            m.name as material_name,
+            m.unit as material_unit
+          FROM material_request_items mri
+          LEFT JOIN materials m ON mri.material_id = m.id
+          WHERE mri.request_id = $1
+          ORDER BY mri.id ASC
+          LIMIT 1`,
+          [request.id]
+        );
+
+        const firstItem = itemsResult.rows[0];
+        return {
+          ...request,
+          first_material_name: firstItem ? (firstItem.material_name || '-') : '-',
+          first_material_quantity: firstItem ? (firstItem.quantity || 0) : 0
+        };
+      })
+    );
+
+    res.json({ requests: requestsWithItems });
   } catch (error) {
     console.error('取得叫料單錯誤:', error);
     res.status(500).json({ error: '取得叫料單失敗' });

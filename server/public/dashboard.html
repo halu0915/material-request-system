@@ -1613,20 +1613,18 @@
                 return;
             }
             
-            let tableHtml = '<table><thead><tr><th>單號</th><th>工區</th><th>施工類別</th><th>狀態</th><th>建立時間</th><th>操作</th></tr></thead><tbody>';
+            let tableHtml = '<table><thead><tr><th>單號</th><th>工區</th><th>施工類別</th><th>材料名稱</th><th>數量</th><th>操作</th></tr></thead><tbody>';
             let cardHtml = '<div class="mobile-card">';
             
             requests.forEach(request => {
-                const createdDate = formatDateTimeToMinute(request.created_at);
-                
                 // Desktop table row
                 tableHtml += `
                     <tr>
                         <td>${escapeHtml(request.request_number)}</td>
                         <td>${escapeHtml(request.work_area || '-')}</td>
                         <td>${escapeHtml(request.construction_category_name || '-')}</td>
-                        <td>${escapeHtml(request.status || 'pending')}</td>
-                        <td>${escapeHtml(createdDate)}</td>
+                        <td>${escapeHtml(request.first_material_name || '-')}</td>
+                        <td>${escapeHtml(request.first_material_quantity || 0)}</td>
                         <td>
                             <button class="btn-secondary" onclick="viewRequest(${request.id})" style="margin-right: 5px;">查看</button>
                             <button class="btn-primary" onclick="sendRequestEmail(${request.id})" style="margin-right: 5px;">📧 發送郵件</button>
@@ -1649,12 +1647,12 @@
                             <span class="mobile-card-item-value">${escapeHtml(request.construction_category_name || '-')}</span>
                         </div>
                         <div class="mobile-card-item-row">
-                            <span class="mobile-card-item-label">狀態</span>
-                            <span class="mobile-card-item-value">${escapeHtml(request.status || 'pending')}</span>
+                            <span class="mobile-card-item-label">材料名稱</span>
+                            <span class="mobile-card-item-value">${escapeHtml(request.first_material_name || '-')}</span>
                         </div>
                         <div class="mobile-card-item-row">
-                            <span class="mobile-card-item-label">建立時間</span>
-                            <span class="mobile-card-item-value">${escapeHtml(createdDate)}</span>
+                            <span class="mobile-card-item-label">數量</span>
+                            <span class="mobile-card-item-value">${escapeHtml(request.first_material_quantity || 0)}</span>
                         </div>
                         <div class="mobile-card-item-actions">
                             <button class="btn-secondary" onclick="viewRequest(${request.id})">查看</button>
