@@ -3,7 +3,7 @@ services:
     name: material-request-system
     env: node
     plan: free
-    buildCommand: npm install:all && npm run build:server || echo "Server build warning" && bash build-frontend.sh && echo "✅ All builds completed!"
+    buildCommand: npm install:all && (npm run build:server || echo "Server build warning") && bash build-frontend.sh && echo "✅ All builds completed!" && ls -la client/dist/ 2>/dev/null | head -10 || echo "⚠️ Cannot list client/dist"
     startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
