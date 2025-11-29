@@ -473,11 +473,22 @@
                 width: 100%;
             }
             /* Hide desktop table, show mobile cards */
-            .section table,
-            .modal table:not(#request-detail-content table) {
+            .section > table,
+            .section table:not(#request-detail-content table),
+            #materials-content > table,
+            #requests-content > table,
+            #category-list-content > table,
+            #address-list-content > table {
                 display: none !important;
             }
             .mobile-card {
+                display: block !important;
+            }
+            /* Ensure mobile cards are visible */
+            #materials-content .mobile-card,
+            #requests-content .mobile-card,
+            #category-list-content .mobile-card,
+            #address-list-content .mobile-card {
                 display: block !important;
             }
             .request-item-row,
@@ -559,10 +570,12 @@
             .modal-header h3 {
                 font-size: 1.1rem;
             }
-            table {
+            /* Only apply font size to visible tables (detail view) */
+            #request-detail-content table {
                 font-size: 0.75rem;
             }
-            th, td {
+            #request-detail-content th, 
+            #request-detail-content td {
                 padding: 6px 4px;
             }
         }
