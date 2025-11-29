@@ -10,6 +10,7 @@ import authRoutes from './routes/auth';
 import materialRoutes from './routes/materials';
 import requestRoutes from './routes/requests';
 import { errorHandler } from './middleware/errorHandler';
+import { findClientBuild } from './utils/findClientBuild';
 
 dotenv.config();
 
@@ -43,64 +44,7 @@ app.get('/health', (req, res) => {
 
 // Serve static files from client build in production
 if (process.env.NODE_ENV === 'production') {
-  // Try multiple possible paths for client build
-  const possiblePaths = [
-    path.join(__dirname, '../../client/dist'), // Relative from server/dist
-    path.join(process.cwd(), 'client/dist'), // From project root
-    path.join(process.cwd(), '../client/dist'), // Alternative
-    path.join(__dirname, '../../../client/dist'), // Alternative relative path
-  ];
-  
-  // Debug: Log current directory and __dirname
-  console.log('🔍 尋找前端構建文件...');
-  console.log('📁 當前工作目錄 (process.cwd()):', process.cwd());
-  console.log('📁 服務器文件位置 (__dirname):', __dirname);
-  console.log('📁 項目根目錄 (從 __dirname 計算):', path.resolve(__dirname, '../..'));
-  
-  let clientBuildPath: string | null = null;
-  
-  // Find the correct path
-  for (const possiblePath of possiblePaths) {
-    const absPath = path.resolve(possiblePath);
-    const indexPath = path.join(possiblePath, 'index.html');
-    
-    console.log(`🔍 檢查路徑: ${absPath}`);
-    
-    try {
-      if (fs.existsSync(possiblePath)) {
-        console.log(`  ✓ 目錄存在`);
-        const stats = fs.statSync(possiblePath);
-        console.log(`  📊 目錄資訊:`, { isDirectory: stats.isDirectory() });
-        
-        if (fs.existsSync(indexPath)) {
-          console.log(`  ✓ index.html 存在`);
-          clientBuildPath = possiblePath;
-          console.log(`✅ ✅ ✅ 找到前端構建文件在: ${absPath} ✅ ✅ ✅`);
-          
-          // List files in dist directory for verification
-          try {
-            const files = fs.readdirSync(possiblePath);
-            console.log(`  📋 目錄內容 (前10個):`, files.slice(0, 10));
-          } catch (err: any) {
-            console.log(`  ⚠️ 無法讀取目錄內容:`, err.message);
-          }
-          break;
-        } else {
-          console.log(`  ✗ index.html 不存在`);
-          try {
-            const files = fs.readdirSync(possiblePath).slice(0, 5);
-            console.log(`  📋 目錄中的文件:`, files);
-          } catch (err: any) {
-            console.log(`  ⚠️ 無法列出目錄內容:`, err.message);
-          }
-        }
-      } else {
-        console.log(`  ✗ 目錄不存在`);
-      }
-    } catch (error: any) {
-      console.log(`  ❌ 檢查路徑時出錯:`, error.message);
-    }
-  }
+  const clientBuildPath = findClientBuild();
   
   if (clientBuildPath) {
     // Serve static files
