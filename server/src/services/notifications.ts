@@ -3,6 +3,17 @@ import nodemailer from 'nodemailer';
 import axios from 'axios';
 import { google } from 'googleapis';
 
+// Helper function to format datetime to minute (without seconds)
+function formatDateTimeToMinute(dateString: string): string {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}/${month}/${day} ${hours}:${minutes}`;
+}
+
 // Helper function to apply cell styles
 function applyCellStyle(sheet: any, cellAddress: string, style: any) {
   if (!sheet[cellAddress]) {
@@ -28,11 +39,9 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     [],
     // Request info
     ['叫料單號', request.request_number],
-    ['建立日期', new Date(request.created_at).toLocaleString('zh-TW')],
+    ['建立日期', formatDateTimeToMinute(request.created_at)],
     ['申請人', request.applicant_name || ''],
     ['聯繫電話', request.contact_phone || ''],
-    ['工區', workArea],
-    ['施工類別', request.construction_category_name || ''],
     ['送貨地址', request.delivery_address_name ? `${request.delivery_address_name} - ${request.delivery_address || ''}` : ''],
     ['狀態', request.status],
     [],
@@ -70,9 +79,9 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   const mainSheet = XLSX.utils.aoa_to_sheet(mainData);
   
   // Add hyperlinks for image_url and link_url in the notes column (column H, index 7)
-  // Header row is row 12 (0-based index 11), data starts from row 13 (index 12)
-  const headerRowIndex = 11; // 0-based index for row 12
-  let dataRowIndex = headerRowIndex + 1; // Start from first data row (row 13)
+  // Header row is row 10 (0-based index 9), data starts from row 11 (index 10)
+  const headerRowIndex = 9; // 0-based index for row 10
+  let dataRowIndex = headerRowIndex + 1; // Start from first data row (row 11)
   
   for (const item of request.items) {
     // Add hyperlinks in the notes column (column H) for image and link
@@ -142,8 +151,6 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     { hpt: 16 },
     { hpt: 16 },
     { hpt: 16 },
-    { hpt: 16 },
-    { hpt: 16 },
     { hpt: 8 },  // Empty row
     { hpt: 20 }  // Header row
   ];
@@ -178,7 +185,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     alignment: { vertical: 'center' },
     fill: { fgColor: { rgb: 'F0F0F0' } }
   };
-  for (let i = 3; i <= 10; i++) {
+  for (let i = 3; i <= 8; i++) {
     applyCellStyle(mainSheet, `A${i + 1}`, labelStyle);
   }
 
@@ -194,7 +201,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       right: { style: 'thin', color: { rgb: '000000' } }
     }
   };
-  const headerRow = 12; // Row index 11 (0-based) = row 12
+  const headerRow = 10; // Row index 9 (0-based) = row 10
   const headerCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
   headerCols.forEach((col, idx) => {
     applyCellStyle(mainSheet, `${col}${headerRow}`, headerStyle);
