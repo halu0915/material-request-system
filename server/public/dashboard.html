@@ -1765,6 +1765,11 @@
                         firstUnitInput.id = 'unit-input-0';
                         setupUnitHistory(firstUnitInput);
                     }
+                    
+                    // Setup quantity validation for all quantity inputs
+                    itemsContainer.querySelectorAll('.item-quantity').forEach(input => {
+                        setupQuantityValidation(input);
+                    });
                 }
             } catch (error) {
                 alert('無法載入物料資料');
