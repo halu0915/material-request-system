@@ -315,10 +315,6 @@
             border-color: #667eea;
             background: #f0f4ff;
         }
-        .image-upload-area.dragover {
-            border-color: #667eea;
-            background: #eef2ff;
-        }
         .image-upload-area input[type="file"] {
             position: absolute;
             width: 100%;
@@ -1142,8 +1138,7 @@
                         <div class="request-item" data-item-index="0">
                             <div class="request-item-row">
                                 <select class="item-material" required>
-                                    <option value="">選擇物料</option>
-                                    ${allMaterials.map(m => `<option value="${m.id}" data-unit="${m.unit || ''}">${m.construction_category_name || ''} - ${m.material_category_name || ''} - ${m.name}</option>`).join('')}
+                                    <option value="">請先選擇施工類別</option>
                                 </select>
                                 <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
                                 <input type="text" class="item-unit" id="unit-input-0" placeholder="單位" list="unit-history">
@@ -1156,7 +1151,7 @@
                                     <input type="file" class="item-image-file" accept="image/*" onchange="handleImageUpload(this, 0)">
                                     <div class="upload-content">
                                         <div style="font-size: 32px; margin-bottom: 8px;">📷</div>
-                                        <div style="color: #667eea; font-weight: 500;">點擊或拖放圖片上傳</div>
+                                        <div style="color: #667eea; font-weight: 500;">點擊選擇圖片</div>
                                         <div style="color: #94a3b8; font-size: 12px; margin-top: 4px;">支援 JPG、PNG、GIF（最大 10MB）</div>
                                     </div>
                                     <div class="image-preview-container" style="display: none;">
@@ -1176,6 +1171,12 @@
                         </div>
                     `;
                     
+                    // Add event listener for construction category change
+                    const constructionCategorySelect = document.getElementById('request-construction-category');
+                    constructionCategorySelect.addEventListener('change', function() {
+                        filterMaterialsByCategory(parseInt(this.value));
+                    });
+                    
                     // Add event listener for unit auto-fill
                     itemsContainer.querySelectorAll('.item-material').forEach(select => {
                         select.addEventListener('change', function() {
@@ -1191,12 +1192,6 @@
                         firstUnitInput.id = 'unit-input-0';
                         setupUnitHistory(firstUnitInput);
                     }
-                    
-                    // Setup drag and drop for image upload
-                    const firstUploadArea = itemsContainer.querySelector('.image-upload-area');
-                    if (firstUploadArea) {
-                        setupImageDragAndDrop(firstUploadArea, 0);
-                    }
                 }
             } catch (error) {
                 alert('無法載入物料資料');
@@ -1206,18 +1201,70 @@
             document.getElementById('request-modal').style.display = 'block';
         }
 
+        // Filter materials by construction category
+        function filterMaterialsByCategory(constructionCategoryId) {
+            if (!constructionCategoryId) {
+                // If no category selected, show message
+                document.querySelectorAll('.item-material').forEach(select => {
+                    select.innerHTML = '<option value="">請先選擇施工類別</option>';
+                });
+                return;
+            }
+            
+            // Filter materials by construction category
+            const filteredMaterials = allMaterials.filter(m => m.construction_category_id === constructionCategoryId);
+            
+            // Update all material selects
+            document.querySelectorAll('.item-material').forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">選擇物料</option>';
+                
+                filteredMaterials.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m.id;
+                    option.setAttribute('data-unit', m.unit || '');
+                    option.setAttribute('data-construction-category-id', m.construction_category_id);
+                    const specText = m.specification ? ` (${m.specification})` : '';
+                    option.textContent = `${m.material_category_name || ''} - ${m.name}${specText}`;
+                    select.appendChild(option);
+                });
+                
+                // Restore previous selection if it still exists
+                if (currentValue) {
+                    const option = select.querySelector(`option[value="${currentValue}"]`);
+                    if (option) {
+                        select.value = currentValue;
+                    }
+                }
+            });
+        }
+        
         // Add request item
         function addRequestItem() {
             const itemsContainer = document.getElementById('request-items');
             const itemCount = itemsContainer.children.length;
+            const constructionCategoryId = parseInt(document.getElementById('request-construction-category').value) || null;
+            
             const newItem = document.createElement('div');
             newItem.className = 'request-item';
             newItem.setAttribute('data-item-index', itemCount.toString());
+            
+            // Get filtered materials
+            let materialOptions = '<option value="">選擇物料</option>';
+            if (constructionCategoryId) {
+                const filteredMaterials = allMaterials.filter(m => m.construction_category_id === constructionCategoryId);
+                filteredMaterials.forEach(m => {
+                    const specText = m.specification ? ` (${m.specification})` : '';
+                    materialOptions += `<option value="${m.id}" data-unit="${m.unit || ''}" data-construction-category-id="${m.construction_category_id}">${m.material_category_name || ''} - ${m.name}${specText}</option>`;
+                });
+            } else {
+                materialOptions = '<option value="">請先選擇施工類別</option>';
+            }
+            
             newItem.innerHTML = `
                 <div class="request-item-row">
                     <select class="item-material" required>
-                        <option value="">選擇物料</option>
-                        ${allMaterials.map(m => `<option value="${m.id}" data-unit="${m.unit || ''}">${m.construction_category_name || ''} - ${m.material_category_name || ''} - ${m.name}</option>`).join('')}
+                        ${materialOptions}
                     </select>
                     <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
                     <input type="text" class="item-unit" id="unit-input-${itemCount}" placeholder="單位" list="unit-history">
@@ -1230,7 +1277,7 @@
                         <input type="file" class="item-image-file" accept="image/*" onchange="handleImageUpload(this, ${itemCount})">
                         <div class="upload-content">
                             <div style="font-size: 32px; margin-bottom: 8px;">📷</div>
-                            <div style="color: #667eea; font-weight: 500;">點擊或拖放圖片上傳</div>
+                            <div style="color: #667eea; font-weight: 500;">點擊選擇圖片</div>
                             <div style="color: #94a3b8; font-size: 12px; margin-top: 4px;">支援 JPG、PNG、GIF（最大 10MB）</div>
                         </div>
                         <div class="image-preview-container" style="display: none;">
@@ -1259,9 +1306,6 @@
             
             // Setup unit history for this input
             setupUnitHistory(newItem.querySelector('.item-unit'));
-            
-            // Setup drag and drop for image upload
-            setupImageDragAndDrop(newItem.querySelector('.image-upload-area'), itemCount);
         }
         
         // Handle image upload
@@ -1343,35 +1387,6 @@
             imageUrlInput.value = '';
         }
         
-        // Setup drag and drop for image upload
-        function setupImageDragAndDrop(uploadArea, itemIndex) {
-            if (!uploadArea) return;
-            
-            uploadArea.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                this.classList.add('dragover');
-            });
-            
-            uploadArea.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                this.classList.remove('dragover');
-            });
-            
-            uploadArea.addEventListener('drop', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                this.classList.remove('dragover');
-                
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    const fileInput = this.querySelector('.item-image-file');
-                    fileInput.files = files;
-                    handleImageUpload(fileInput, itemIndex);
-                }
-            });
-        }
 
         // Remove request item
         function removeRequestItem(btn) {
