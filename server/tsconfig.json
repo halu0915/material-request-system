@@ -14,8 +14,9 @@
     "moduleResolution": "node",
     "declaration": false,
     "declarationMap": false,
-    "sourceMap": false
+    "sourceMap": false,
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/global.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
