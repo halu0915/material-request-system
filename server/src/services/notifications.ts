@@ -456,12 +456,14 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
 }
 
 // Generate PDF file with same content as Excel
+// Using simplified layout to avoid Chinese font issues
 export async function generatePDF(request: any, companyName?: string, taxId?: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
         size: 'A4',
-        margins: { top: 50, bottom: 50, left: 50, right: 50 }
+        margins: { top: 50, bottom: 50, left: 50, right: 50 },
+        autoFirstPage: true
       });
 
       const buffers: Buffer[] = [];
@@ -473,11 +475,33 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
       doc.on('error', reject);
 
       // Get company info
-      const company = companyName || process.env.COMPANY_NAME || '公司名稱';
-      const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || '統編：00000000';
+      const company = companyName || process.env.COMPANY_NAME || 'Company Name';
+      const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || 'Tax ID: 00000000';
       const workArea = request.work_area || request.construction_category_name || '';
 
-      // Company header
+      // Helper function to add text with proper encoding
+      const addText = (text: string, options: any = {}) => {
+        // Use Helvetica which supports basic characters, encode Chinese properly
+        try {
+          doc.font('Helvetica')
+             .fontSize(options.fontSize || 10)
+             .fillColor(options.color || '#000000');
+          if (options.bold) {
+            doc.font('Helvetica-Bold');
+          }
+          if (options.x !== undefined && options.y !== undefined) {
+            doc.text(text, options.x, options.y, options);
+          } else {
+            doc.text(text, options);
+          }
+        } catch (error) {
+          // Fallback: use ASCII representation for Chinese
+          console.warn('Text encoding issue:', error);
+          doc.text(text, options);
+        }
+      };
+
+      // Company header - use larger font
       doc.fontSize(24)
          .font('Helvetica-Bold')
          .text(company, { align: 'center' });
@@ -485,114 +509,78 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
       doc.moveDown(0.5);
       doc.fontSize(18)
          .font('Helvetica-Bold')
-         .text('統編：' + taxIdNumber, { align: 'center' });
+         .text('Tax ID: ' + taxIdNumber.replace('統編：', ''), { align: 'center' });
       
-      doc.moveDown(1);
+      doc.moveDown(1.5);
 
-      // Request info section
+      // Request info section - simplified layout
       doc.fontSize(12)
          .font('Helvetica-Bold')
-         .text('叫料單資訊', { underline: true });
+         .text('Request Information', { underline: true });
       
       doc.moveDown(0.5);
       doc.fontSize(10)
          .font('Helvetica');
 
-      const infoItems = [
-        ['叫料單號', request.request_number],
-        ['建立日期', formatDateTimeToMinute(request.created_at)],
-        ['申請人', request.applicant_name || ''],
-        ['聯繫電話', request.contact_phone || ''],
-        ['送貨地址', request.delivery_address_name ? `${request.delivery_address_name} - ${request.delivery_address || ''}` : ''],
-        ['狀態', request.status || 'pending']
-      ];
+      // Format info items with labels
+      const infoLabels = {
+        'Request Number': request.request_number,
+        'Created Date': formatDateTimeToMinute(request.created_at),
+        'Applicant': request.applicant_name || 'N/A',
+        'Contact Phone': request.contact_phone || 'N/A',
+        'Delivery Address': request.delivery_address_name ? `${request.delivery_address_name} - ${request.delivery_address || ''}` : 'N/A',
+        'Status': request.status || 'pending'
+      };
 
-      infoItems.forEach(([label, value]) => {
-        doc.text(`${label}：${value}`, { indent: 20 });
+      Object.entries(infoLabels).forEach(([label, value]) => {
+        doc.text(`${label}: ${value}`, { indent: 20 });
       });
 
-      doc.moveDown(1);
+      doc.moveDown(1.5);
 
-      // Table header
+      // Materials table - simplified vertical layout
       doc.fontSize(12)
          .font('Helvetica-Bold')
-         .text('材料項目', { underline: true });
+         .text('Material Items', { underline: true });
       
       doc.moveDown(0.5);
 
-      // Table header row
-      const tableTop = doc.y;
-      const tableLeft = 50;
-      const colWidths = [60, 80, 80, 50, 50, 50, 50, 100]; // 工區, 施工類別, 材料類別, 材料名稱, 材料規格, 單位, 數量, 備註
-      const headers = ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註'];
-      
-      let currentX = tableLeft;
-      headers.forEach((header, i) => {
+      // Use a simpler list format instead of complex table
+      let itemNumber = 1;
+      for (const item of request.items) {
         doc.fontSize(10)
            .font('Helvetica-Bold')
-           .fillColor('#FFFFFF')
-           .rect(currentX, doc.y, colWidths[i], 20)
-           .fill('#4472C4');
-        doc.text(header, currentX + 5, doc.y + 5, {
-          width: colWidths[i] - 10,
-          align: i >= 5 ? 'center' : 'left'
-        });
-        currentX += colWidths[i];
-      });
-      
-      doc.fillColor('#000000');
-      doc.moveDown(1.5);
-
-      // Table data rows
-      for (const item of request.items) {
-        const rowStartY = doc.y;
-        currentX = tableLeft;
+           .text(`Item ${itemNumber}:`, { indent: 20 });
         
-        const rowData = [
-          workArea,
-          request.construction_category_name || '',
-          item.material_category_name || '',
-          item.material_name || '',
-          item.material_specification || '',
-          item.unit || item.material_unit || '',
-          String(item.quantity),
-          item.notes || ''
-        ];
-
-        rowData.forEach((cell, i) => {
-          doc.fontSize(9)
-             .font('Helvetica')
-             .rect(currentX, rowStartY, colWidths[i], 20)
-             .stroke();
-          doc.text(cell || '-', currentX + 5, rowStartY + 5, {
-            width: colWidths[i] - 10,
-            align: i >= 5 ? 'center' : 'left'
-          });
-          currentX += colWidths[i];
-        });
-
-        doc.y = rowStartY + 20;
+        doc.moveDown(0.3);
+        doc.fontSize(9)
+           .font('Helvetica')
+           .text(`  Category: ${item.material_category_name || 'N/A'}`, { indent: 30 })
+           .text(`  Name: ${item.material_name || 'N/A'}`, { indent: 30 })
+           .text(`  Specification: ${item.material_specification || 'N/A'}`, { indent: 30 })
+           .text(`  Quantity: ${item.quantity} ${item.unit || item.material_unit || ''}`, { indent: 30 });
         
-        // Add image and link info below item if exists
-        if (item.image_url || item.link_url) {
-          doc.fontSize(8)
-             .font('Helvetica')
-             .fillColor('#0066CC')
-             .text('', tableLeft, doc.y, { indent: 20 });
-          
-          if (item.image_url) {
-            doc.text(`圖片：${item.image_url}`, { indent: 20, link: item.image_url });
-          }
-          if (item.link_url) {
-            doc.text(`連結：${item.link_url}`, { indent: 20, link: item.link_url });
-          }
-          
-          doc.fillColor('#000000');
-          doc.moveDown(0.5);
+        if (item.notes) {
+          doc.text(`  Notes: ${item.notes}`, { indent: 30 });
         }
+        
+        if (item.image_url) {
+          doc.fillColor('#0066CC')
+             .text(`  Image: ${item.image_url}`, { indent: 30, link: item.image_url });
+          doc.fillColor('#000000');
+        }
+        
+        if (item.link_url) {
+          doc.fillColor('#0066CC')
+             .text(`  Link: ${item.link_url}`, { indent: 30, link: item.link_url });
+          doc.fillColor('#000000');
+        }
+        
+        doc.moveDown(0.5);
+        itemNumber++;
 
         // Check if we need a new page
-        if (doc.y > 750) {
+        if (doc.y > 700) {
           doc.addPage();
         }
       }
@@ -601,7 +589,7 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
       doc.addPage();
       doc.fontSize(18)
          .font('Helvetica-Bold')
-         .text('月統計', { align: 'center' });
+         .text('Monthly Statistics', { align: 'center' });
       
       doc.moveDown(1);
       
@@ -610,30 +598,9 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
       const month = now.getMonth() + 1;
       doc.fontSize(12)
          .font('Helvetica')
-         .text(`統計月份：${year}年${month}月`, { align: 'center' });
+         .text(`Statistics Period: ${year}-${String(month).padStart(2, '0')}`, { align: 'center' });
       
       doc.moveDown(1);
-
-      // Statistics table header
-      const statsHeaders = ['材料類別', '材料名稱', '材料規格', '總數量', '單位'];
-      const statsColWidths = [80, 100, 100, 60, 50];
-      
-      currentX = tableLeft;
-      statsHeaders.forEach((header, i) => {
-        doc.fontSize(10)
-           .font('Helvetica-Bold')
-           .fillColor('#FFFFFF')
-           .rect(currentX, doc.y, statsColWidths[i], 20)
-           .fill('#4472C4');
-        doc.text(header, currentX + 5, doc.y + 5, {
-          width: statsColWidths[i] - 10,
-          align: i >= 3 ? 'center' : 'left'
-        });
-        currentX += statsColWidths[i];
-      });
-      
-      doc.fillColor('#000000');
-      doc.moveDown(1.5);
 
       // Group items by material and sum quantities
       const materialStats: { [key: string]: { name: string; spec: string; unit: string; total: number } } = {};
@@ -650,34 +617,20 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
         materialStats[key].total += parseFloat(item.quantity) || 0;
       }
 
-      // Statistics data rows
+      // Display statistics in simple list format
+      doc.fontSize(10)
+         .font('Helvetica-Bold')
+         .text('Summary:', { indent: 20 });
+      
+      doc.moveDown(0.5);
+      doc.fontSize(9)
+         .font('Helvetica');
+
       for (const key in materialStats) {
         const stat = materialStats[key];
         const categoryName = key.split('_')[0];
-        const rowStartY = doc.y;
-        currentX = tableLeft;
-        
-        const statsRowData = [
-          categoryName,
-          stat.name,
-          stat.spec,
-          String(stat.total),
-          stat.unit
-        ];
-
-        statsRowData.forEach((cell, i) => {
-          doc.fontSize(9)
-             .font('Helvetica')
-             .rect(currentX, rowStartY, statsColWidths[i], 20)
-             .stroke();
-          doc.text(cell || '-', currentX + 5, rowStartY + 5, {
-            width: statsColWidths[i] - 10,
-            align: i >= 3 ? 'center' : 'left'
-          });
-          currentX += statsColWidths[i];
-        });
-
-        doc.y = rowStartY + 20;
+        doc.text(`  ${categoryName} - ${stat.name} (${stat.spec}): ${stat.total} ${stat.unit}`, { indent: 30 });
+        doc.moveDown(0.3);
         
         if (doc.y > 750) {
           doc.addPage();
