@@ -123,6 +123,34 @@ router.post('/material-categories', authenticateToken, async (req: AuthRequest, 
   }
 });
 
+// Get single material by ID
+router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const result = await query(
+      `SELECT 
+        m.*,
+        cc.name as construction_category_name,
+        mc.name as material_category_name
+      FROM materials m
+      LEFT JOIN construction_categories cc ON m.construction_category_id = cc.id
+      LEFT JOIN material_categories mc ON m.material_category_id = mc.id
+      WHERE m.id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到物料' });
+    }
+
+    res.json({ material: result.rows[0] });
+  } catch (error) {
+    console.error('取得材料錯誤:', error);
+    res.status(500).json({ error: '取得材料失敗' });
+  }
+});
+
 // Create material
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -233,10 +261,52 @@ router.post('/import', authenticateToken, upload.single('file'), async (req, res
   }
 });
 
+// Update material
+router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { construction_category_id, material_category_id, name, specification, unit, description } = req.body;
+
+    if (!construction_category_id || !material_category_id || !name) {
+      return res.status(400).json({ error: '施工類別、材料類別和材料名稱必填' });
+    }
+
+    const result = await query(
+      `UPDATE materials 
+       SET construction_category_id = $1, material_category_id = $2, name = $3, 
+           specification = $4, unit = $5, description = $6
+       WHERE id = $7 RETURNING *`,
+      [construction_category_id, material_category_id, name, specification || null, unit || null, description || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到物料' });
+    }
+
+    res.json({ material: result.rows[0] });
+  } catch (error: any) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: '此材料名稱已存在' });
+    }
+    console.error('更新材料錯誤:', error);
+    res.status(500).json({ error: '更新材料失敗' });
+  }
+});
+
 // Delete material
 router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+
+    // Check if material is used in any requests
+    const checkRequests = await query(
+      'SELECT id FROM material_request_items WHERE material_id = $1 LIMIT 1',
+      [id]
+    );
+
+    if (checkRequests.rows.length > 0) {
+      return res.status(400).json({ error: '此物料已被使用，無法刪除' });
+    }
 
     const result = await query(
       'DELETE FROM materials WHERE id = $1 RETURNING *',

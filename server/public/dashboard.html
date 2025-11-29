@@ -651,7 +651,8 @@
                         <td>${material.specification || '-'}</td>
                         <td>${material.unit || '-'}</td>
                         <td>
-                            <button class="btn-danger" onclick="deleteMaterial(${material.id})">刪除</button>
+                            <button class="btn-secondary btn-small" onclick="editMaterialById(${material.id})" style="margin-right: 5px;">編輯</button>
+                            <button class="btn-danger btn-small" onclick="deleteMaterial(${material.id})">刪除</button>
                         </td>
                     </tr>
                 `;
@@ -661,40 +662,160 @@
             content.innerHTML = html;
         }
 
-        // Show add category form
+        let currentManageType = null;
+
+        // Manage Categories
+        async function manageCategories(type) {
+            currentManageType = type;
+            const content = document.getElementById('category-list-content');
+            const title = document.getElementById('category-manage-title');
+            title.textContent = type === 'construction' ? '管理施工類別' : '管理材料類別';
+            
+            document.getElementById('category-manage-modal').style.display = 'block';
+            content.innerHTML = '<div class="loading">載入中...</div>';
+            
+            try {
+                const endpoint = type === 'construction' ? '/api/materials/construction-categories' : '/api/materials/material-categories';
+                const response = await fetch(endpoint, {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const categories = data.categories || [];
+                    displayCategoryList(categories, type);
+                } else {
+                    content.innerHTML = '<div class="alert alert-error">無法載入類別資料</div>';
+                }
+            } catch (error) {
+                content.innerHTML = '<div class="alert alert-error">載入失敗：' + error.message + '</div>';
+            }
+        }
+
+        function displayCategoryList(categories, type) {
+            const content = document.getElementById('category-list-content');
+            
+            if (categories.length === 0) {
+                content.innerHTML = '<div class="empty-state">尚無類別，請點擊「新增類別」</div>';
+                return;
+            }
+            
+            let html = '<table><thead><tr><th>名稱</th><th>描述</th><th>操作</th></tr></thead><tbody>';
+            
+            categories.forEach(cat => {
+                html += `
+                    <tr>
+                        <td>${cat.name}</td>
+                        <td>${cat.description || '-'}</td>
+                        <td>
+                            <button class="btn-secondary btn-small" onclick="editCategoryById(${cat.id}, '${type}')" style="margin-right: 5px;">編輯</button>
+                            <button class="btn-danger btn-small" onclick="deleteCategory(${cat.id}, '${type}')">刪除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        }
+
+        // Show add category form (also handles edit setup)
         function showAddCategoryForm(type) {
-            const title = type === 'construction' ? '新增施工類別' : '新增材料類別';
-            document.getElementById('category-modal-title').textContent = title;
-            document.getElementById('category-form').reset();
+            const modalTitle = document.getElementById('category-modal-title');
+            modalTitle.textContent = type === 'construction' ? '新增施工類別' : '新增材料類別';
             document.getElementById('category-type').value = type;
+            document.getElementById('category-id').value = ''; // Clear ID for new
+            document.getElementById('category-name').value = '';
+            document.getElementById('category-description').value = '';
             document.getElementById('category-modal').style.display = 'block';
         }
 
-        // Save category
+        // Edit Category by ID (get from current list)
+        function editCategoryById(id, type) {
+            // Get category from current list
+            const endpoint = type === 'construction' ? '/api/materials/construction-categories' : '/api/materials/material-categories';
+            
+            fetch(endpoint, { headers: getHeaders() })
+                .then(response => response.json())
+                .then(data => {
+                    const cat = data.categories.find(c => c.id == id);
+                    if (!cat) {
+                        alert('找不到類別資料');
+                        return;
+                    }
+                    
+                    const modalTitle = document.getElementById('category-modal-title');
+                    modalTitle.textContent = type === 'construction' ? '編輯施工類別' : '編輯材料類別';
+                    
+                    document.getElementById('category-type').value = type;
+                    document.getElementById('category-id').value = cat.id;
+                    document.getElementById('category-name').value = cat.name;
+                    document.getElementById('category-description').value = cat.description || '';
+                    document.getElementById('category-modal').style.display = 'block';
+                })
+                .catch(error => {
+                    alert('載入類別資料失敗：' + error.message);
+                });
+        }
+
+        // Delete Category
+        async function deleteCategory(id, type) {
+            if (!confirm('確定要刪除此類別嗎？如果此類別下有物料，將無法刪除。')) return;
+            
+            try {
+                const endpoint = type === 'construction' ? 
+                    `/api/materials/construction-categories/${id}` : 
+                    `/api/materials/material-categories/${id}`;
+                    
+                const response = await fetch(endpoint, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    manageCategories(type); // Refresh list
+                } else {
+                    const error = await response.json();
+                    alert('刪除失敗：' + (error.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('刪除失敗：' + error.message);
+            }
+        }
+
+        // Save category (Create or Update)
         async function saveCategory(e) {
             e.preventDefault();
             
             const type = document.getElementById('category-type').value;
+            const id = document.getElementById('category-id').value;
             const name = document.getElementById('category-name').value;
             const description = document.getElementById('category-description').value || null;
             
-            const endpoint = type === 'construction' 
-                ? '/api/materials/construction-categories'
-                : '/api/materials/material-categories';
+            let endpoint = type === 'construction' ? '/api/materials/construction-categories' : '/api/materials/material-categories';
+            let method = 'POST';
+            
+            if (id) {
+                endpoint += `/${id}`;
+                method = 'PUT';
+            }
             
             try {
                 const response = await fetch(endpoint, {
-                    method: 'POST',
+                    method: method,
                     headers: getHeaders(),
                     body: JSON.stringify({ name, description })
                 });
                 
                 if (response.ok) {
                     closeModal('category-modal');
+                    if (document.getElementById('category-manage-modal').style.display === 'block') {
+                        manageCategories(type); // Refresh manage list
+                    }
                     if (currentSection === 'materials') {
                         loadMaterials();
                     }
-                    alert('類別建立成功！');
+                    alert(id ? '類別更新成功！' : '類別建立成功！');
                 } else {
                     const error = await response.json();
                     alert('儲存失敗：' + (error.error || '未知錯誤'));
@@ -708,8 +829,49 @@
         async function showAddMaterialForm() {
             document.getElementById('material-modal-title').textContent = '新增物料';
             document.getElementById('material-form').reset();
+            document.getElementById('material-form').setAttribute('data-material-id', ''); // Clear ID
             
-            // Load categories
+            await loadCategoriesForMaterialForm();
+            document.getElementById('material-modal').style.display = 'block';
+        }
+
+        // Edit Material by ID
+        async function editMaterialById(id) {
+            try {
+                const response = await fetch(`/api/materials/${id}`, {
+                    headers: getHeaders()
+                });
+                
+                if (!response.ok) {
+                    alert('無法載入物料資料');
+                    return;
+                }
+                
+                const data = await response.json();
+                const material = data.material;
+                
+                document.getElementById('material-modal-title').textContent = '編輯物料';
+                document.getElementById('material-form').setAttribute('data-material-id', material.id);
+                
+                const loaded = await loadCategoriesForMaterialForm();
+                if (!loaded) return;
+                
+                // Set form values
+                document.getElementById('construction-category').value = material.construction_category_id;
+                document.getElementById('material-category').value = material.material_category_id;
+                document.getElementById('material-name').value = material.name;
+                document.getElementById('material-specification').value = material.specification || '';
+                document.getElementById('material-unit').value = material.unit || '';
+                document.getElementById('material-description').value = material.description || '';
+                
+                document.getElementById('material-modal').style.display = 'block';
+            } catch (error) {
+                alert('載入物料資料失敗：' + error.message);
+            }
+        }
+
+        // Load categories for material form
+        async function loadCategoriesForMaterialForm() {
             try {
                 const [ccRes, mcRes] = await Promise.all([
                     fetch('/api/materials/construction-categories', { headers: getHeaders() }),
@@ -734,21 +896,21 @@
                     });
                 } else {
                     alert('無法載入類別資料，請先建立類別');
-                    return;
+                    return false;
                 }
             } catch (error) {
                 console.error('載入類別錯誤:', error);
                 alert('無法載入類別資料');
-                return;
+                return false;
             }
-            
-            document.getElementById('material-modal').style.display = 'block';
+            return true;
         }
 
-        // Save material
+        // Save material (Create or Update)
         async function saveMaterial(e) {
             e.preventDefault();
             
+            const materialId = document.getElementById('material-form').getAttribute('data-material-id');
             const material = {
                 construction_category_id: parseInt(document.getElementById('construction-category').value),
                 material_category_id: parseInt(document.getElementById('material-category').value),
@@ -758,9 +920,17 @@
                 description: document.getElementById('material-description').value || null
             };
             
+            let endpoint = '/api/materials';
+            let method = 'POST';
+            
+            if (materialId) {
+                endpoint += `/${materialId}`;
+                method = 'PUT';
+            }
+            
             try {
-                const response = await fetch('/api/materials', {
-                    method: 'POST',
+                const response = await fetch(endpoint, {
+                    method: method,
                     headers: getHeaders(),
                     body: JSON.stringify(material)
                 });
@@ -768,6 +938,7 @@
                 if (response.ok) {
                     closeModal('material-modal');
                     loadMaterials();
+                    alert(materialId ? '物料更新成功！' : '物料建立成功！');
                 } else {
                     const error = await response.json();
                     alert('儲存失敗：' + (error.error || '未知錯誤'));
@@ -779,7 +950,7 @@
 
         // Delete material
         async function deleteMaterial(id) {
-            if (!confirm('確定要刪除此物料嗎？')) return;
+            if (!confirm('確定要刪除此物料嗎？如果此物料已被使用，將無法刪除。')) return;
             
             try {
                 const response = await fetch(`/api/materials/${id}`, {
@@ -789,8 +960,10 @@
                 
                 if (response.ok) {
                     loadMaterials();
+                    alert('物料已刪除');
                 } else {
-                    alert('刪除失敗');
+                    const error = await response.json();
+                    alert('刪除失敗：' + (error.error || '未知錯誤'));
                 }
             } catch (error) {
                 alert('刪除失敗：' + error.message);
