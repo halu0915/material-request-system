@@ -129,35 +129,36 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     dataRowIndex++; // Move to next item
   }
 
-  // Set column widths optimized for A4 (portrait) - total width ~109 chars fits A4
+  // Set column widths optimized for A4 (portrait) - balanced for readability
   mainSheet['!cols'] = [
-    { wch: 11 }, // 工區
-    { wch: 13 }, // 施工類別
-    { wch: 13 }, // 材料類別
-    { wch: 18 }, // 材料名稱
-    { wch: 15 }, // 材料規格
-    { wch: 8 },  // 單位
-    { wch: 9 },  // 數量
-    { wch: 22 }  // 備註（包含圖片和連結）
+    { wch: 12 }, // 工區 (increased)
+    { wch: 14 }, // 施工類別 (increased)
+    { wch: 14 }, // 材料類別 (increased)
+    { wch: 20 }, // 材料名稱 (increased)
+    { wch: 16 }, // 材料規格 (increased)
+    { wch: 9 },  // 單位 (increased)
+    { wch: 10 }, // 數量 (increased)
+    { wch: 24 }  // 備註（包含圖片和連結）(increased)
   ];
 
   // Set row heights - optimized for A4 one page, larger for readability
   const rowHeights: any[] = [
-    { hpt: 30 }, // Company name row (increased)
-    { hpt: 24 }, // Tax ID row (increased)
-    { hpt: 6 },  // Empty row (reduced)
-    { hpt: 20 }, // Request info rows (increased for better readability)
-    { hpt: 20 },
-    { hpt: 20 },
-    { hpt: 20 },
-    { hpt: 20 },
-    { hpt: 6 },  // Empty row (reduced)
-    { hpt: 24 }  // Header row (increased)
+    { hpt: 32 }, // Company name row (increased)
+    { hpt: 26 }, // Tax ID row (increased)
+    { hpt: 6 },  // Empty row
+    { hpt: 22 }, // 叫料單號 row (increased)
+    { hpt: 22 }, // 建立日期 row (increased)
+    { hpt: 22 }, // 申請人 row (increased)
+    { hpt: 22 }, // 聯繫電話 row (increased)
+    { hpt: 28 }, // 送貨地址 row (increased for special highlighting)
+    { hpt: 22 }, // 狀態 row (increased)
+    { hpt: 6 },  // Empty row
+    { hpt: 26 }  // Header row (increased)
   ];
   
   // Add row heights for data rows - larger for readability
   for (let i = 0; i < request.items.length * 2; i++) {
-    rowHeights.push({ hpt: 18 });
+    rowHeights.push({ hpt: 20 }); // Increased from 18 to 20
   }
   
   mainSheet['!rows'] = rowHeights;
@@ -189,10 +190,45 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     font: { name: '微軟正黑體', sz: 12 },
     alignment: { vertical: 'center', wrapText: true }
   };
+  
+  // Apply styles to all info rows except delivery address (row 7)
   for (let i = 3; i <= 8; i++) {
-    applyCellStyle(mainSheet, `A${i + 1}`, labelStyle);
-    applyCellStyle(mainSheet, `B${i + 1}`, valueStyle);
+    if (i !== 6) { // Skip row 7 (delivery address) - will be styled separately
+      applyCellStyle(mainSheet, `A${i + 1}`, labelStyle);
+      applyCellStyle(mainSheet, `B${i + 1}`, valueStyle);
+    }
   }
+  
+  // Special style for delivery address - highlighted with special color
+  const deliveryAddressLabelStyle = {
+    font: { name: '微軟正黑體', sz: 13, bold: true, color: { rgb: 'FFFFFF' } },
+    alignment: { vertical: 'center' },
+    fill: { fgColor: { rgb: 'FF6B6B' } }, // Coral red background
+    border: {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } }
+    }
+  };
+  const deliveryAddressValueStyle = {
+    font: { name: '微軟正黑體', sz: 13, bold: true, color: { rgb: 'FFFFFF' } },
+    alignment: { vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: 'FF8E8E' } }, // Lighter coral red background
+    border: {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } }
+    }
+  };
+  
+  // Apply special styles to delivery address row (row 7, index 6)
+  applyCellStyle(mainSheet, 'A7', deliveryAddressLabelStyle);
+  // Merge B7 to H7 for delivery address value to show full address
+  if (!mainSheet['!merges']) mainSheet['!merges'] = [];
+  mainSheet['!merges'].push({ s: { r: 6, c: 1 }, e: { r: 6, c: 7 } }); // Merge B7:H7
+  applyCellStyle(mainSheet, 'B7', deliveryAddressValueStyle);
 
   // Table header - Bold, centered, with background (適中偏大)
   const headerStyle = {
