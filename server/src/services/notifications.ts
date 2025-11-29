@@ -767,8 +767,15 @@ export async function sendEmail(options: {
 
     // Send email to all recipients
     for (const recipient of recipients) {
+      // Format from address with display name (optional)
+      let fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
+      const displayName = process.env.SMTP_FROM_NAME; // Optional display name
+      if (displayName) {
+        fromAddress = `"${displayName}" <${fromAddress}>`;
+      }
+
       const mailOptions: any = {
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        from: fromAddress,
         to: recipient,
         subject: subject,
         html: html
