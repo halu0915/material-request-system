@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 
@@ -8,8 +8,18 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, setToken } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Handle token from registration
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.token) {
+      setToken(state.token);
+      navigate('/', { replace: true });
+    }
+  }, [location, setToken, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +50,10 @@ export default function Login() {
             登入叫料系統
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            或使用試用帳號體驗系統
+            或{' '}
+            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+              註冊新帳號
+            </Link>
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
