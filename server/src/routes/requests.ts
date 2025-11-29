@@ -169,19 +169,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       // Generate Excel
       const excelBuffer = await generateExcel(fullRequest);
 
-      // Generate filename: 工區名稱+叫料單+日期+(施工類別)
-      const workAreaForFile = work_area || '未指定工區';
-      const requestDateForFile = new Date(request.created_at);
-      const dateStrForFile = `${requestDateForFile.getFullYear()}${String(requestDateForFile.getMonth() + 1).padStart(2, '0')}${String(requestDateForFile.getDate()).padStart(2, '0')}`;
-      
-      // Get construction category name
-      const ccResult = await query(
-        'SELECT name FROM construction_categories WHERE id = $1',
-        [construction_category_id]
-      );
-      const constructionCategoryName = ccResult.rows[0]?.name || '未指定';
-      
-      const excelFilename = `${workAreaForFile}叫料單_${dateStrForFile}_(${constructionCategoryName}).xlsx`;
+      // Generate filename using helper function
+      const excelFilename = generateExcelFilename(fullRequest);
 
       // Upload to cloud
       let cloudFileId = null;
@@ -303,12 +292,8 @@ router.post('/:id/send-email', authenticateToken, async (req: AuthRequest, res: 
       tax_id as string
     );
 
-    // Generate filename
-    const workArea = fullRequest.work_area || '未指定工區';
-    const requestDateForEmail = new Date(fullRequest.created_at);
-    const dateStr = `${requestDateForEmail.getFullYear()}${String(requestDateForEmail.getMonth() + 1).padStart(2, '0')}${String(requestDateForEmail.getDate()).padStart(2, '0')}`;
-    const constructionCategoryName = fullRequest.construction_category_name || '未指定';
-    const excelFilename = `${workArea}叫料單_${dateStr}_(${constructionCategoryName}).xlsx`;
+    // Generate filename using helper function
+    const excelFilename = generateExcelFilename(fullRequest);
 
     // Get recipients from environment variable
     const recipientsEnv = process.env.PURCHASE_EMAIL_RECIPIENTS;
@@ -418,12 +403,8 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
       monthlyRequests
     );
 
-    // Generate filename: 工區名稱+叫料單+日期+(施工類別)
-    const workArea = fullRequest.work_area || '未指定工區';
-    // Reuse requestDate from above (line 365)
-    const dateStr = `${requestDate.getFullYear()}${String(requestDate.getMonth() + 1).padStart(2, '0')}${String(requestDate.getDate()).padStart(2, '0')}`;
-    const constructionCategoryName = fullRequest.construction_category_name || '未指定';
-    const filename = `${workArea}叫料單_${dateStr}_(${constructionCategoryName}).xlsx`;
+    // Generate filename using helper function
+    const filename = generateExcelFilename(fullRequest);
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
@@ -535,6 +516,15 @@ router.get('/reports/range', authenticateToken, async (req: AuthRequest, res: Re
     res.status(500).json({ error: '產生報表失敗' });
   }
 });
+
+// Helper function to generate Excel filename
+function generateExcelFilename(request: any): string {
+  const workArea = request.work_area || '未指定工區';
+  const requestDate = new Date(request.created_at);
+  const dateStr = `${requestDate.getFullYear()}${String(requestDate.getMonth() + 1).padStart(2, '0')}${String(requestDate.getDate()).padStart(2, '0')}`;
+  const constructionCategoryName = request.construction_category_name || '未指定';
+  return `${workArea}叫料單_${dateStr}_(${constructionCategoryName}).xlsx`;
+}
 
 // Helper function to get full request with items
 async function getFullRequest(requestId: number) {
