@@ -27,7 +27,9 @@ export default function Login() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google`;
+    // Use relative path in production (same server), or env variable, or localhost for dev
+    const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
+    window.location.href = `${apiUrl}/api/auth/google`;
   };
 
   return (
