@@ -1064,6 +1064,11 @@
         // Load materials
         async function loadMaterials() {
             const content = document.getElementById('materials-content');
+            if (!content) {
+                console.error('無法找到 materials-content 元素');
+                return;
+            }
+            
             content.innerHTML = '<div class="loading">載入中...</div>';
             
             try {
@@ -1076,10 +1081,20 @@
                     allMaterials = data.materials || [];
                     displayMaterials(allMaterials);
                 } else {
-                    content.innerHTML = '<div class="alert alert-error">無法載入物料資料</div>';
+                    const errorText = await response.text();
+                    let errorMessage = '無法載入物料資料';
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        console.error('API 錯誤響應:', errorText);
+                    }
+                    content.innerHTML = '<div class="alert alert-error">' + escapeHtml(errorMessage) + '</div>';
+                    console.error('載入物料失敗:', response.status, errorMessage);
                 }
             } catch (error) {
-                content.innerHTML = '<div class="alert alert-error">載入失敗：' + error.message + '</div>';
+                console.error('載入物料錯誤:', error);
+                content.innerHTML = '<div class="alert alert-error">載入失敗：' + escapeHtml(error.message || '未知錯誤') + '</div>';
             }
         }
 
