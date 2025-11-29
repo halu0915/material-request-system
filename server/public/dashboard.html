@@ -634,7 +634,8 @@
                         <td>${material.specification || '-'}</td>
                         <td>${material.unit || '-'}</td>
                         <td>
-                            <button class="btn-danger" onclick="deleteMaterial(${material.id})">刪除</button>
+                            <button class="btn-primary btn-small" onclick="editMaterial(${material.id})" style="margin-right: 5px;">更改</button>
+                            <button class="btn-danger btn-small" onclick="deleteMaterial(${material.id})">刪除</button>
                         </td>
                     </tr>
                 `;
@@ -688,9 +689,15 @@
         }
 
         // Show add material form
-        async function showAddMaterialForm() {
-            document.getElementById('material-modal-title').textContent = '新增物料';
-            document.getElementById('material-form').reset();
+        async function showAddMaterialForm(isEdit = false) {
+            if (!isEdit) {
+                document.getElementById('material-modal-title').textContent = '新增物料';
+                document.getElementById('material-form').reset();
+                document.getElementById('material-id').value = '';
+            }
+            
+            // Load unit history
+            updateUnitDatalist();
             
             // Load categories
             try {
