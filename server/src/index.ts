@@ -17,10 +17,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for frontend to work
+}));
 app.use(compression());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || '*', // Allow all origins in production
   credentials: true
 }));
 app.use(express.json());
@@ -41,37 +43,55 @@ app.get('/health', (req, res) => {
 
 // Serve static files from client build in production
 if (process.env.NODE_ENV === 'production') {
-  const clientBuildPath = path.join(__dirname, '../../client/dist');
+  // Try multiple possible paths for client build
+  const possiblePaths = [
+    path.join(__dirname, '../../client/dist'), // Relative from server/dist
+    path.join(process.cwd(), 'client/dist'), // From project root
+    path.join(process.cwd(), '../client/dist'), // Alternative
+  ];
   
-  // Check if client build exists before serving
-  try {
-    if (fs.existsSync(clientBuildPath) && fs.existsSync(path.join(clientBuildPath, 'index.html'))) {
-      app.use(express.static(clientBuildPath));
-      
-      app.get('*', (req, res, next) => {
-        // Don't serve client files for API routes
-        if (req.path.startsWith('/api')) {
-          return next();
-        }
-        res.sendFile(path.join(clientBuildPath, 'index.html'));
-      });
+  let clientBuildPath: string | null = null;
+  
+  // Find the correct path
+  for (const possiblePath of possiblePaths) {
+    const indexPath = path.join(possiblePath, 'index.html');
+    if (fs.existsSync(possiblePath) && fs.existsSync(indexPath)) {
+      clientBuildPath = possiblePath;
+      console.log(`✅ 找到前端構建文件在: ${clientBuildPath}`);
+      break;
     } else {
-      // If client build doesn't exist, just show API info
-      app.get('/', (req, res) => {
-        res.json({
-          message: '叫料系統 API 服務運行中',
-          version: '1.0.0',
-          status: 'ok',
-          endpoints: {
-            health: '/health',
-            api: '/api',
-            docs: 'API 服務已啟動，前端尚未構建'
-          }
-        });
-      });
+      console.log(`❌ 檢查路徑: ${possiblePath} (不存在)`);
     }
-  } catch (error) {
-    // If there's any error, just show API info
+  }
+  
+  if (clientBuildPath) {
+    // Serve static files
+    app.use(express.static(clientBuildPath, {
+      maxAge: '1y', // Cache static assets
+      etag: true
+    }));
+    
+    // Serve index.html for all non-API routes (SPA routing)
+    app.get('*', (req, res, next) => {
+      // Don't serve client files for API routes or health check
+      if (req.path.startsWith('/api') || req.path === '/health') {
+        return next();
+      }
+      
+      // Serve index.html for all other routes (SPA routing)
+      const indexPath = path.join(clientBuildPath!, 'index.html');
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error('發送 index.html 錯誤:', err);
+          next(err);
+        }
+      });
+    });
+    
+    console.log('✅ 前端靜態文件服務已啟動');
+  } else {
+    console.warn('⚠️  前端構建文件未找到，只提供 API 服務');
+    // If client build doesn't exist, just show API info
     app.get('/', (req, res) => {
       res.json({
         message: '叫料系統 API 服務運行中',
@@ -79,7 +99,8 @@ if (process.env.NODE_ENV === 'production') {
         status: 'ok',
         endpoints: {
           health: '/health',
-          api: '/api'
+          api: '/api',
+          note: '前端尚未構建或構建文件未找到'
         }
       });
     });
