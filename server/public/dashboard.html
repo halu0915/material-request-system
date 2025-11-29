@@ -877,7 +877,7 @@
                             <select class="item-material" required>
                                 <option value="">選擇物料</option>
                             </select>
-                            <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
+                            <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" required>
                             <input type="text" class="item-unit" placeholder="單位" list="unit-history">
                             <input type="text" class="item-notes" placeholder="備註">
                             <input type="url" class="item-image-url" placeholder="圖片網址（可選）">
@@ -1713,7 +1713,7 @@
                                 <select class="item-material" required>
                                     <option value="">請先選擇施工類別</option>
                                 </select>
-                                <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
+                                <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" required>
                                 <input type="text" class="item-unit" id="unit-input-0" placeholder="單位" list="unit-history">
                             </div>
                             <div class="request-item-row-full">
@@ -1839,7 +1839,7 @@
                     <select class="item-material" required>
                         ${materialOptions}
                     </select>
-                    <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
+                    <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" required>
                     <input type="text" class="item-unit" id="unit-input-${itemCount}" placeholder="單位" list="unit-history">
                 </div>
                 <div class="request-item-row-full">
@@ -2053,7 +2053,7 @@
                 const imageUrl = imageUrlInput ? imageUrlInput.value || null : null;
                 const linkUrl = item.querySelector('.item-link-url').value || null;
                 
-                if (materialId && quantity) {
+                if (materialId && quantity && quantity >= 1) {
                     items.push({
                         material_id: parseInt(materialId),
                         quantity: quantity,
@@ -2062,6 +2062,9 @@
                         image_url: imageUrl,
                         link_url: linkUrl
                     });
+                } else if (materialId && quantity < 1) {
+                    alert('數量必須至少為1');
+                    return;
                 }
             });
             
