@@ -143,22 +143,27 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
 
   // Set row heights - optimized for A4 one page, larger for readability
   const rowHeights: any[] = [
-    { hpt: 32 }, // Company name row (increased)
-    { hpt: 26 }, // Tax ID row (increased)
+    { hpt: 32 }, // Company name row
+    { hpt: 26 }, // Tax ID row
     { hpt: 6 },  // Empty row
-    { hpt: 22 }, // 叫料單號 row (increased)
-    { hpt: 22 }, // 建立日期 row (increased)
-    { hpt: 22 }, // 申請人 row (increased)
-    { hpt: 22 }, // 聯繫電話 row (increased)
-    { hpt: 28 }, // 送貨地址 row (increased for special highlighting)
-    { hpt: 22 }, // 狀態 row (increased)
+    { hpt: 22 }, // 叫料單號 row
+    { hpt: 22 }, // 建立日期 row
+    { hpt: 22 }, // 申請人 row
+    { hpt: 22 }, // 聯繫電話 row
+    { hpt: 24 }, // 送貨地址 row (same height as other info rows, slightly taller for address)
+    { hpt: 22 }, // 狀態 row
     { hpt: 6 },  // Empty row
-    { hpt: 26 }  // Header row (increased)
+    { hpt: 26 }  // Header row
   ];
   
   // Add row heights for data rows - larger for readability
-  for (let i = 0; i < request.items.length * 2; i++) {
-    rowHeights.push({ hpt: 20 }); // Increased from 18 to 20
+  // Each item has 1 main row + 1 image/link row (if exists)
+  for (let i = 0; i < request.items.length; i++) {
+    rowHeights.push({ hpt: 20 }); // Main item row
+    // Check if this item has image or link
+    if (request.items[i].image_url || request.items[i].link_url) {
+      rowHeights.push({ hpt: 18 }); // Image/link row (slightly smaller)
+    }
   }
   
   mainSheet['!rows'] = rowHeights;
@@ -191,44 +196,18 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     alignment: { vertical: 'center', wrapText: true }
   };
   
-  // Apply styles to all info rows except delivery address (row 7)
+  // Apply styles to all info rows (including delivery address - same as phone)
   for (let i = 3; i <= 8; i++) {
-    if (i !== 6) { // Skip row 7 (delivery address) - will be styled separately
-      applyCellStyle(mainSheet, `A${i + 1}`, labelStyle);
+    applyCellStyle(mainSheet, `A${i + 1}`, labelStyle);
+    if (i === 6) {
+      // Merge B7 to H7 for delivery address value to show full address
+      if (!mainSheet['!merges']) mainSheet['!merges'] = [];
+      mainSheet['!merges'].push({ s: { r: 6, c: 1 }, e: { r: 6, c: 7 } }); // Merge B7:H7
+      applyCellStyle(mainSheet, 'B7', valueStyle);
+    } else {
       applyCellStyle(mainSheet, `B${i + 1}`, valueStyle);
     }
   }
-  
-  // Special style for delivery address - highlighted with special color
-  const deliveryAddressLabelStyle = {
-    font: { name: '微軟正黑體', sz: 13, bold: true, color: { rgb: 'FFFFFF' } },
-    alignment: { vertical: 'center' },
-    fill: { fgColor: { rgb: 'FF6B6B' } }, // Coral red background
-    border: {
-      top: { style: 'thin', color: { rgb: '000000' } },
-      bottom: { style: 'thin', color: { rgb: '000000' } },
-      left: { style: 'thin', color: { rgb: '000000' } },
-      right: { style: 'thin', color: { rgb: '000000' } }
-    }
-  };
-  const deliveryAddressValueStyle = {
-    font: { name: '微軟正黑體', sz: 13, bold: true, color: { rgb: 'FFFFFF' } },
-    alignment: { vertical: 'center', wrapText: true },
-    fill: { fgColor: { rgb: 'FF8E8E' } }, // Lighter coral red background
-    border: {
-      top: { style: 'thin', color: { rgb: '000000' } },
-      bottom: { style: 'thin', color: { rgb: '000000' } },
-      left: { style: 'thin', color: { rgb: '000000' } },
-      right: { style: 'thin', color: { rgb: '000000' } }
-    }
-  };
-  
-  // Apply special styles to delivery address row (row 7, index 6)
-  applyCellStyle(mainSheet, 'A7', deliveryAddressLabelStyle);
-  // Merge B7 to H7 for delivery address value to show full address
-  if (!mainSheet['!merges']) mainSheet['!merges'] = [];
-  mainSheet['!merges'].push({ s: { r: 6, c: 1 }, e: { r: 6, c: 7 } }); // Merge B7:H7
-  applyCellStyle(mainSheet, 'B7', deliveryAddressValueStyle);
 
   // Table header - Bold, centered, with background (適中偏大)
   const headerStyle = {
@@ -259,14 +238,57 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       right: { style: 'thin', color: { rgb: '666666' } }
     }
   };
+  
+  // Style for image/link rows - slightly different to distinguish
+  const imageLinkStyle = {
+    font: { name: '微軟正黑體', sz: 10, color: { rgb: '0066CC' } },
+    alignment: { vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: 'F0F8FF' } }, // Light blue background
+    border: {
+      top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      bottom: { style: 'thin', color: { rgb: '666666' } },
+      left: { style: 'thin', color: { rgb: '666666' } },
+      right: { style: 'thin', color: { rgb: '666666' } }
+    }
+  };
+  
   const numRows = mainData.length;
-  for (let r = headerRow + 1; r <= numRows; r++) {
-    headerCols.forEach((col) => {
-      applyCellStyle(mainSheet, `${col}${r}`, dataStyle);
-    });
+  let currentRow = headerRow + 1;
+  
+  // Apply styles row by row, checking if it's an image/link row
+  for (let i = headerRowIndex + 1; i < mainData.length; i++) {
+    const rowData = mainData[i];
+    // Check if this is an image/link row (all cells empty except last column)
+    const isImageLinkRow = rowData && rowData[7] && 
+                          (rowData[7].toString().includes('圖片：') || 
+                           rowData[7].toString().includes('連結：') ||
+                           rowData[7].toString().includes('查看圖片') ||
+                           rowData[7].toString().includes('開啟連結'));
+    
+    if (isImageLinkRow) {
+      // Apply image/link style to all columns
+      headerCols.forEach((col) => {
+        applyCellStyle(mainSheet, `${col}${currentRow}`, imageLinkStyle);
+      });
+      // Make the link cell (H column) have hyperlink style
+      const linkCell = mainSheet[XLSX.utils.encode_cell({ r: currentRow - 1, c: 7 })];
+      if (linkCell && linkCell.l) {
+        // Keep hyperlink but update style
+        linkCell.s = {
+          ...imageLinkStyle,
+          font: { ...imageLinkStyle.font, underline: true }
+        };
+      }
+    } else {
+      // Regular data row
+      headerCols.forEach((col) => {
+        applyCellStyle(mainSheet, `${col}${currentRow}`, dataStyle);
+      });
+    }
+    currentRow++;
   }
 
-  // Center align quantity and unit columns
+  // Center align quantity and unit columns for all data rows
   const centerStyle = {
     ...dataStyle,
     alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
