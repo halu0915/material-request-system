@@ -10,6 +10,7 @@
     "migrate": "node dist/db/migrate.js"
   },
   "dependencies": {
+    "@types/pdfkit": "^0.17.4",
     "@types/uuid": "^10.0.0",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
@@ -26,6 +27,7 @@
     "passport": "^0.7.0",
     "passport-apple": "^2.0.0",
     "passport-google-oauth20": "^2.0.0",
+    "pdfkit": "^0.17.2",
     "pg": "^8.11.3",
     "uuid": "^13.0.0",
     "xlsx": "^0.18.5",

@@ -2,6 +2,7 @@ import XLSX from 'xlsx-js-style';
 import nodemailer from 'nodemailer';
 import axios from 'axios';
 import { google } from 'googleapis';
+import PDFDocument from 'pdfkit';
 
 // Helper function to format datetime to minute (without seconds)
 function formatDateTimeToMinute(dateString: string): string {
@@ -454,6 +455,242 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   return buffer;
 }
 
+// Generate PDF file with same content as Excel
+export async function generatePDF(request: any, companyName?: string, taxId?: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      });
+
+      const buffers: Buffer[] = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(buffers);
+        resolve(pdfBuffer);
+      });
+      doc.on('error', reject);
+
+      // Get company info
+      const company = companyName || process.env.COMPANY_NAME || '公司名稱';
+      const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || '統編：00000000';
+      const workArea = request.work_area || request.construction_category_name || '';
+
+      // Company header
+      doc.fontSize(24)
+         .font('Helvetica-Bold')
+         .text(company, { align: 'center' });
+      
+      doc.moveDown(0.5);
+      doc.fontSize(18)
+         .font('Helvetica-Bold')
+         .text('統編：' + taxIdNumber, { align: 'center' });
+      
+      doc.moveDown(1);
+
+      // Request info section
+      doc.fontSize(12)
+         .font('Helvetica-Bold')
+         .text('叫料單資訊', { underline: true });
+      
+      doc.moveDown(0.5);
+      doc.fontSize(10)
+         .font('Helvetica');
+
+      const infoItems = [
+        ['叫料單號', request.request_number],
+        ['建立日期', formatDateTimeToMinute(request.created_at)],
+        ['申請人', request.applicant_name || ''],
+        ['聯繫電話', request.contact_phone || ''],
+        ['送貨地址', request.delivery_address_name ? `${request.delivery_address_name} - ${request.delivery_address || ''}` : ''],
+        ['狀態', request.status || 'pending']
+      ];
+
+      infoItems.forEach(([label, value]) => {
+        doc.text(`${label}：${value}`, { indent: 20 });
+      });
+
+      doc.moveDown(1);
+
+      // Table header
+      doc.fontSize(12)
+         .font('Helvetica-Bold')
+         .text('材料項目', { underline: true });
+      
+      doc.moveDown(0.5);
+
+      // Table header row
+      const tableTop = doc.y;
+      const tableLeft = 50;
+      const colWidths = [60, 80, 80, 50, 50, 50, 50, 100]; // 工區, 施工類別, 材料類別, 材料名稱, 材料規格, 單位, 數量, 備註
+      const headers = ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註'];
+      
+      let currentX = tableLeft;
+      headers.forEach((header, i) => {
+        doc.fontSize(10)
+           .font('Helvetica-Bold')
+           .fillColor('#FFFFFF')
+           .rect(currentX, doc.y, colWidths[i], 20)
+           .fill('#4472C4');
+        doc.text(header, currentX + 5, doc.y + 5, {
+          width: colWidths[i] - 10,
+          align: i >= 5 ? 'center' : 'left'
+        });
+        currentX += colWidths[i];
+      });
+      
+      doc.fillColor('#000000');
+      doc.moveDown(1.5);
+
+      // Table data rows
+      for (const item of request.items) {
+        const rowStartY = doc.y;
+        currentX = tableLeft;
+        
+        const rowData = [
+          workArea,
+          request.construction_category_name || '',
+          item.material_category_name || '',
+          item.material_name || '',
+          item.material_specification || '',
+          item.unit || item.material_unit || '',
+          String(item.quantity),
+          item.notes || ''
+        ];
+
+        rowData.forEach((cell, i) => {
+          doc.fontSize(9)
+             .font('Helvetica')
+             .rect(currentX, rowStartY, colWidths[i], 20)
+             .stroke();
+          doc.text(cell || '-', currentX + 5, rowStartY + 5, {
+            width: colWidths[i] - 10,
+            align: i >= 5 ? 'center' : 'left'
+          });
+          currentX += colWidths[i];
+        });
+
+        doc.y = rowStartY + 20;
+        
+        // Add image and link info below item if exists
+        if (item.image_url || item.link_url) {
+          doc.fontSize(8)
+             .font('Helvetica')
+             .fillColor('#0066CC')
+             .text('', tableLeft, doc.y, { indent: 20 });
+          
+          if (item.image_url) {
+            doc.text(`圖片：${item.image_url}`, { indent: 20, link: item.image_url });
+          }
+          if (item.link_url) {
+            doc.text(`連結：${item.link_url}`, { indent: 20, link: item.link_url });
+          }
+          
+          doc.fillColor('#000000');
+          doc.moveDown(0.5);
+        }
+
+        // Check if we need a new page
+        if (doc.y > 750) {
+          doc.addPage();
+        }
+      }
+
+      // Monthly statistics section
+      doc.addPage();
+      doc.fontSize(18)
+         .font('Helvetica-Bold')
+         .text('月統計', { align: 'center' });
+      
+      doc.moveDown(1);
+      
+      const now = new Date(request.created_at);
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      doc.fontSize(12)
+         .font('Helvetica')
+         .text(`統計月份：${year}年${month}月`, { align: 'center' });
+      
+      doc.moveDown(1);
+
+      // Statistics table header
+      const statsHeaders = ['材料類別', '材料名稱', '材料規格', '總數量', '單位'];
+      const statsColWidths = [80, 100, 100, 60, 50];
+      
+      currentX = tableLeft;
+      statsHeaders.forEach((header, i) => {
+        doc.fontSize(10)
+           .font('Helvetica-Bold')
+           .fillColor('#FFFFFF')
+           .rect(currentX, doc.y, statsColWidths[i], 20)
+           .fill('#4472C4');
+        doc.text(header, currentX + 5, doc.y + 5, {
+          width: statsColWidths[i] - 10,
+          align: i >= 3 ? 'center' : 'left'
+        });
+        currentX += statsColWidths[i];
+      });
+      
+      doc.fillColor('#000000');
+      doc.moveDown(1.5);
+
+      // Group items by material and sum quantities
+      const materialStats: { [key: string]: { name: string; spec: string; unit: string; total: number } } = {};
+      for (const item of request.items) {
+        const key = `${item.material_category_name || ''}_${item.material_name || ''}`;
+        if (!materialStats[key]) {
+          materialStats[key] = {
+            name: item.material_name || '',
+            spec: item.material_specification || '',
+            unit: item.unit || item.material_unit || '',
+            total: 0
+          };
+        }
+        materialStats[key].total += parseFloat(item.quantity) || 0;
+      }
+
+      // Statistics data rows
+      for (const key in materialStats) {
+        const stat = materialStats[key];
+        const categoryName = key.split('_')[0];
+        const rowStartY = doc.y;
+        currentX = tableLeft;
+        
+        const statsRowData = [
+          categoryName,
+          stat.name,
+          stat.spec,
+          String(stat.total),
+          stat.unit
+        ];
+
+        statsRowData.forEach((cell, i) => {
+          doc.fontSize(9)
+             .font('Helvetica')
+             .rect(currentX, rowStartY, statsColWidths[i], 20)
+             .stroke();
+          doc.text(cell || '-', currentX + 5, rowStartY + 5, {
+            width: statsColWidths[i] - 10,
+            align: i >= 3 ? 'center' : 'left'
+          });
+          currentX += statsColWidths[i];
+        });
+
+        doc.y = rowStartY + 20;
+        
+        if (doc.y > 750) {
+          doc.addPage();
+        }
+      }
+
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 // Generate report Excel (monthly or date range)
 export async function generateReportExcel(requests: any[], startDate?: string, endDate?: string, companyName?: string, taxId?: string): Promise<Buffer> {
   const workbook = XLSX.utils.book_new();
@@ -789,6 +1026,7 @@ export async function sendEmail(options: {
   subject?: string;
   request: any;
   excelBuffer?: Buffer;
+  pdfBuffer?: Buffer;
   filename?: string;
 }): Promise<void> {
   try {
@@ -930,11 +1168,28 @@ export async function sendEmail(options: {
       html: html
     };
 
+    // Add attachments (Excel and PDF)
+    const attachments: any[] = [];
+    
     if (options.excelBuffer) {
-      mailOptions.attachments = [{
-          filename: options.filename || `${options.request.request_number}.xlsx`,
+      const excelFilename = options.filename || `${options.request.request_number}.xlsx`;
+      attachments.push({
+        filename: excelFilename,
         content: options.excelBuffer
-      }];
+      });
+    }
+    
+    if (options.pdfBuffer) {
+      const pdfFilename = (options.filename || `${options.request.request_number}.xlsx`).replace('.xlsx', '.pdf');
+      attachments.push({
+        filename: pdfFilename,
+        content: options.pdfBuffer,
+        contentType: 'application/pdf'
+      });
+    }
+    
+    if (attachments.length > 0) {
+      mailOptions.attachments = attachments;
     }
 
     await transporter.sendMail(mailOptions);
