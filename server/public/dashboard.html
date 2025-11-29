@@ -2044,6 +2044,8 @@
             const notes = document.getElementById('request-notes').value || null;
             
             const items = [];
+            let hasInvalidQuantity = false;
+            
             document.querySelectorAll('.request-item').forEach((item, index) => {
                 const materialId = item.querySelector('.item-material').value;
                 const quantity = parseFloat(item.querySelector('.item-quantity').value);
@@ -2053,7 +2055,11 @@
                 const imageUrl = imageUrlInput ? imageUrlInput.value || null : null;
                 const linkUrl = item.querySelector('.item-link-url').value || null;
                 
-                if (materialId && quantity && quantity >= 1) {
+                if (materialId && quantity) {
+                    if (quantity < 1) {
+                        hasInvalidQuantity = true;
+                        return;
+                    }
                     items.push({
                         material_id: parseInt(materialId),
                         quantity: quantity,
@@ -2062,11 +2068,13 @@
                         image_url: imageUrl,
                         link_url: linkUrl
                     });
-                } else if (materialId && quantity < 1) {
-                    alert('數量必須至少為1');
-                    return;
                 }
             });
+            
+            if (hasInvalidQuantity) {
+                alert('數量必須至少為1');
+                return;
+            }
             
             if (items.length === 0) {
                 alert('請至少添加一個材料項目');
