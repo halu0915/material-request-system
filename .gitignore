@@ -38,3 +38,6 @@ temp/
 *.db
 *.sqlite
 
+# Deployment
+.jwt_secret.txt
+

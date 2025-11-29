@@ -1,17 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-export interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-    name?: string;
-  };
-  body: any;
-  params: any;
-  query: any;
-  file?: Express.Multer.File;
-}
+export type AuthRequest = Request;
 
 export const authenticateToken = (
   req: AuthRequest,
