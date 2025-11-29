@@ -3,7 +3,6 @@ import XLSX from 'xlsx';
 import { query } from '../db/connection';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { generateExcel, generateReportExcel, uploadToCloud, sendEmail, sendLineNotify } from '../services/notifications';
-import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
