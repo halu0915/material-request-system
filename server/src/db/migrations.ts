@@ -51,7 +51,7 @@ export const createTables = async (): Promise<void> => {
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(construction_category_id, material_category_id, name)
+        UNIQUE(construction_category_id, material_category_id, name, COALESCE(specification, ''))
       )
     `);
     
@@ -64,6 +64,29 @@ export const createTables = async (): Promise<void> => {
           WHERE table_name = 'materials' AND column_name = 'specification'
         ) THEN
           ALTER TABLE materials ADD COLUMN specification VARCHAR(255);
+        END IF;
+      END $$;
+    `);
+    
+    // Update unique constraint to include specification (for existing databases)
+    await query(`
+      DO $$ 
+      BEGIN
+        -- Drop old unique constraint if it exists
+        IF EXISTS (
+          SELECT 1 FROM pg_constraint 
+          WHERE conname = 'materials_construction_category_id_material_category_id_name_key'
+        ) THEN
+          ALTER TABLE materials DROP CONSTRAINT materials_construction_category_id_material_category_id_name_key;
+        END IF;
+        
+        -- Add new unique constraint with specification
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint 
+          WHERE conname = 'materials_unique_with_spec'
+        ) THEN
+          ALTER TABLE materials ADD CONSTRAINT materials_unique_with_spec 
+          UNIQUE (construction_category_id, material_category_id, name, COALESCE(specification, ''));
         END IF;
       END $$;
     `);

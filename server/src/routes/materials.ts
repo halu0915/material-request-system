@@ -252,6 +252,20 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: '施工類別、材料類別和材料名稱必填' });
     }
 
+    // Check if material with same category, name and specification already exists
+    const checkExisting = await query(
+      `SELECT id FROM materials 
+       WHERE construction_category_id = $1 
+         AND material_category_id = $2 
+         AND name = $3 
+         AND COALESCE(specification, '') = COALESCE($4, '')`,
+      [construction_category_id, material_category_id, name, specification || null]
+    );
+
+    if (checkExisting.rows.length > 0) {
+      return res.status(400).json({ error: '此材料（相同類別、名稱和規格）已存在' });
+    }
+
     const result = await query(
       `INSERT INTO materials (construction_category_id, material_category_id, name, specification, unit, description)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
@@ -261,7 +275,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     res.status(201).json({ material: result.rows[0] });
   } catch (error: any) {
     if (error.code === '23505') {
-      return res.status(400).json({ error: '此材料已存在' });
+      return res.status(400).json({ error: '此材料（相同類別、名稱和規格）已存在' });
     }
     console.error('建立材料錯誤:', error);
     res.status(500).json({ error: '建立材料失敗' });
@@ -363,6 +377,21 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
       return res.status(400).json({ error: '施工類別、材料類別和材料名稱必填' });
     }
 
+    // Check if another material with same category, name and specification already exists (excluding current one)
+    const checkExisting = await query(
+      `SELECT id FROM materials 
+       WHERE construction_category_id = $1 
+         AND material_category_id = $2 
+         AND name = $3 
+         AND COALESCE(specification, '') = COALESCE($4, '')
+         AND id != $5`,
+      [construction_category_id, material_category_id, name, specification || null, id]
+    );
+
+    if (checkExisting.rows.length > 0) {
+      return res.status(400).json({ error: '此材料（相同類別、名稱和規格）已存在' });
+    }
+
     const result = await query(
       `UPDATE materials 
        SET construction_category_id = $1, material_category_id = $2, name = $3, 
@@ -378,7 +407,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
     res.json({ material: result.rows[0] });
   } catch (error: any) {
     if (error.code === '23505') {
-      return res.status(400).json({ error: '此材料名稱已存在' });
+      return res.status(400).json({ error: '此材料（相同類別、名稱和規格）已存在' });
     }
     console.error('更新材料錯誤:', error);
     res.status(500).json({ error: '更新材料失敗' });
