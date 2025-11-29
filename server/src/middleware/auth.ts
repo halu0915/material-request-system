@@ -16,11 +16,12 @@ export function getUserId(req: AuthRequest): number | null {
   return (req.user as any)?.id || null;
 }
 
-export const authenticateToken = (
-  req: AuthRequest,
+export const authenticateToken: any = (
+  req: Request | AuthRequest,
   res: Response,
   next: NextFunction
 ): void => {
+  const authReq = req as AuthRequest;
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -31,7 +32,7 @@ export const authenticateToken = (
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-    req.user = {
+    authReq.user = {
       id: decoded.id,
       email: decoded.email,
       name: decoded.name

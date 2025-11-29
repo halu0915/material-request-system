@@ -75,10 +75,15 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
       return res.status(400).json({ error: '地址名稱和地址必填' });
     }
 
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ error: '未授權' });
+    }
+
     // Check if address belongs to user
     const checkResult = await query(
       'SELECT id FROM delivery_addresses WHERE id = $1 AND user_id = $2',
-      [id, req.user?.id]
+      [id, userId]
     );
 
     if (checkResult.rows.length === 0) {
