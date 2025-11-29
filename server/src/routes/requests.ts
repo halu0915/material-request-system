@@ -2,7 +2,7 @@ import express, { Response } from 'express';
 import XLSX from 'xlsx';
 import { query } from '../db/connection';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { generateExcel, generatePDF, generateReportExcel, uploadToCloud, sendEmail, sendLineNotify } from '../services/notifications';
+import { generateExcel, generateReportExcel, uploadToCloud, sendEmail, sendLineNotify } from '../services/notifications';
 
 const router = express.Router();
 
@@ -215,18 +215,11 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         }
 
         if (recipients.length > 0) {
-          // Generate PDF (use environment variables or defaults)
-          const pdfBuffer = await generatePDF(
-            fullRequest,
-            process.env.COMPANY_NAME,
-            process.env.COMPANY_TAX_ID
-          );
-          
+          // Send email with Excel attachment only
           await sendEmail({
             to: recipients,
             request: fullRequest,
             excelBuffer,
-            pdfBuffer,
             filename: excelFilename
           });
 
@@ -328,20 +321,12 @@ router.post('/:id/send-email', authenticateToken, async (req: AuthRequest, res: 
       return res.status(400).json({ error: '未設定郵件收件人' });
     }
 
-    // Generate PDF
-    const pdfBuffer = await generatePDF(
-      fullRequest,
-      company_name as string,
-      tax_id as string
-    );
-
-    // Send email
+    // Send email with Excel attachment only
     try {
       await sendEmail({
         to: recipients,
         request: fullRequest,
         excelBuffer,
-        pdfBuffer,
         filename: excelFilename
       });
 
