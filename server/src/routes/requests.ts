@@ -191,12 +191,13 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       // Get full request data
       const fullRequest = await getFullRequest(request.id);
 
-      // Get all requests from the same month for monthly statistics
+      // Get all requests from the same month up to and including current request creation time
       const requestDate = new Date(fullRequest.created_at);
       const year = requestDate.getFullYear();
       const month = requestDate.getMonth() + 1;
       const startOfMonth = new Date(year, month - 1, 1);
-      const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+      // Use current request's created_at as the end time (inclusive)
+      const currentRequestTime = new Date(fullRequest.created_at);
       
       const monthlyRequestsResult = await query(
         `SELECT id FROM material_requests 
@@ -204,7 +205,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
            AND created_at >= $2 
            AND created_at <= $3
          ORDER BY created_at`,
-        [req.user?.id, startOfMonth, endOfMonth]
+        [req.user?.id, startOfMonth, currentRequestTime]
       );
       
       const monthlyRequests = [];
@@ -333,12 +334,13 @@ router.post('/:id/send-email', authenticateToken, async (req: AuthRequest, res: 
       return res.status(404).json({ error: '找不到叫料單' });
     }
 
-    // Get all requests from the same month for monthly statistics
+    // Get all requests from the same month up to and including current request creation time
     const requestDate = new Date(fullRequest.created_at);
     const year = requestDate.getFullYear();
     const month = requestDate.getMonth() + 1;
     const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+    // Use current request's created_at as the end time (inclusive)
+    const currentRequestTime = new Date(fullRequest.created_at);
     
     const monthlyRequestsResult = await query(
       `SELECT id FROM material_requests 
@@ -346,7 +348,7 @@ router.post('/:id/send-email', authenticateToken, async (req: AuthRequest, res: 
          AND created_at >= $2 
          AND created_at <= $3
        ORDER BY created_at`,
-      [req.user?.id, startOfMonth, endOfMonth]
+      [req.user?.id, startOfMonth, currentRequestTime]
     );
     
     const monthlyRequests = [];
@@ -445,12 +447,13 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
       return res.status(404).json({ error: '找不到叫料單' });
     }
 
-    // Get all requests from the same month for monthly statistics
+    // Get all requests from the same month up to and including current request creation time
     const requestDate = new Date(fullRequest.created_at);
     const year = requestDate.getFullYear();
     const month = requestDate.getMonth() + 1;
     const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+    // Use current request's created_at as the end time (inclusive)
+    const currentRequestTime = new Date(fullRequest.created_at);
     
     const monthlyRequestsResult = await query(
       `SELECT id FROM material_requests 
@@ -458,7 +461,7 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
          AND created_at >= $2 
          AND created_at <= $3
        ORDER BY created_at`,
-      [req.user?.id, startOfMonth, endOfMonth]
+      [req.user?.id, startOfMonth, currentRequestTime]
     );
     
     const monthlyRequests = [];
