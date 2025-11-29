@@ -221,41 +221,6 @@ router.post('/apple', async (req: Request, res: Response) => {
   res.status(501).json({ error: 'Apple 登入功能開發中' });
 });
 
-// Create guest/trial account
-router.post('/guest', async (req: Request, res: Response) => {
-  try {
-    // Create a guest account with unique email
-    const guestEmail = `guest_${Date.now()}@trial.local`;
-    const guestPassword = Math.random().toString(36).slice(-12);
-    const passwordHash = await bcrypt.hash(guestPassword, 10);
-    const trialExpires = new Date();
-    trialExpires.setDate(trialExpires.getDate() + 30); // 30 days trial
-
-    const result = await query(
-      `INSERT INTO users (email, password_hash, name, provider, is_trial, trial_expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, name, is_trial`,
-      [guestEmail, passwordHash, '訪客', 'guest', true, trialExpires]
-    );
-
-    const user = result.rows[0];
-    const token = generateToken({ id: user.id, email: user.email, name: user.name });
-
-    res.json({
-      message: '訪客帳號已創建',
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isTrial: user.is_trial
-      }
-    });
-  } catch (error: any) {
-    console.error('創建訪客帳號錯誤:', error);
-    res.status(500).json({ error: '創建訪客帳號失敗' });
-  }
-});
-
 // Get current user
 router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {

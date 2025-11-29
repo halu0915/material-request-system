@@ -3,7 +3,7 @@ services:
     name: material-request-system
     env: node
     plan: free
-    buildCommand: bash build.sh
+    buildCommand: npm install:all && npm run build
     startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
@@ -30,6 +30,4 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
-      - key: VITE_API_URL
-        value: https://material-request-system-uadw.onrender.com
 

@@ -357,28 +357,40 @@
         </div>
     </div>
 
-    <!-- Category Form Modal -->
-    <div id="category-modal" class="modal">
+    <!-- Category Manager Modal -->
+    <div id="category-manager-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="category-modal-title">新增類別</h3>
-                <button class="close" onclick="closeModal('category-modal')">&times;</button>
+                <h3 id="category-manager-title">類別管理</h3>
+                <button class="close" onclick="closeModal('category-manager-modal')">&times;</button>
             </div>
-            <form id="category-form" onsubmit="saveCategory(event)">
-                <div class="form-group">
-                    <label>類別名稱 *</label>
-                    <input type="text" id="category-name" required>
-                </div>
-                <div class="form-group">
-                    <label>描述</label>
-                    <textarea id="category-description"></textarea>
-                </div>
-                <input type="hidden" id="category-type">
-                <div style="text-align: right;">
-                    <button type="button" class="btn-secondary" onclick="closeModal('category-modal')">取消</button>
-                    <button type="submit" class="btn-primary" style="margin-left: 10px;">儲存</button>
-                </div>
-            </form>
+            <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                <input type="text" id="new-category-name" placeholder="輸入新類別名稱" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                <button class="btn-primary" onclick="addNewCategory()">新增</button>
+            </div>
+            <div id="category-list" class="category-list">
+                <div class="loading">載入中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Category Modal -->
+    <div id="edit-category-modal" class="modal" style="z-index: 1001;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>編輯類別</h3>
+                <button class="close" onclick="closeModal('edit-category-modal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>類別名稱</label>
+                <input type="text" id="edit-category-name" required>
+                <input type="hidden" id="edit-category-id">
+                <input type="hidden" id="edit-category-type">
+            </div>
+            <div style="text-align: right;">
+                <button class="btn-secondary" onclick="closeModal('edit-category-modal')">取消</button>
+                <button class="btn-primary" onclick="updateCategory()">儲存</button>
+            </div>
         </div>
     </div>
 

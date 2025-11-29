@@ -325,7 +325,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
 
   // Add all request items
   for (const request of requests) {
-    const workArea = request.work_area || '';
+    const workArea = request.work_area || request.construction_category_name || '';
     
     if (request.items && request.items.length > 0) {
       for (const item of request.items) {
@@ -338,7 +338,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
           item.material_name || '',
           item.material_specification || '',
           item.unit || item.material_unit || '',
-          item.quantity, // Keep as number for Excel
+          item.quantity,
           item.notes || ''
         ]);
       }
@@ -363,16 +363,16 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
 
   // Set column widths optimized for A4
   reportSheet['!cols'] = [
-    { wch: 15 }, // 叫料單號
+    { wch: 18 }, // 叫料單號
     { wch: 12 }, // 建立日期
-    { wch: 15 }, // 工區
+    { wch: 10 }, // 工區
     { wch: 12 }, // 施工類別
     { wch: 12 }, // 材料類別
-    { wch: 20 }, // 材料名稱
-    { wch: 15 }, // 材料規格
+    { wch: 16 }, // 材料名稱
+    { wch: 14 }, // 材料規格
     { wch: 8 },  // 單位
     { wch: 10 }, // 數量
-    { wch: 25 }  // 備註
+    { wch: 20 }  // 備註
   ];
 
   // Apply styles
@@ -407,7 +407,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
   });
 
   const reportDataStyle = {
-    font: { name: '微軟正黑體', sz: 10 },
+    font: { name: '微軟正黑體', sz: 9 },
     alignment: { vertical: 'center', wrapText: true },
     border: {
       top: { style: 'thin', color: { rgb: 'CCCCCC' } },
@@ -421,15 +421,6 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
     ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].forEach((col) => {
       applyCellStyle(reportSheet, `${col}${r}`, reportDataStyle);
     });
-  }
-  
-  // Center align quantity column
-  for (let r = reportHeaderRow + 1; r <= numReportRows; r++) {
-    const quantityStyle = {
-      ...reportDataStyle,
-      alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
-    };
-    applyCellStyle(reportSheet, `I${r}`, quantityStyle);
   }
 
   // Merge cells for header

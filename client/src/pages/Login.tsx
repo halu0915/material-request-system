@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 
@@ -8,18 +8,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, setToken } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Handle token from registration
-  useEffect(() => {
-    const state = location.state as any;
-    if (state?.token) {
-      setToken(state.token);
-      navigate('/', { replace: true });
-    }
-  }, [location, setToken, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,29 +27,7 @@ export default function Login() {
   };
 
   const handleGoogleLogin = () => {
-    // Use relative path in production (same server), or env variable, or localhost for dev
-    const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
-    window.location.href = `${apiUrl}/api/auth/google`;
-  };
-
-  const handleGuestLogin = async () => {
-    setError('');
-    setLoading(true);
-
-    try {
-      const response = await api.post('/api/auth/guest');
-      const { token, user } = response.data;
-      
-      // Save token and login
-      localStorage.setItem('token', token);
-      setToken(token);
-      
-      // Redirect to home
-      navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.error || '訪客登入失敗');
-      setLoading(false);
-    }
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google`;
   };
 
   return (
@@ -70,21 +38,8 @@ export default function Login() {
             登入叫料系統
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            或{' '}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              註冊新帳號
-            </Link>
+            或使用試用帳號體驗系統
           </p>
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={handleGuestLogin}
-              disabled={loading}
-              className="text-sm text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50"
-            >
-              {loading ? '登入中...' : '以訪客身份試用系統'}
-            </button>
-          </div>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (

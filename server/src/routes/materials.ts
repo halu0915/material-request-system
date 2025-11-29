@@ -129,9 +129,13 @@ router.put('/construction-categories/:id', authenticateToken, async (req: AuthRe
     const { id } = req.params;
     const { name, description } = req.body;
 
+    if (!name) {
+      return res.status(400).json({ error: '名稱必填' });
+    }
+
     const result = await query(
       'UPDATE construction_categories SET name = $1, description = $2 WHERE id = $3 RETURNING *',
-      [name, description || null, id]
+      [name, description || null, parseInt(id)]
     );
 
     if (result.rows.length === 0) {
@@ -139,9 +143,43 @@ router.put('/construction-categories/:id', authenticateToken, async (req: AuthRe
     }
 
     res.json({ category: result.rows[0] });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: '此施工類別名稱已存在' });
+    }
     console.error('更新施工類別錯誤:', error);
     res.status(500).json({ error: '更新施工類別失敗' });
+  }
+});
+
+// Delete construction category
+router.delete('/construction-categories/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if used by any materials
+    const checkUsage = await query(
+      'SELECT COUNT(*) FROM materials WHERE construction_category_id = $1',
+      [parseInt(id)]
+    );
+
+    if (parseInt(checkUsage.rows[0].count) > 0) {
+      return res.status(400).json({ error: '此類別已被使用，無法刪除' });
+    }
+
+    const result = await query(
+      'DELETE FROM construction_categories WHERE id = $1 RETURNING *',
+      [parseInt(id)]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到此施工類別' });
+    }
+
+    res.json({ message: '施工類別已刪除' });
+  } catch (error) {
+    console.error('刪除施工類別錯誤:', error);
+    res.status(500).json({ error: '刪除施工類別失敗' });
   }
 });
 
@@ -151,9 +189,13 @@ router.put('/material-categories/:id', authenticateToken, async (req: AuthReques
     const { id } = req.params;
     const { name, description } = req.body;
 
+    if (!name) {
+      return res.status(400).json({ error: '名稱必填' });
+    }
+
     const result = await query(
       'UPDATE material_categories SET name = $1, description = $2 WHERE id = $3 RETURNING *',
-      [name, description || null, id]
+      [name, description || null, parseInt(id)]
     );
 
     if (result.rows.length === 0) {
@@ -161,31 +203,12 @@ router.put('/material-categories/:id', authenticateToken, async (req: AuthReques
     }
 
     res.json({ category: result.rows[0] });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: '此材料類別名稱已存在' });
+    }
     console.error('更新材料類別錯誤:', error);
     res.status(500).json({ error: '更新材料類別失敗' });
-  }
-});
-
-// Delete construction category
-router.delete('/construction-categories/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    
-    // Check if used
-    const check = await query('SELECT 1 FROM materials WHERE construction_category_id = $1 LIMIT 1', [id]);
-    if (check.rows.length > 0) {
-      return res.status(400).json({ error: '此類別已被使用，無法刪除' });
-    }
-
-    const result = await query('DELETE FROM construction_categories WHERE id = $1 RETURNING *', [id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: '找不到此類別' });
-    }
-    res.json({ message: '刪除成功' });
-  } catch (error) {
-    console.error('刪除施工類別錯誤:', error);
-    res.status(500).json({ error: '刪除失敗' });
   }
 });
 
@@ -193,21 +216,30 @@ router.delete('/construction-categories/:id', authenticateToken, async (req: Aut
 router.delete('/material-categories/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    
-    // Check if used
-    const check = await query('SELECT 1 FROM materials WHERE material_category_id = $1 LIMIT 1', [id]);
-    if (check.rows.length > 0) {
+
+    // Check if used by any materials
+    const checkUsage = await query(
+      'SELECT COUNT(*) FROM materials WHERE material_category_id = $1',
+      [parseInt(id)]
+    );
+
+    if (parseInt(checkUsage.rows[0].count) > 0) {
       return res.status(400).json({ error: '此類別已被使用，無法刪除' });
     }
 
-    const result = await query('DELETE FROM material_categories WHERE id = $1 RETURNING *', [id]);
+    const result = await query(
+      'DELETE FROM material_categories WHERE id = $1 RETURNING *',
+      [parseInt(id)]
+    );
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: '找不到此類別' });
+      return res.status(404).json({ error: '找不到此材料類別' });
     }
-    res.json({ message: '刪除成功' });
+
+    res.json({ message: '材料類別已刪除' });
   } catch (error) {
     console.error('刪除材料類別錯誤:', error);
-    res.status(500).json({ error: '刪除失敗' });
+    res.status(500).json({ error: '刪除材料類別失敗' });
   }
 });
 
@@ -318,6 +350,37 @@ router.post('/import', authenticateToken, upload.single('file'), async (req, res
   } catch (error) {
     console.error('匯入材料錯誤:', error);
     res.status(500).json({ error: '匯入材料失敗' });
+  }
+});
+
+// Update material
+router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { construction_category_id, material_category_id, name, specification, unit, description } = req.body;
+
+    if (!construction_category_id || !material_category_id || !name) {
+      return res.status(400).json({ error: '施工類別、材料類別和材料名稱必填' });
+    }
+
+    const result = await query(
+      `UPDATE materials 
+       SET construction_category_id = $1, material_category_id = $2, name = $3, specification = $4, unit = $5, description = $6
+       WHERE id = $7 RETURNING *`,
+      [construction_category_id, material_category_id, name, specification || null, unit || null, description || null, parseInt(id)]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到此材料' });
+    }
+
+    res.json({ material: result.rows[0] });
+  } catch (error: any) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: '此材料名稱已存在' });
+    }
+    console.error('更新材料錯誤:', error);
+    res.status(500).json({ error: '更新材料失敗' });
   }
 });
 
