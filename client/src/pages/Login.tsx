@@ -42,6 +42,26 @@ export default function Login() {
     window.location.href = `${apiUrl}/api/auth/google`;
   };
 
+  const handleGuestLogin = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await api.post('/api/auth/guest');
+      const { token, user } = response.data;
+      
+      // Save token and login
+      localStorage.setItem('token', token);
+      setToken(token);
+      
+      // Redirect to home
+      navigate('/');
+    } catch (err: any) {
+      setError(err.response?.data?.error || '訪客登入失敗');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -55,6 +75,16 @@ export default function Login() {
               註冊新帳號
             </Link>
           </p>
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={handleGuestLogin}
+              disabled={loading}
+              className="text-sm text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50"
+            >
+              {loading ? '登入中...' : '以訪客身份試用系統'}
+            </button>
+          </div>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
