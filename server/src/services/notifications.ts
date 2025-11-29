@@ -4,7 +4,7 @@ import axios from 'axios';
 import { google } from 'googleapis';
 
 // Generate Excel file with company header
-export async function generateExcel(request: any, companyName?: string, taxId?: string): Promise<Buffer> {
+export async function generateExcel(request: any, companyName?: string, taxId?: string, monthlyRequests?: any[]): Promise<Buffer> {
   const workbook = XLSX.utils.book_new();
   
   // Get company info from environment or use defaults
