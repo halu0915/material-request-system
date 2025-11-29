@@ -1104,19 +1104,151 @@
                     const data = await requestsRes.json();
                     const requests = data.requests || [];
                     
-                    let html = '<div class="welcome-card">';
-                    html += `<h3>統計資訊</h3>`;
-                    html += `<p>總叫料單數：${requests.length}</p>`;
-                    html += `<p>待處理：${requests.filter(r => r.status === 'pending').length}</p>`;
-                    html += `<p>已完成：${requests.filter(r => r.status === 'completed').length}</p>`;
-                    html += '</div>';
+                    const total = requests.length;
+                    const pending = requests.filter(r => r.status === 'pending').length;
+                    const completed = requests.filter(r => r.status === 'completed').length;
                     
-                    content.innerHTML = html;
+                    const now = new Date();
+                    const currentYear = now.getFullYear();
+                    const currentMonth = now.getMonth() + 1;
+                    
+                    content.innerHTML = `
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <h3>總叫料單數</h3>
+                                <p class="stat-number">${total}</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>待處理</h3>
+                                <p class="stat-number">${pending}</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>已完成</h3>
+                                <p class="stat-number">${completed}</p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 30px;">
+                            <h3 style="margin-bottom: 20px;">報表下載</h3>
+                            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                                <div style="flex: 1; min-width: 300px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                                    <h4>月報表</h4>
+                                    <div style="margin-top: 15px;">
+                                        <label style="display: block; margin-bottom: 5px;">年份</label>
+                                        <input type="number" id="report-year" value="${currentYear}" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                                        <label style="display: block; margin-bottom: 5px;">月份</label>
+                                        <input type="number" id="report-month" value="${currentMonth}" min="1" max="12" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                                        <button class="btn-primary" onclick="downloadMonthlyReport()" style="width: 100%;">下載月報表</button>
+                                    </div>
+                                </div>
+                                <div style="flex: 1; min-width: 300px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                                    <h4>時間區間報表</h4>
+                                    <div style="margin-top: 15px;">
+                                        <label style="display: block; margin-bottom: 5px;">開始日期</label>
+                                        <input type="date" id="report-start-date" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                                        <label style="display: block; margin-bottom: 5px;">結束日期</label>
+                                        <input type="date" id="report-end-date" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                                        <button class="btn-primary" onclick="downloadRangeReport()" style="width: 100%;">下載區間報表</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 } else {
                     content.innerHTML = '<div class="alert alert-error">無法載入報表資料</div>';
                 }
             } catch (error) {
                 content.innerHTML = '<div class="alert alert-error">載入失敗：' + error.message + '</div>';
+            }
+        }
+
+        // Download monthly report
+        async function downloadMonthlyReport() {
+            const year = document.getElementById('report-year').value;
+            const month = document.getElementById('report-month').value;
+            
+            if (!year || !month) {
+                alert('請輸入年份和月份');
+                return;
+            }
+            
+            const companyName = prompt('請輸入公司名稱（可選，留空使用預設值）：') || '';
+            const taxId = prompt('請輸入統編（可選，留空使用預設值）：') || '';
+            
+            try {
+                const params = new URLSearchParams();
+                if (companyName) params.append('company_name', companyName);
+                if (taxId) params.append('tax_id', taxId);
+                
+                const url = `/api/requests/reports/monthly/${year}/${month}${params.toString() ? '?' + params.toString() : ''}`;
+                const response = await fetch(url, {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = `叫料單月報表_${year}年${month}月.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(downloadUrl);
+                } else {
+                    const error = await response.json();
+                    alert('下載失敗：' + (error.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('下載失敗：' + error.message);
+            }
+        }
+
+        // Download date range report
+        async function downloadRangeReport() {
+            const startDate = document.getElementById('report-start-date').value;
+            const endDate = document.getElementById('report-end-date').value;
+            
+            if (!startDate || !endDate) {
+                alert('請選擇開始日期和結束日期');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('開始日期不能晚於結束日期');
+                return;
+            }
+            
+            const companyName = prompt('請輸入公司名稱（可選，留空使用預設值）：') || '';
+            const taxId = prompt('請輸入統編（可選，留空使用預設值）：') || '';
+            
+            try {
+                const params = new URLSearchParams();
+                params.append('start_date', startDate);
+                params.append('end_date', endDate);
+                if (companyName) params.append('company_name', companyName);
+                if (taxId) params.append('tax_id', taxId);
+                
+                const url = `/api/requests/reports/range?${params.toString()}`;
+                const response = await fetch(url, {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = `叫料單報表_${startDate}_${endDate}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(downloadUrl);
+                } else {
+                    const error = await response.json();
+                    alert('下載失敗：' + (error.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('下載失敗：' + error.message);
             }
         }
 
