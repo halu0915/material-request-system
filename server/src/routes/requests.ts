@@ -190,26 +190,48 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         console.error('上傳雲端失敗:', error);
       }
 
-      // Send email
+      // Send email to configured recipients
       try {
-        const userResult = await query(
-          'SELECT email, name FROM users WHERE id = $1',
-          [req.user?.id]
-        );
-        const user = userResult.rows[0];
+        // Get recipients from environment variable (comma-separated emails)
+        // Format: PURCHASE_EMAIL_RECIPIENTS=email1@example.com,email2@example.com,email3@example.com
+        const recipientsEnv = process.env.PURCHASE_EMAIL_RECIPIENTS;
+        let recipients: string[] = [];
+        
+        if (recipientsEnv) {
+          // Parse comma-separated emails
+          recipients = recipientsEnv.split(',')
+            .map(email => email.trim())
+            .filter(email => email.length > 0);
+        }
+        
+        // If no recipients configured, send to the user who created the request
+        if (recipients.length === 0) {
+          const userResult = await query(
+            'SELECT email, name FROM users WHERE id = $1',
+            [req.user?.id]
+          );
+          if (userResult.rows.length > 0) {
+            recipients = [userResult.rows[0].email];
+          }
+        }
 
-        await sendEmail({
-          to: user.email,
-          subject: `叫料單已建立 - ${requestNumber}`,
-          request: fullRequest,
-          excelBuffer,
-          filename: excelFilename
-        });
+        if (recipients.length > 0) {
+          await sendEmail({
+            to: recipients,
+            request: fullRequest,
+            excelBuffer,
+            filename: excelFilename
+          });
 
-        await query(
-          'UPDATE material_requests SET email_sent = true WHERE id = $1',
-          [request.id]
-        );
+          await query(
+            'UPDATE material_requests SET email_sent = true WHERE id = $1',
+            [request.id]
+          );
+          
+          console.log(`郵件已發送給 ${recipients.length} 位收件人:`, recipients.join(', '));
+        } else {
+          console.warn('未設定郵件收件人，跳過郵件發送');
+        }
       } catch (error) {
         console.error('發送郵件失敗:', error);
       }

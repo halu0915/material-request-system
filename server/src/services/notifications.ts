@@ -634,10 +634,10 @@ export async function uploadToCloud(buffer: Buffer, filename: string): Promise<{
   }
 }
 
-// Send email
+// Send email to multiple recipients
 export async function sendEmail(options: {
-  to: string;
-  subject: string;
+  to: string | string[];
+  subject?: string;
   request: any;
   excelBuffer?: Buffer;
   filename?: string;
@@ -658,52 +658,89 @@ export async function sendEmail(options: {
       }
     });
 
+    // Get material names for subject
+    const materialNames = options.request.items
+      .map((item: any) => item.material_name || '')
+      .filter((name: string) => name)
+      .join('、');
+    
+    // Generate subject: 材料申購＋物料名稱
+    const subject = options.subject || `材料申購${materialNames ? ' - ' + materialNames : ''}`;
+
+    // Email content
     let html = `
-      <h2>叫料單已建立</h2>
-      <p><strong>叫料單號：</strong>${options.request.request_number}</p>
-      <p><strong>建立日期：</strong>${new Date(options.request.created_at).toLocaleString('zh-TW')}</p>
-      <p><strong>施工類別：</strong>${options.request.construction_category_name}</p>
-      ${options.request.notes ? `<p><strong>備註：</strong>${options.request.notes}</p>` : ''}
-      
-      <h3>材料明細</h3>
-      <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
-        <tr>
-          <th>材料類別</th>
-          <th>材料名稱</th>
-          <th>數量</th>
-          <th>單位</th>
-        </tr>
+      <div style="font-family: 微軟正黑體, Arial, sans-serif; line-height: 1.6; color: #333;">
+        <p>感謝您的收信，以下是採購清單，如有疑問，請儘速與我聯繫。</p>
+        
+        <div style="margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 5px;">
+          <h3 style="margin-top: 0; color: #4472C4;">叫料單資訊</h3>
+          <p><strong>叫料單號：</strong>${options.request.request_number}</p>
+          <p><strong>建立日期：</strong>${new Date(options.request.created_at).toLocaleString('zh-TW')}</p>
+          <p><strong>工區：</strong>${options.request.work_area || '未指定'}</p>
+          <p><strong>施工類別：</strong>${options.request.construction_category_name || '未指定'}</p>
+          ${options.request.notes ? `<p><strong>備註：</strong>${options.request.notes}</p>` : ''}
+        </div>
+        
+        <h3 style="color: #4472C4;">採購清單</h3>
+        <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #4472C4; color: white;">
+              <th style="padding: 10px; text-align: left;">材料類別</th>
+              <th style="padding: 10px; text-align: left;">材料名稱</th>
+              <th style="padding: 10px; text-align: left;">材料規格</th>
+              <th style="padding: 10px; text-align: right;">數量</th>
+              <th style="padding: 10px; text-align: left;">單位</th>
+              <th style="padding: 10px; text-align: left;">備註</th>
+            </tr>
+          </thead>
+          <tbody>
     `;
 
     for (const item of options.request.items) {
       html += `
-        <tr>
-          <td>${item.material_category_name || ''}</td>
-          <td>${item.material_name || ''}</td>
-          <td>${item.quantity}</td>
-          <td>${item.unit || item.material_unit || ''}</td>
+        <tr style="border-bottom: 1px solid #ddd;">
+          <td style="padding: 8px;">${item.material_category_name || '-'}</td>
+          <td style="padding: 8px;"><strong>${item.material_name || '-'}</strong></td>
+          <td style="padding: 8px;">${item.material_specification || '-'}</td>
+          <td style="padding: 8px; text-align: right;">${item.quantity}</td>
+          <td style="padding: 8px;">${item.unit || item.material_unit || '-'}</td>
+          <td style="padding: 8px;">${item.notes || '-'}</td>
         </tr>
       `;
     }
 
-    html += '</table>';
+    html += `
+          </tbody>
+        </table>
+        
+        <p style="margin-top: 30px; color: #666; font-size: 0.9em;">
+          此郵件由叫料系統自動發送，請勿直接回覆。
+        </p>
+      </div>
+    `;
 
-    const mailOptions: any = {
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: options.to,
-      subject: options.subject,
-      html: html
-    };
+    // Convert to array if single email
+    const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
-    if (options.excelBuffer) {
-      mailOptions.attachments = [{
-        filename: options.filename || `${options.request.request_number}.xlsx`,
-        content: options.excelBuffer
-      }];
+    // Send email to all recipients
+    for (const recipient of recipients) {
+      const mailOptions: any = {
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: recipient,
+        subject: subject,
+        html: html
+      };
+
+      if (options.excelBuffer) {
+        mailOptions.attachments = [{
+          filename: options.filename || `${options.request.request_number}.xlsx`,
+          content: options.excelBuffer
+        }];
+      }
+
+      await transporter.sendMail(mailOptions);
+      console.log('郵件發送成功:', recipient);
     }
-
-    await transporter.sendMail(mailOptions);
-    console.log('郵件發送成功:', options.to);
   } catch (error) {
     console.error('發送郵件失敗:', error);
     throw error;
