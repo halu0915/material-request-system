@@ -345,8 +345,8 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     ['材料類別', '材料名稱', '材料規格', '總數量', '單位']
   ];
   
-  // Group items by material and sum quantities - accumulate from all monthly requests
-  const materialStats: { [key: string]: { name: string; spec: string; unit: string; total: number } } = {};
+  // Group items by material name and quantity - only accumulate items with same material name AND quantity
+  const materialStats: { [key: string]: { name: string; spec: string; unit: string; quantity: number; count: number } } = {};
   
   // Use monthlyRequests if provided, otherwise fall back to current request only
   const requestsToProcess = monthlyRequests && monthlyRequests.length > 0 ? monthlyRequests : [request];
@@ -354,29 +354,51 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   for (const req of requestsToProcess) {
     if (req.items && req.items.length > 0) {
       for (const item of req.items) {
-        // Use material_specification in key to distinguish different specifications
-        const key = `${item.material_category_name || ''}_${item.material_name || ''}_${item.material_specification || ''}`;
+        // Use material_name and quantity as key - only items with same name AND quantity will be grouped
+        const quantity = parseFloat(item.quantity) || 0;
+        const key = `${item.material_name || ''}_${quantity}`;
+        
         if (!materialStats[key]) {
           materialStats[key] = {
             name: item.material_name || '',
             spec: item.material_specification || '',
             unit: item.unit || item.material_unit || '',
-            total: 0
+            quantity: quantity,
+            count: 0
           };
         }
-        materialStats[key].total += parseFloat(item.quantity) || 0;
+        // Count how many times this material with this quantity appears
+        materialStats[key].count += 1;
       }
     }
   }
   
   for (const key in materialStats) {
     const stat = materialStats[key];
-    const categoryName = key.split('_')[0];
+    // Calculate total quantity: quantity per item * number of occurrences
+    const totalQuantity = stat.quantity * stat.count;
+    
+    // Get material category from the first matching item
+    // We need to find the category from the original items
+    let categoryName = '';
+    for (const req of requestsToProcess) {
+      if (req.items && req.items.length > 0) {
+        for (const item of req.items) {
+          const itemQuantity = parseFloat(item.quantity) || 0;
+          if (item.material_name === stat.name && itemQuantity === stat.quantity) {
+            categoryName = item.material_category_name || '';
+            break;
+          }
+        }
+        if (categoryName) break;
+      }
+    }
+    
     statsData.push([
       categoryName,
       stat.name,
       stat.spec,
-      String(stat.total), // Convert number to string for Excel
+      String(totalQuantity), // Total quantity: quantity per item * count
       stat.unit
     ]);
   }
