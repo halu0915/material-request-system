@@ -392,7 +392,7 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
 
     // Generate filename: 工區名稱+叫料單+日期+(施工類別)
     const workArea = fullRequest.work_area || '未指定工區';
-    const requestDate = new Date(fullRequest.created_at);
+    // Reuse requestDate from above (line 365)
     const dateStr = `${requestDate.getFullYear()}${String(requestDate.getMonth() + 1).padStart(2, '0')}${String(requestDate.getDate()).padStart(2, '0')}`;
     const constructionCategoryName = fullRequest.construction_category_name || '未指定';
     const filename = `${workArea}叫料單_${dateStr}_(${constructionCategoryName}).xlsx`;
