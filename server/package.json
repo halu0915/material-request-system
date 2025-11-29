@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc || exit 0",
+    "build": "tsc || exit 0 && npm run copy:public",
+    "copy:public": "mkdir -p dist/public && cp -r public/* dist/public/ 2>/dev/null || true",
     "start": "node dist/index.js",
     "migrate": "node dist/db/migrate.js"
   },

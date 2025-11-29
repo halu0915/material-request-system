@@ -16,6 +16,18 @@ echo ""
 echo "🔨 步驟 2: 構建後端..."
 cd server && npm run build || echo "⚠️ 後端構建有警告，但繼續..." && cd ..
 
+# 複製 public 目錄到 dist
+echo ""
+echo "📋 步驟 2.5: 複製備用 HTML 文件..."
+if [ -d "server/public" ]; then
+    mkdir -p server/dist/public
+    cp -r server/public/* server/dist/public/ 2>/dev/null || true
+    echo "✅ 備用 HTML 文件已複製到 server/dist/public/"
+    ls -la server/dist/public/ 2>/dev/null || echo "⚠️ 無法列出文件"
+else
+    echo "⚠️ server/public 目錄不存在"
+fi
+
 # 構建前端
 echo ""
 echo "🔨 步驟 3: 構建前端..."
