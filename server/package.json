@@ -10,6 +10,7 @@
     "migrate": "node dist/db/migrate.js"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "@types/pdfkit": "^0.17.4",
     "@types/uuid": "^10.0.0",
     "axios": "^1.6.2",

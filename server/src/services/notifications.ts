@@ -456,7 +456,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
 }
 
 // Generate PDF file with same content as Excel
-// Using simplified layout to avoid Chinese font issues
+// Using simplified layout with proper UTF-8 encoding for Chinese characters
 export async function generatePDF(request: any, companyName?: string, taxId?: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
@@ -475,33 +475,11 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
       doc.on('error', reject);
 
       // Get company info
-      const company = companyName || process.env.COMPANY_NAME || 'Company Name';
-      const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || 'Tax ID: 00000000';
+      const company = companyName || process.env.COMPANY_NAME || '公司名稱';
+      const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || '統編：00000000';
       const workArea = request.work_area || request.construction_category_name || '';
 
-      // Helper function to add text with proper encoding
-      const addText = (text: string, options: any = {}) => {
-        // Use Helvetica which supports basic characters, encode Chinese properly
-        try {
-          doc.font('Helvetica')
-             .fontSize(options.fontSize || 10)
-             .fillColor(options.color || '#000000');
-          if (options.bold) {
-            doc.font('Helvetica-Bold');
-          }
-          if (options.x !== undefined && options.y !== undefined) {
-            doc.text(text, options.x, options.y, options);
-          } else {
-            doc.text(text, options);
-          }
-        } catch (error) {
-          // Fallback: use ASCII representation for Chinese
-          console.warn('Text encoding issue:', error);
-          doc.text(text, options);
-        }
-      };
-
-      // Company header - use larger font
+      // Company header - center aligned
       doc.fontSize(24)
          .font('Helvetica-Bold')
          .text(company, { align: 'center' });
@@ -509,70 +487,74 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
       doc.moveDown(0.5);
       doc.fontSize(18)
          .font('Helvetica-Bold')
-         .text('Tax ID: ' + taxIdNumber.replace('統編：', ''), { align: 'center' });
+         .text(taxIdNumber, { align: 'center' });
       
       doc.moveDown(1.5);
 
-      // Request info section - simplified layout
+      // Request info section
       doc.fontSize(12)
          .font('Helvetica-Bold')
-         .text('Request Information', { underline: true });
+         .text('叫料單資訊', { underline: true });
       
       doc.moveDown(0.5);
       doc.fontSize(10)
          .font('Helvetica');
 
-      // Format info items with labels
-      const infoLabels = {
-        'Request Number': request.request_number,
-        'Created Date': formatDateTimeToMinute(request.created_at),
-        'Applicant': request.applicant_name || 'N/A',
-        'Contact Phone': request.contact_phone || 'N/A',
-        'Delivery Address': request.delivery_address_name ? `${request.delivery_address_name} - ${request.delivery_address || ''}` : 'N/A',
-        'Status': request.status || 'pending'
-      };
+      // Format info items - use Chinese labels but ensure UTF-8 encoding
+      const infoItems = [
+        ['叫料單號', request.request_number],
+        ['建立日期', formatDateTimeToMinute(request.created_at)],
+        ['申請人', request.applicant_name || ''],
+        ['聯繫電話', request.contact_phone || ''],
+        ['送貨地址', request.delivery_address_name ? `${request.delivery_address_name} - ${request.delivery_address || ''}` : ''],
+        ['狀態', request.status || 'pending']
+      ];
 
-      Object.entries(infoLabels).forEach(([label, value]) => {
-        doc.text(`${label}: ${value}`, { indent: 20 });
+      infoItems.forEach(([label, value]) => {
+        // Ensure text is properly encoded
+        const text = `${label}：${value}`;
+        doc.text(text, { indent: 20 });
       });
 
       doc.moveDown(1.5);
 
-      // Materials table - simplified vertical layout
+      // Materials section - simplified list format
       doc.fontSize(12)
          .font('Helvetica-Bold')
-         .text('Material Items', { underline: true });
+         .text('材料項目', { underline: true });
       
       doc.moveDown(0.5);
 
-      // Use a simpler list format instead of complex table
+      // Display items in a clean list format
       let itemNumber = 1;
       for (const item of request.items) {
         doc.fontSize(10)
            .font('Helvetica-Bold')
-           .text(`Item ${itemNumber}:`, { indent: 20 });
+           .text(`項目 ${itemNumber}：`, { indent: 20 });
         
         doc.moveDown(0.3);
         doc.fontSize(9)
            .font('Helvetica')
-           .text(`  Category: ${item.material_category_name || 'N/A'}`, { indent: 30 })
-           .text(`  Name: ${item.material_name || 'N/A'}`, { indent: 30 })
-           .text(`  Specification: ${item.material_specification || 'N/A'}`, { indent: 30 })
-           .text(`  Quantity: ${item.quantity} ${item.unit || item.material_unit || ''}`, { indent: 30 });
+           .text(`  工區：${workArea}`, { indent: 30 })
+           .text(`  施工類別：${request.construction_category_name || ''}`, { indent: 30 })
+           .text(`  材料類別：${item.material_category_name || ''}`, { indent: 30 })
+           .text(`  材料名稱：${item.material_name || ''}`, { indent: 30 })
+           .text(`  材料規格：${item.material_specification || ''}`, { indent: 30 })
+           .text(`  數量：${item.quantity} ${item.unit || item.material_unit || ''}`, { indent: 30 });
         
         if (item.notes) {
-          doc.text(`  Notes: ${item.notes}`, { indent: 30 });
+          doc.text(`  備註：${item.notes}`, { indent: 30 });
         }
         
         if (item.image_url) {
           doc.fillColor('#0066CC')
-             .text(`  Image: ${item.image_url}`, { indent: 30, link: item.image_url });
+             .text(`  圖片：${item.image_url}`, { indent: 30, link: item.image_url });
           doc.fillColor('#000000');
         }
         
         if (item.link_url) {
           doc.fillColor('#0066CC')
-             .text(`  Link: ${item.link_url}`, { indent: 30, link: item.link_url });
+             .text(`  連結：${item.link_url}`, { indent: 30, link: item.link_url });
           doc.fillColor('#000000');
         }
         
@@ -589,7 +571,7 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
       doc.addPage();
       doc.fontSize(18)
          .font('Helvetica-Bold')
-         .text('Monthly Statistics', { align: 'center' });
+         .text('月統計', { align: 'center' });
       
       doc.moveDown(1);
       
@@ -598,7 +580,7 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
       const month = now.getMonth() + 1;
       doc.fontSize(12)
          .font('Helvetica')
-         .text(`Statistics Period: ${year}-${String(month).padStart(2, '0')}`, { align: 'center' });
+         .text(`統計月份：${year}年${month}月`, { align: 'center' });
       
       doc.moveDown(1);
 
@@ -617,10 +599,10 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
         materialStats[key].total += parseFloat(item.quantity) || 0;
       }
 
-      // Display statistics in simple list format
+      // Display statistics
       doc.fontSize(10)
          .font('Helvetica-Bold')
-         .text('Summary:', { indent: 20 });
+         .text('統計摘要：', { indent: 20 });
       
       doc.moveDown(0.5);
       doc.fontSize(9)
@@ -629,7 +611,8 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
       for (const key in materialStats) {
         const stat = materialStats[key];
         const categoryName = key.split('_')[0];
-        doc.text(`  ${categoryName} - ${stat.name} (${stat.spec}): ${stat.total} ${stat.unit}`, { indent: 30 });
+        const summaryText = `${categoryName} - ${stat.name} (${stat.spec})：${stat.total} ${stat.unit}`;
+        doc.text(`  ${summaryText}`, { indent: 30 });
         doc.moveDown(0.3);
         
         if (doc.y > 750) {
