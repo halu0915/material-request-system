@@ -48,19 +48,34 @@ if (process.env.NODE_ENV === 'production') {
     path.join(__dirname, '../../client/dist'), // Relative from server/dist
     path.join(process.cwd(), 'client/dist'), // From project root
     path.join(process.cwd(), '../client/dist'), // Alternative
+    path.join(__dirname, '../../../client/dist'), // Alternative relative path
   ];
+  
+  // Debug: Log current directory and __dirname
+  console.log('🔍 尋找前端構建文件...');
+  console.log('📁 當前工作目錄:', process.cwd());
+  console.log('📁 __dirname:', __dirname);
   
   let clientBuildPath: string | null = null;
   
   // Find the correct path
   for (const possiblePath of possiblePaths) {
     const indexPath = path.join(possiblePath, 'index.html');
-    if (fs.existsSync(possiblePath) && fs.existsSync(indexPath)) {
-      clientBuildPath = possiblePath;
-      console.log(`✅ 找到前端構建文件在: ${clientBuildPath}`);
-      break;
+    const absPath = path.resolve(possiblePath);
+    console.log(`🔍 檢查路徑: ${absPath}`);
+    
+    if (fs.existsSync(possiblePath)) {
+      console.log(`  ✓ 目錄存在`);
+      if (fs.existsSync(indexPath)) {
+        console.log(`  ✓ index.html 存在`);
+        clientBuildPath = possiblePath;
+        console.log(`✅ 找到前端構建文件在: ${absPath}`);
+        break;
+      } else {
+        console.log(`  ✗ index.html 不存在`);
+      }
     } else {
-      console.log(`❌ 檢查路徑: ${possiblePath} (不存在)`);
+      console.log(`  ✗ 目錄不存在`);
     }
   }
   
