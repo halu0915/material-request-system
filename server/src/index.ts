@@ -44,18 +44,34 @@ if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '../../client/dist');
   
   // Check if client build exists before serving
-  if (fs.existsSync(clientBuildPath) && fs.existsSync(path.join(clientBuildPath, 'index.html'))) {
-    app.use(express.static(clientBuildPath));
-    
-    app.get('*', (req, res, next) => {
-      // Don't serve client files for API routes
-      if (req.path.startsWith('/api')) {
-        return next();
-      }
-      res.sendFile(path.join(clientBuildPath, 'index.html'));
-    });
-  } else {
-    // If client build doesn't exist, just show API info
+  try {
+    if (fs.existsSync(clientBuildPath) && fs.existsSync(path.join(clientBuildPath, 'index.html'))) {
+      app.use(express.static(clientBuildPath));
+      
+      app.get('*', (req, res, next) => {
+        // Don't serve client files for API routes
+        if (req.path.startsWith('/api')) {
+          return next();
+        }
+        res.sendFile(path.join(clientBuildPath, 'index.html'));
+      });
+    } else {
+      // If client build doesn't exist, just show API info
+      app.get('/', (req, res) => {
+        res.json({
+          message: '叫料系統 API 服務運行中',
+          version: '1.0.0',
+          status: 'ok',
+          endpoints: {
+            health: '/health',
+            api: '/api',
+            docs: 'API 服務已啟動，前端尚未構建'
+          }
+        });
+      });
+    }
+  } catch (error) {
+    // If there's any error, just show API info
     app.get('/', (req, res) => {
       res.json({
         message: '叫料系統 API 服務運行中',
@@ -63,8 +79,7 @@ if (process.env.NODE_ENV === 'production') {
         status: 'ok',
         endpoints: {
           health: '/health',
-          api: '/api',
-          docs: 'API 服務已啟動，前端尚未構建'
+          api: '/api'
         }
       });
     });
