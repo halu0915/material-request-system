@@ -129,74 +129,79 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     dataRowIndex++; // Move to next item
   }
 
-  // Set column widths optimized for A4 (portrait) - reduced to fit on one page
+  // Set column widths optimized for A4 (portrait) - total width ~109 chars fits A4
   mainSheet['!cols'] = [
-    { wch: 10 }, // 工區
-    { wch: 12 }, // 施工類別
-    { wch: 12 }, // 材料類別
-    { wch: 16 }, // 材料名稱
-    { wch: 14 }, // 材料規格
-    { wch: 7 },  // 單位
-    { wch: 8 },  // 數量
-    { wch: 30 }  // 備註（包含圖片和連結）
+    { wch: 11 }, // 工區
+    { wch: 13 }, // 施工類別
+    { wch: 13 }, // 材料類別
+    { wch: 18 }, // 材料名稱
+    { wch: 15 }, // 材料規格
+    { wch: 8 },  // 單位
+    { wch: 9 },  // 數量
+    { wch: 22 }  // 備註（包含圖片和連結）
   ];
 
-  // Set row heights - optimized for A4 one page
+  // Set row heights - optimized for A4 one page, larger for readability
   const rowHeights: any[] = [
-    { hpt: 24 }, // Company name row
-    { hpt: 20 }, // Tax ID row
-    { hpt: 8 },  // Empty row
-    { hpt: 16 }, // Request info rows
-    { hpt: 16 },
-    { hpt: 16 },
-    { hpt: 16 },
-    { hpt: 16 },
-    { hpt: 8 },  // Empty row
-    { hpt: 20 }  // Header row
+    { hpt: 30 }, // Company name row (increased)
+    { hpt: 24 }, // Tax ID row (increased)
+    { hpt: 6 },  // Empty row (reduced)
+    { hpt: 20 }, // Request info rows (increased for better readability)
+    { hpt: 20 },
+    { hpt: 20 },
+    { hpt: 20 },
+    { hpt: 20 },
+    { hpt: 6 },  // Empty row (reduced)
+    { hpt: 24 }  // Header row (increased)
   ];
   
-  // Add row heights for data rows
+  // Add row heights for data rows - larger for readability
   for (let i = 0; i < request.items.length * 2; i++) {
-    rowHeights.push({ hpt: 15 });
+    rowHeights.push({ hpt: 18 });
   }
   
   mainSheet['!rows'] = rowHeights;
 
-  // Apply styles to cells
-  // Company name - Large, bold, centered
+  // Apply styles to cells - optimized for A4 printing with larger, clearer text
+  // Company name - Large, bold, centered (適中偏大)
   const companyStyle = {
-    font: { name: '標楷體', sz: 24, bold: true, color: { rgb: '000000' } },
+    font: { name: '標楷體', sz: 28, bold: true, color: { rgb: '000000' } },
     alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
     fill: { fgColor: { rgb: 'FFFFFF' } }
   };
   applyCellStyle(mainSheet, 'A1', companyStyle);
 
-  // Tax ID - Large, bold, centered
+  // Tax ID - Large, bold, centered (適中偏大)
   const taxIdStyle = {
-    font: { name: '標楷體', sz: 18, bold: true, color: { rgb: '000000' } },
+    font: { name: '標楷體', sz: 20, bold: true, color: { rgb: '000000' } },
     alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
     fill: { fgColor: { rgb: 'FFFFFF' } }
   };
   applyCellStyle(mainSheet, 'A2', taxIdStyle);
 
-  // Request info labels - Bold
+  // Request info labels - Bold, larger font (適中偏大)
   const labelStyle = {
-    font: { name: '微軟正黑體', sz: 10, bold: true },
+    font: { name: '微軟正黑體', sz: 12, bold: true },
     alignment: { vertical: 'center' },
     fill: { fgColor: { rgb: 'F0F0F0' } }
   };
+  const valueStyle = {
+    font: { name: '微軟正黑體', sz: 12 },
+    alignment: { vertical: 'center', wrapText: true }
+  };
   for (let i = 3; i <= 8; i++) {
     applyCellStyle(mainSheet, `A${i + 1}`, labelStyle);
+    applyCellStyle(mainSheet, `B${i + 1}`, valueStyle);
   }
 
-  // Table header - Bold, centered, with background
+  // Table header - Bold, centered, with background (適中偏大)
   const headerStyle = {
-    font: { name: '微軟正黑體', sz: 10, bold: true, color: { rgb: 'FFFFFF' } },
+    font: { name: '微軟正黑體', sz: 12, bold: true, color: { rgb: 'FFFFFF' } },
     alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
     fill: { fgColor: { rgb: '4472C4' } },
     border: {
-      top: { style: 'thin', color: { rgb: '000000' } },
-      bottom: { style: 'thin', color: { rgb: '000000' } },
+      top: { style: 'medium', color: { rgb: '000000' } },
+      bottom: { style: 'medium', color: { rgb: '000000' } },
       left: { style: 'thin', color: { rgb: '000000' } },
       right: { style: 'thin', color: { rgb: '000000' } }
     }
@@ -207,15 +212,15 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     applyCellStyle(mainSheet, `${col}${headerRow}`, headerStyle);
   });
 
-  // Data rows - Normal style with borders
+  // Data rows - Normal style with borders (適中偏大)
   const dataStyle = {
-    font: { name: '微軟正黑體', sz: 9 },
+    font: { name: '微軟正黑體', sz: 11 },
     alignment: { vertical: 'center', wrapText: true },
     border: {
-      top: { style: 'thin', color: { rgb: 'CCCCCC' } },
-      bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
-      left: { style: 'thin', color: { rgb: 'CCCCCC' } },
-      right: { style: 'thin', color: { rgb: 'CCCCCC' } }
+      top: { style: 'thin', color: { rgb: '666666' } },
+      bottom: { style: 'thin', color: { rgb: '666666' } },
+      left: { style: 'thin', color: { rgb: '666666' } },
+      right: { style: 'thin', color: { rgb: '666666' } }
     }
   };
   const numRows = mainData.length;
@@ -225,13 +230,14 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     });
   }
 
-  // Center align quantity column
-  const quantityStyle = {
+  // Center align quantity and unit columns
+  const centerStyle = {
     ...dataStyle,
     alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
   };
   for (let r = headerRow + 1; r <= numRows; r++) {
-    applyCellStyle(mainSheet, `G${r}`, quantityStyle);
+    applyCellStyle(mainSheet, `F${r}`, centerStyle); // 單位
+    applyCellStyle(mainSheet, `G${r}`, centerStyle); // 數量
   }
 
   // Merge cells for company header
@@ -239,12 +245,12 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   mainSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }); // Company name (span all 8 columns)
   mainSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }); // Tax ID (span all 8 columns)
 
-  // Set A4 page setup (portrait)
+  // Set A4 page setup (portrait) - optimized for printing
   mainSheet['!margins'] = {
-    left: 0.7,
-    right: 0.7,
-    top: 0.75,
-    bottom: 0.75,
+    left: 0.5,    // Reduced margins for more content space
+    right: 0.5,
+    top: 0.5,
+    bottom: 0.5,
     header: 0.3,
     footer: 0.3
   };
@@ -252,9 +258,11 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     paperSize: 9, // A4
     orientation: 'portrait',
     fitToPage: true,
-    fitToWidth: 1,
-    fitToHeight: 0,
-    scale: 100
+    fitToWidth: 1,  // Fit to 1 page wide
+    fitToHeight: 0, // Auto height (fit all content)
+    scale: 100,     // 100% scale for clear printing
+    horizontalDpi: 600,
+    verticalDpi: 600
   };
 
   XLSX.utils.book_append_sheet(workbook, mainSheet, '叫料單');
