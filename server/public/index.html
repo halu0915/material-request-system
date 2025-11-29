@@ -108,7 +108,8 @@
                     localStorage.setItem('token', data.token);
                     statusEl.innerHTML = '✅ 訪客帳號創建成功，正在跳轉...';
                     setTimeout(() => {
-                        window.location.href = '/';
+                        // Check if we're on backup HTML, redirect to dashboard.html
+                        window.location.href = '/dashboard.html';
                     }, 1000);
                 } else {
                     throw new Error('創建訪客帳號失敗');
@@ -130,7 +131,8 @@
                 })
                 .then(res => {
                     if (res.ok) {
-                        window.location.href = '/';
+                        // Check if we're on backup HTML, redirect to dashboard.html
+                        window.location.href = '/dashboard.html';
                     }
                 })
                 .catch(() => {

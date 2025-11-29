@@ -94,11 +94,39 @@ if (process.env.NODE_ENV === 'production') {
       console.warn('📋 將使用備用 HTML 頁面');
       console.log('✅ 備用 HTML 頁面已設置:', publicPath);
       
-      // Serve backup HTML for all non-API routes (BEFORE static files)
+      // Serve backup HTML for specific routes
+      app.get('/', (req, res) => {
+        // Check if user has token, redirect to dashboard
+        const token = req.headers.authorization?.replace('Bearer ', '') || 
+                     req.query.token as string;
+        if (token) {
+          const dashboardPath = path.join(publicPath, 'dashboard.html');
+          if (fs.existsSync(dashboardPath)) {
+            return res.sendFile(dashboardPath);
+          }
+        }
+        // Otherwise serve login page
+        const backupHtml = path.join(publicPath, 'index.html');
+        res.sendFile(backupHtml);
+      });
+
+      app.get('/dashboard.html', (req, res) => {
+        const dashboardPath = path.join(publicPath, 'dashboard.html');
+        res.sendFile(dashboardPath);
+      });
+
+      // Serve backup HTML for login and other routes
+      app.get('/login', (req, res) => {
+        const backupHtml = path.join(publicPath, 'index.html');
+        res.sendFile(backupHtml);
+      });
+
+      // Fallback for all other routes
       app.get('*', (req, res, next) => {
         if (req.path.startsWith('/api') || req.path === '/health') {
           return next();
         }
+        // Default to login page
         const backupHtml = path.join(publicPath, 'index.html');
         res.sendFile(backupHtml, (err) => {
           if (err) {
