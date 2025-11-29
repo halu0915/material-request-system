@@ -981,6 +981,36 @@
             }
         }
 
+        // Send email for request
+        async function sendRequestEmail(id) {
+            if (!confirm('確定要發送郵件嗎？')) return;
+            
+            const companyName = prompt('請輸入公司名稱（可選，留空使用預設值）：') || '';
+            const taxId = prompt('請輸入統編（可選，留空使用預設值）：') || '';
+            
+            try {
+                const params = new URLSearchParams();
+                if (companyName) params.append('company_name', companyName);
+                if (taxId) params.append('tax_id', taxId);
+                
+                const url = `/api/requests/${id}/send-email${params.toString() ? '?' + params.toString() : ''}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(`✅ ${data.message}\n收件人：${data.recipients.join(', ')}`);
+                } else {
+                    const error = await response.json();
+                    alert('發送失敗：' + (error.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('發送失敗：' + error.message);
+            }
+        }
+
         // Download Excel for request
         async function downloadRequestExcel(id) {
             const companyName = prompt('請輸入公司名稱（可選，留空使用預設值）：') || '';
@@ -1006,6 +1036,7 @@
                     a.click();
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(downloadUrl);
+                    alert('✅ Excel 檔案下載成功！');
                 } else {
                     alert('下載失敗');
                 }
