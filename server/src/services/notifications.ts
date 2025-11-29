@@ -3,6 +3,9 @@ import nodemailer from 'nodemailer';
 import axios from 'axios';
 import { google } from 'googleapis';
 import PDFDocument from 'pdfkit';
+import puppeteer from 'puppeteer';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Helper function to format datetime to minute (without seconds)
 function formatDateTimeToMinute(dateString: string): string {
@@ -455,9 +458,271 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   return buffer;
 }
 
+// Generate HTML template for PDF
+function generatePDFHTML(request: any, companyName?: string, taxId?: string): string {
+  const company = companyName || process.env.COMPANY_NAME || '公司名稱';
+  const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || '統編：00000000';
+  const workArea = request.work_area || request.construction_category_name || '';
+  
+  const now = new Date(request.created_at);
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  // Group items by material for statistics
+  const materialStats: { [key: string]: { name: string; spec: string; unit: string; total: number } } = {};
+  for (const item of request.items) {
+    const key = `${item.material_category_name || ''}_${item.material_name || ''}`;
+    if (!materialStats[key]) {
+      materialStats[key] = {
+        name: item.material_name || '',
+        spec: item.material_specification || '',
+        unit: item.unit || item.material_unit || '',
+        total: 0
+      };
+    }
+    materialStats[key].total += parseFloat(item.quantity) || 0;
+  }
+
+  let itemsHTML = '';
+  request.items.forEach((item: any, index: number) => {
+    itemsHTML += `
+      <tr>
+        <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${index + 1}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${workArea}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${request.construction_category_name || ''}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${item.material_category_name || ''}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${item.material_name || ''}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${item.material_specification || ''}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${item.unit || item.material_unit || ''}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${item.quantity}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${item.notes || ''}</td>
+      </tr>
+      ${(item.image_url || item.link_url) ? `
+      <tr style="background-color: #f0f8ff;">
+        <td colspan="9" style="padding: 8px; border: 1px solid #ddd; font-size: 9px; color: #0066cc;">
+          ${item.image_url ? `圖片：<a href="${item.image_url}" style="color: #0066cc;">${item.image_url}</a>` : ''}
+          ${item.image_url && item.link_url ? ' | ' : ''}
+          ${item.link_url ? `連結：<a href="${item.link_url}" style="color: #0066cc;">${item.link_url}</a>` : ''}
+        </td>
+      </tr>
+      ` : ''}
+    `;
+  });
+
+  let statsHTML = '';
+  Object.keys(materialStats).forEach((key) => {
+    const stat = materialStats[key];
+    const categoryName = key.split('_')[0];
+    statsHTML += `
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">${categoryName}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${stat.name}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${stat.spec}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${stat.total}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${stat.unit}</td>
+      </tr>
+    `;
+  });
+
+  return `
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>叫料單 - ${request.request_number}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1cm;
+    }
+    body {
+      font-family: 'Microsoft YaHei', '微軟正黑體', 'SimHei', '黑體', Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .company-name {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .tax-id {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .section {
+      margin-bottom: 25px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #4472C4;
+      padding-bottom: 5px;
+    }
+    .info-item {
+      margin: 5px 0;
+      padding-left: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 10px;
+    }
+    th {
+      background-color: #4472C4;
+      color: white;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #000;
+      font-weight: bold;
+    }
+    td {
+      padding: 8px;
+      border: 1px solid #666;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+    a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="company-name">${company}</div>
+    <div class="tax-id">${taxIdNumber}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">叫料單資訊</div>
+    <div class="info-item">叫料單號：${request.request_number}</div>
+    <div class="info-item">建立日期：${formatDateTimeToMinute(request.created_at)}</div>
+    <div class="info-item">申請人：${request.applicant_name || ''}</div>
+    <div class="info-item">聯繫電話：${request.contact_phone || ''}</div>
+    <div class="info-item">送貨地址：${request.delivery_address_name ? `${request.delivery_address_name} - ${request.delivery_address || ''}` : ''}</div>
+    <div class="info-item">狀態：${request.status || 'pending'}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">材料項目</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 5%;">序號</th>
+          <th style="width: 10%;">工區</th>
+          <th style="width: 12%;">施工類別</th>
+          <th style="width: 12%;">材料類別</th>
+          <th style="width: 15%;">材料名稱</th>
+          <th style="width: 12%;">材料規格</th>
+          <th style="width: 8%;">單位</th>
+          <th style="width: 8%;">數量</th>
+          <th style="width: 18%;">備註</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsHTML}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section page-break">
+    <div class="section-title">月統計</div>
+    <div style="text-align: center; margin-bottom: 15px; font-size: 14px;">
+      統計月份：${year}年${month}月
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 20%;">材料類別</th>
+          <th style="width: 25%;">材料名稱</th>
+          <th style="width: 25%;">材料規格</th>
+          <th style="width: 15%;">總數量</th>
+          <th style="width: 15%;">單位</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${statsHTML}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
+  `;
+}
+
+// Generate PDF using Puppeteer (preferred method for Chinese support)
+async function generatePDFWithPuppeteer(request: any, companyName?: string, taxId?: string): Promise<Buffer> {
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ]
+    });
+
+    const page = await browser.newPage();
+    const html = generatePDFHTML(request, companyName, taxId);
+    
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      margin: {
+        top: '1cm',
+        right: '1cm',
+        bottom: '1cm',
+        left: '1cm'
+      },
+      printBackground: true,
+      preferCSSPageSize: true
+    });
+
+    await browser.close();
+    return Buffer.from(pdfBuffer);
+  } catch (error) {
+    if (browser) {
+      await browser.close();
+    }
+    throw error;
+  }
+}
+
 // Generate PDF file with same content as Excel
-// Using simplified layout with proper UTF-8 encoding for Chinese characters
+// Try Puppeteer first (supports Chinese), fallback to PDFKit with font registration
 export async function generatePDF(request: any, companyName?: string, taxId?: string): Promise<Buffer> {
+  // Try Puppeteer first (best Chinese support)
+  try {
+    console.log('嘗試使用 Puppeteer 生成 PDF...');
+    return await generatePDFWithPuppeteer(request, companyName, taxId);
+  } catch (puppeteerError) {
+    console.warn('Puppeteer 生成 PDF 失敗，嘗試使用 PDFKit:', puppeteerError);
+    
+    // Fallback to PDFKit with Chinese font registration
+    return generatePDFWithPDFKit(request, companyName, taxId);
+  }
+}
+
+// Generate PDF using PDFKit with Chinese font support
+async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
@@ -1106,7 +1371,7 @@ export async function sendEmail(options: {
 
     // Add attachments (Excel and PDF)
     const attachments: any[] = [];
-    
+
     if (options.excelBuffer) {
       const excelFilename = options.filename || `${options.request.request_number}.xlsx`;
       attachments.push({
