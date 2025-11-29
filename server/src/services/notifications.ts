@@ -14,7 +14,7 @@ function applyCellStyle(sheet: any, cellAddress: string, style: any) {
 // Generate Excel file with company header and A4 formatting
 export async function generateExcel(request: any, companyName?: string, taxId?: string, monthlyRequests?: any[]): Promise<Buffer> {
   const workbook = XLSX.utils.book_new();
-  
+
   // Get company info from environment or use defaults
   const company = companyName || process.env.COMPANY_NAME || '公司名稱';
   const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || '統編：00000000';
@@ -29,16 +29,20 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     // Request info
     ['叫料單號', request.request_number],
     ['建立日期', new Date(request.created_at).toLocaleString('zh-TW')],
+    ['申請人', request.applicant_name || ''],
+    ['聯繫電話', request.contact_phone || ''],
     ['工區', workArea],
     ['施工類別', request.construction_category_name || ''],
+    ['送貨地址', request.delivery_address || ''],
     ['狀態', request.status],
     [],
-    // Table header
-    ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註', '圖片', '連結']
+    // Table header (without image and link columns - they will be added vertically)
+    ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註']
   ];
 
-  // Add material items
+  // Add material items with image and link in separate rows below each item
   for (const item of request.items) {
+    // Main item row
     mainData.push([
       workArea,
       request.construction_category_name || '',
@@ -47,72 +51,109 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       item.material_specification || '',
       item.unit || item.material_unit || '',
       item.quantity,
-      item.notes || '',
-      item.image_url || '',
-      item.link_url || ''
+      item.notes || ''
     ]);
+    
+    // Add image and link rows below the item (vertical layout)
+    if (item.image_url || item.link_url) {
+      const imageLinkRow = ['', '', '', '', '', '', '', ''];
+      if (item.image_url) {
+        imageLinkRow[7] = `圖片：${item.image_url}`;
+      }
+      if (item.link_url) {
+        imageLinkRow[7] += (item.image_url ? ' | ' : '') + `連結：${item.link_url}`;
+      }
+      mainData.push(imageLinkRow);
+    }
   }
 
   const mainSheet = XLSX.utils.aoa_to_sheet(mainData);
   
-  // Add hyperlinks for image_url and link_url columns
-  // Header row is row 10 (0-based index 9), data starts from row 11 (index 10)
-  const headerRowIndex = 9; // 0-based index for row 10
-  let dataRowIndex = headerRowIndex + 1; // Start from first data row (row 11)
+  // Add hyperlinks for image_url and link_url in the notes column (column H, index 7)
+  // Header row is row 12 (0-based index 11), data starts from row 13 (index 12)
+  const headerRowIndex = 11; // 0-based index for row 12
+  let dataRowIndex = headerRowIndex + 1; // Start from first data row (row 13)
   
   for (const item of request.items) {
-    // Add hyperlink for image_url (column I, index 8)
-    if (item.image_url) {
-      const cellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 8 });
-      if (!mainSheet[cellAddress]) {
-        mainSheet[cellAddress] = { t: 's', v: '' };
+    // Add hyperlinks in the notes column (column H) for image and link
+    if (item.image_url || item.link_url) {
+      const notesCellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 7 }); // Column H (index 7)
+      if (!mainSheet[notesCellAddress]) {
+        mainSheet[notesCellAddress] = { t: 's', v: '' };
       }
-      mainSheet[cellAddress].l = { Target: item.image_url, Tooltip: '查看圖片' };
-      mainSheet[cellAddress].v = '查看圖片';
-      mainSheet[cellAddress].t = 's'; // String type
+      
+      // If there's an image link row below, add hyperlinks there
+      if (item.image_url || item.link_url) {
+        dataRowIndex++; // Move to the image/link row
+        const linkRowCellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 7 }); // Column H
+        
+        if (item.image_url) {
+          const imageCellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 7 });
+          if (!mainSheet[imageCellAddress]) {
+            mainSheet[imageCellAddress] = { t: 's', v: '' };
+          }
+          mainSheet[imageCellAddress].l = { Target: item.image_url, Tooltip: '查看圖片' };
+          mainSheet[imageCellAddress].v = '查看圖片';
+          mainSheet[imageCellAddress].t = 's';
+        }
+        
+        if (item.link_url) {
+          const linkCellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 7 });
+          if (!mainSheet[linkCellAddress]) {
+            mainSheet[linkCellAddress] = { t: 's', v: '' };
+          }
+          // If image already exists, append link text
+          if (item.image_url && mainSheet[linkCellAddress].v) {
+            mainSheet[linkCellAddress].v += ' | ';
+          }
+          mainSheet[linkCellAddress].l = { Target: item.link_url, Tooltip: '開啟連結' };
+          if (!item.image_url) {
+            mainSheet[linkCellAddress].v = '開啟連結';
+          } else {
+            mainSheet[linkCellAddress].v = (mainSheet[linkCellAddress].v || '查看圖片') + ' | 開啟連結';
+          }
+          mainSheet[linkCellAddress].t = 's';
+        }
+      }
     }
     
-    // Add hyperlink for link_url (column J, index 9)
-    if (item.link_url) {
-      const cellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 9 });
-      if (!mainSheet[cellAddress]) {
-        mainSheet[cellAddress] = { t: 's', v: '' };
-      }
-      mainSheet[cellAddress].l = { Target: item.link_url, Tooltip: '開啟連結' };
-      mainSheet[cellAddress].v = '開啟連結';
-      mainSheet[cellAddress].t = 's'; // String type
-    }
-    
-    dataRowIndex++;
+    dataRowIndex++; // Move to next item
   }
 
-  // Set column widths optimized for A4 (portrait)
+  // Set column widths optimized for A4 (portrait) - reduced to fit on one page
   mainSheet['!cols'] = [
-    { wch: 12 }, // 工區
-    { wch: 14 }, // 施工類別
-    { wch: 14 }, // 材料類別
-    { wch: 18 }, // 材料名稱
-    { wch: 16 }, // 材料規格
-    { wch: 8 },  // 單位
-    { wch: 10 }, // 數量
-    { wch: 25 }, // 備註
-    { wch: 30 }, // 圖片
-    { wch: 30 }  // 連結
+    { wch: 10 }, // 工區
+    { wch: 12 }, // 施工類別
+    { wch: 12 }, // 材料類別
+    { wch: 16 }, // 材料名稱
+    { wch: 14 }, // 材料規格
+    { wch: 7 },  // 單位
+    { wch: 8 },  // 數量
+    { wch: 30 }  // 備註（包含圖片和連結）
   ];
 
-  // Set row heights
-  mainSheet['!rows'] = [
-    { hpt: 30 }, // Company name row
-    { hpt: 24 }, // Tax ID row
-    { hpt: 12 }, // Empty row
-    { hpt: 18 }, // Request info rows
-    { hpt: 18 },
-    { hpt: 18 },
-    { hpt: 18 },
-    { hpt: 18 },
-    { hpt: 12 }, // Empty row
-    { hpt: 22 }  // Header row
+  // Set row heights - optimized for A4 one page
+  const rowHeights: any[] = [
+    { hpt: 24 }, // Company name row
+    { hpt: 20 }, // Tax ID row
+    { hpt: 8 },  // Empty row
+    { hpt: 16 }, // Request info rows
+    { hpt: 16 },
+    { hpt: 16 },
+    { hpt: 16 },
+    { hpt: 16 },
+    { hpt: 16 },
+    { hpt: 16 },
+    { hpt: 8 },  // Empty row
+    { hpt: 20 }  // Header row
   ];
+  
+  // Add row heights for data rows
+  for (let i = 0; i < request.items.length * 2; i++) {
+    rowHeights.push({ hpt: 15 });
+  }
+  
+  mainSheet['!rows'] = rowHeights;
 
   // Apply styles to cells
   // Company name - Large, bold, centered
@@ -133,17 +174,17 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
 
   // Request info labels - Bold
   const labelStyle = {
-    font: { name: '微軟正黑體', sz: 11, bold: true },
+    font: { name: '微軟正黑體', sz: 10, bold: true },
     alignment: { vertical: 'center' },
     fill: { fgColor: { rgb: 'F0F0F0' } }
   };
-  for (let i = 3; i <= 7; i++) {
+  for (let i = 3; i <= 10; i++) {
     applyCellStyle(mainSheet, `A${i + 1}`, labelStyle);
   }
 
   // Table header - Bold, centered, with background
   const headerStyle = {
-    font: { name: '微軟正黑體', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+    font: { name: '微軟正黑體', sz: 10, bold: true, color: { rgb: 'FFFFFF' } },
     alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
     fill: { fgColor: { rgb: '4472C4' } },
     border: {
@@ -153,15 +194,15 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       right: { style: 'thin', color: { rgb: '000000' } }
     }
   };
-  const headerRow = 10; // Row index 9 (0-based) = row 10
-  const headerCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+  const headerRow = 12; // Row index 11 (0-based) = row 12
+  const headerCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
   headerCols.forEach((col, idx) => {
     applyCellStyle(mainSheet, `${col}${headerRow}`, headerStyle);
   });
 
   // Data rows - Normal style with borders
   const dataStyle = {
-    font: { name: '微軟正黑體', sz: 10 },
+    font: { name: '微軟正黑體', sz: 9 },
     alignment: { vertical: 'center', wrapText: true },
     border: {
       top: { style: 'thin', color: { rgb: 'CCCCCC' } },
@@ -188,8 +229,8 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
 
   // Merge cells for company header
   if (!mainSheet['!merges']) mainSheet['!merges'] = [];
-  mainSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 9 } }); // Company name (span all 10 columns)
-  mainSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 9 } }); // Tax ID (span all 10 columns)
+  mainSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }); // Company name (span all 8 columns)
+  mainSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }); // Tax ID (span all 8 columns)
 
   // Set A4 page setup (portrait)
   mainSheet['!margins'] = {
@@ -752,11 +793,11 @@ export async function sendEmail(options: {
         
         <div style="margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 5px;">
           <h3 style="margin-top: 0; color: #4472C4;">叫料單資訊</h3>
-          <p><strong>叫料單號：</strong>${options.request.request_number}</p>
-          <p><strong>建立日期：</strong>${new Date(options.request.created_at).toLocaleString('zh-TW')}</p>
+      <p><strong>叫料單號：</strong>${options.request.request_number}</p>
+      <p><strong>建立日期：</strong>${new Date(options.request.created_at).toLocaleString('zh-TW')}</p>
           <p><strong>工區：</strong>${options.request.work_area || '未指定'}</p>
           <p><strong>施工類別：</strong>${options.request.construction_category_name || '未指定'}</p>
-          ${options.request.notes ? `<p><strong>備註：</strong>${options.request.notes}</p>` : ''}
+      ${options.request.notes ? `<p><strong>備註：</strong>${options.request.notes}</p>` : ''}
         </div>
         
         <h3 style="color: #4472C4;">採購清單</h3>
@@ -769,7 +810,7 @@ export async function sendEmail(options: {
               <th style="padding: 10px; text-align: right;">數量</th>
               <th style="padding: 10px; text-align: left;">單位</th>
               <th style="padding: 10px; text-align: left;">備註</th>
-            </tr>
+        </tr>
           </thead>
           <tbody>
     `;
@@ -809,21 +850,21 @@ export async function sendEmail(options: {
         fromAddress = `"${displayName}" <${fromAddress}>`;
       }
 
-      const mailOptions: any = {
+    const mailOptions: any = {
         from: fromAddress,
         to: recipient,
         subject: subject,
-        html: html
-      };
+      html: html
+    };
 
-      if (options.excelBuffer) {
-        mailOptions.attachments = [{
+    if (options.excelBuffer) {
+      mailOptions.attachments = [{
           filename: options.filename || `${options.request.request_number}.xlsx`,
-          content: options.excelBuffer
-        }];
-      }
+        content: options.excelBuffer
+      }];
+    }
 
-      await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
       console.log('郵件發送成功:', recipient);
     }
   } catch (error: any) {

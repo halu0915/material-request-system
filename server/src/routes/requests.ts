@@ -108,7 +108,7 @@ async function generateRequestNumber(): Promise<string> {
 // Create material request
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { construction_category_id, items, notes, work_area } = req.body;
+    const { construction_category_id, items, notes, work_area, applicant_name, contact_phone, delivery_address_id } = req.body;
 
     if (!construction_category_id || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: '施工類別和材料項目必填' });
@@ -127,9 +127,18 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       // Create request
       const requestResult = await client.query(
         `INSERT INTO material_requests 
-         (user_id, request_number, construction_category_id, notes, status, work_area)
-         VALUES ($1, $2, $3, $4, 'pending', $5) RETURNING *`,
-        [req.user?.id, requestNumber, construction_category_id, notes || null, work_area || null]
+         (user_id, request_number, construction_category_id, notes, status, work_area, applicant_name, contact_phone, delivery_address_id)
+         VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8) RETURNING *`,
+        [
+          req.user?.id, 
+          requestNumber, 
+          construction_category_id, 
+          notes || null, 
+          work_area || null,
+          applicant_name || null,
+          contact_phone || null,
+          delivery_address_id || null
+        ]
       );
 
       const request = requestResult.rows[0];
@@ -535,10 +544,15 @@ async function getFullRequest(requestId: number) {
       mr.*,
       cc.name as construction_category_name,
       u.name as user_name,
-      u.email as user_email
+      u.email as user_email,
+      da.name as delivery_address_name,
+      da.address as delivery_address,
+      da.contact_person as delivery_contact_person,
+      da.contact_phone as delivery_contact_phone
     FROM material_requests mr
     LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
     LEFT JOIN users u ON mr.user_id = u.id
+    LEFT JOIN delivery_addresses da ON mr.delivery_address_id = da.id
     WHERE mr.id = $1`,
     [requestId]
   );

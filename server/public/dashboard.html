@@ -545,12 +545,27 @@
             </div>
             <form id="request-form" onsubmit="saveRequest(event)">
                 <div class="form-group">
+                    <label>申請人 *</label>
+                    <input type="text" id="request-applicant-name" placeholder="請輸入申請人姓名" required>
+                </div>
+                <div class="form-group">
+                    <label>聯繫電話 *</label>
+                    <input type="tel" id="request-contact-phone" placeholder="請輸入聯繫電話" required>
+                </div>
+                <div class="form-group">
                     <label>工區 *</label>
                     <input type="text" id="request-work-area" placeholder="例如：A區、B區" required>
                 </div>
                 <div class="form-group">
                     <label>施工類別 *</label>
                     <select id="request-construction-category" required></select>
+                </div>
+                <div class="form-group">
+                    <label>送貨地址 *</label>
+                    <select id="request-delivery-address" required>
+                        <option value="">請選擇送貨地址</option>
+                    </select>
+                    <button type="button" class="btn-secondary btn-small" onclick="manageAddresses()" style="margin-top: 5px;">管理地址</button>
                 </div>
                 <div class="form-group">
                     <label>備註</label>
@@ -1125,6 +1140,9 @@
                 return;
             }
             
+            // Load delivery addresses
+            await loadDeliveryAddresses();
+            
             // Load materials
             try {
                 const matRes = await fetch('/api/materials', { headers: getHeaders() });
@@ -1445,8 +1463,11 @@
         async function saveRequest(e) {
             e.preventDefault();
             
+            const applicant_name = document.getElementById('request-applicant-name').value;
+            const contact_phone = document.getElementById('request-contact-phone').value;
             const work_area = document.getElementById('request-work-area').value;
             const construction_category_id = parseInt(document.getElementById('request-construction-category').value);
+            const delivery_address_id = parseInt(document.getElementById('request-delivery-address').value) || null;
             const notes = document.getElementById('request-notes').value || null;
             
             const items = [];
@@ -1481,8 +1502,11 @@
                     method: 'POST',
                     headers: getHeaders(),
                     body: JSON.stringify({
+                        applicant_name,
+                        contact_phone,
                         work_area,
                         construction_category_id,
+                        delivery_address_id,
                         items,
                         notes
                     })
@@ -1498,6 +1522,201 @@
                 }
             } catch (error) {
                 alert('建立失敗：' + error.message);
+            }
+        }
+        
+        // Load delivery addresses
+        async function loadDeliveryAddresses() {
+            try {
+                const response = await fetch('/api/addresses', {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const addressSelect = document.getElementById('request-delivery-address');
+                    addressSelect.innerHTML = '<option value="">請選擇送貨地址</option>';
+                    
+                    data.addresses.forEach(addr => {
+                        const option = document.createElement('option');
+                        option.value = addr.id;
+                        option.textContent = `${addr.name}${addr.is_default ? ' (預設)' : ''}`;
+                        addressSelect.appendChild(option);
+                    });
+                    
+                    // Set default address if exists
+                    const defaultAddr = data.addresses.find(a => a.is_default);
+                    if (defaultAddr) {
+                        addressSelect.value = defaultAddr.id;
+                    }
+                    
+                    return data.addresses;
+                }
+            } catch (error) {
+                console.error('載入地址失敗:', error);
+            }
+            return [];
+        }
+        
+        // Manage addresses
+        async function manageAddresses() {
+            document.getElementById('address-manage-modal').style.display = 'block';
+            await loadAddresses();
+        }
+        
+        // Load addresses for management
+        async function loadAddresses() {
+            const content = document.getElementById('address-list-content');
+            content.innerHTML = '<div class="loading">載入中...</div>';
+            
+            try {
+                const response = await fetch('/api/addresses', {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayAddressList(data.addresses || []);
+                } else {
+                    content.innerHTML = '<div class="alert alert-error">無法載入地址資料</div>';
+                }
+            } catch (error) {
+                content.innerHTML = '<div class="alert alert-error">載入失敗：' + error.message + '</div>';
+            }
+        }
+        
+        function displayAddressList(addresses) {
+            const content = document.getElementById('address-list-content');
+            
+            if (addresses.length === 0) {
+                content.innerHTML = '<div class="empty-state">尚無地址，請點擊「新增地址」</div>';
+                return;
+            }
+            
+            let html = '<table><thead><tr><th>名稱</th><th>地址</th><th>聯絡人</th><th>聯絡電話</th><th>預設</th><th>操作</th></tr></thead><tbody>';
+            
+            addresses.forEach(addr => {
+                html += `
+                    <tr>
+                        <td>${addr.name}${addr.is_default ? ' <span style="color: #667eea;">(預設)</span>' : ''}</td>
+                        <td>${addr.address}</td>
+                        <td>${addr.contact_person || '-'}</td>
+                        <td>${addr.contact_phone || '-'}</td>
+                        <td>${addr.is_default ? '是' : '否'}</td>
+                        <td>
+                            <button class="btn-secondary btn-small" onclick="editAddress(${addr.id})" style="margin-right: 5px;">編輯</button>
+                            <button class="btn-danger btn-small" onclick="deleteAddress(${addr.id})">刪除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        }
+        
+        // Show add address form
+        function showAddAddressForm() {
+            document.getElementById('address-modal-title').textContent = '新增地址';
+            document.getElementById('address-form').reset();
+            document.getElementById('address-id').value = '';
+            document.getElementById('address-is-default').checked = false;
+            document.getElementById('address-modal').style.display = 'block';
+        }
+        
+        // Edit address
+        async function editAddress(id) {
+            try {
+                const response = await fetch('/api/addresses', {
+                    headers: getHeaders()
+                });
+                
+                if (!response.ok) {
+                    alert('無法載入地址資料');
+                    return;
+                }
+                
+                const data = await response.json();
+                const addr = data.addresses.find(a => a.id == id);
+                
+                if (!addr) {
+                    alert('找不到地址資料');
+                    return;
+                }
+                
+                document.getElementById('address-modal-title').textContent = '編輯地址';
+                document.getElementById('address-id').value = addr.id;
+                document.getElementById('address-name').value = addr.name;
+                document.getElementById('address-address').value = addr.address;
+                document.getElementById('address-contact-person').value = addr.contact_person || '';
+                document.getElementById('address-contact-phone').value = addr.contact_phone || '';
+                document.getElementById('address-is-default').checked = addr.is_default || false;
+                
+                document.getElementById('address-modal').style.display = 'block';
+            } catch (error) {
+                alert('載入地址資料失敗：' + error.message);
+            }
+        }
+        
+        // Delete address
+        async function deleteAddress(id) {
+            if (!confirm('確定要刪除此地址嗎？如果此地址已被使用，將無法刪除。')) return;
+            
+            try {
+                const response = await fetch(`/api/addresses/${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    await loadAddresses();
+                    await loadDeliveryAddresses(); // Refresh dropdown
+                } else {
+                    const error = await response.json();
+                    alert('刪除失敗：' + (error.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('刪除失敗：' + error.message);
+            }
+        }
+        
+        // Save address
+        async function saveAddress(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('address-id').value;
+            const name = document.getElementById('address-name').value;
+            const address = document.getElementById('address-address').value;
+            const contact_person = document.getElementById('address-contact-person').value || null;
+            const contact_phone = document.getElementById('address-contact-phone').value || null;
+            const is_default = document.getElementById('address-is-default').checked;
+            
+            let endpoint = '/api/addresses';
+            let method = 'POST';
+            
+            if (id) {
+                endpoint += `/${id}`;
+                method = 'PUT';
+            }
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: method,
+                    headers: getHeaders(),
+                    body: JSON.stringify({ name, address, contact_person, contact_phone, is_default })
+                });
+                
+                if (response.ok) {
+                    closeModal('address-modal');
+                    await loadAddresses();
+                    await loadDeliveryAddresses(); // Refresh dropdown
+                    alert(id ? '地址更新成功！' : '地址建立成功！');
+                } else {
+                    const error = await response.json();
+                    alert('儲存失敗：' + (error.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('儲存失敗：' + error.message);
             }
         }
 
@@ -1596,12 +1815,24 @@
                     <p>${request.request_number}</p>
                 </div>
                 <div class="form-group">
+                    <label>申請人</label>
+                    <p>${request.applicant_name || '-'}</p>
+                </div>
+                <div class="form-group">
+                    <label>聯繫電話</label>
+                    <p>${request.contact_phone || '-'}</p>
+                </div>
+                <div class="form-group">
                     <label>工區</label>
                     <p>${request.work_area || '-'}</p>
                 </div>
                 <div class="form-group">
                     <label>施工類別</label>
                     <p>${request.construction_category_name || '-'}</p>
+                </div>
+                <div class="form-group">
+                    <label>送貨地址</label>
+                    <p>${request.delivery_address_name || '-'}${request.delivery_address ? '<br>' + request.delivery_address : ''}</p>
                 </div>
                 <div class="form-group">
                     <label>狀態</label>

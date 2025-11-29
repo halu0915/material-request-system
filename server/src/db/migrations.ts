@@ -88,6 +88,26 @@ export const createTables = async (): Promise<void> => {
       END $$;
     `);
 
+    // Delivery addresses table (create before material_requests to avoid foreign key issues)
+    await query(`
+      CREATE TABLE IF NOT EXISTS delivery_addresses (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        address TEXT NOT NULL,
+        contact_person VARCHAR(255),
+        contact_phone VARCHAR(50),
+        is_default BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Create index for delivery addresses
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_delivery_addresses_user_id ON delivery_addresses(user_id);
+    `);
+
     // Material requests table
     await query(`
       CREATE TABLE IF NOT EXISTS material_requests (
@@ -96,6 +116,9 @@ export const createTables = async (): Promise<void> => {
         request_number VARCHAR(100) UNIQUE NOT NULL,
         construction_category_id INTEGER REFERENCES construction_categories(id),
         work_area VARCHAR(255),
+        applicant_name VARCHAR(255),
+        contact_phone VARCHAR(50),
+        delivery_address_id INTEGER REFERENCES delivery_addresses(id),
         status VARCHAR(50) DEFAULT 'pending',
         notes TEXT,
         excel_file_url VARCHAR(500),
@@ -117,7 +140,45 @@ export const createTables = async (): Promise<void> => {
         ) THEN
           ALTER TABLE material_requests ADD COLUMN work_area VARCHAR(255);
         END IF;
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'material_requests' AND column_name = 'applicant_name'
+        ) THEN
+          ALTER TABLE material_requests ADD COLUMN applicant_name VARCHAR(255);
+        END IF;
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'material_requests' AND column_name = 'contact_phone'
+        ) THEN
+          ALTER TABLE material_requests ADD COLUMN contact_phone VARCHAR(50);
+        END IF;
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'material_requests' AND column_name = 'delivery_address_id'
+        ) THEN
+          ALTER TABLE material_requests ADD COLUMN delivery_address_id INTEGER REFERENCES delivery_addresses(id);
+        END IF;
       END $$;
+    `);
+    
+    // Delivery addresses table
+    await query(`
+      CREATE TABLE IF NOT EXISTS delivery_addresses (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        address TEXT NOT NULL,
+        contact_person VARCHAR(255),
+        contact_phone VARCHAR(50),
+        is_default BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Create index for delivery addresses
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_delivery_addresses_user_id ON delivery_addresses(user_id);
     `);
 
     // Material request items table
