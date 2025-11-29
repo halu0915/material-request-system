@@ -30,24 +30,12 @@
         }
         .header h1 {
             font-size: 1.5rem;
+            cursor: pointer;
         }
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
-        }
-        .logout-btn {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s;
-        }
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.3);
         }
         .container {
             max-width: 1200px;
@@ -84,6 +72,7 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             text-align: center;
             transition: transform 0.3s;
+            cursor: pointer;
         }
         .feature-card:hover {
             transform: translateY(-5px);
@@ -100,37 +89,168 @@
             color: #666;
             font-size: 0.9rem;
         }
-        .note {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 8px;
-            padding: 20px;
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             margin-top: 30px;
-            color: #856404;
         }
-        .note h4 {
-            margin-bottom: 10px;
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .section-header h2 {
+            color: #333;
+            font-size: 1.5rem;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .form-group textarea {
+            min-height: 100px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .modal-header h3 {
+            color: #333;
+        }
+        .close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
         }
         .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 10px;
+            text-align: center;
+            padding: 40px;
+            color: #666;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
     </style>
 </head>
 <body>
-        <div class="header">
+    <div class="header">
         <div class="header-content">
-            <h1>叫料系統</h1>
+            <h1 onclick="showHome()">叫料系統</h1>
             <div class="user-info">
                 <span id="userName">使用者</span>
             </div>
@@ -138,55 +258,391 @@
     </div>
 
     <div class="container">
-        <div class="welcome-card">
-            <h2>歡迎使用叫料系統</h2>
-            <p id="welcomeMessage">正在載入使用者資訊...</p>
+        <!-- Home View -->
+        <div id="home-view">
+            <div class="welcome-card">
+                <h2>歡迎使用叫料系統</h2>
+                <p>歡迎使用叫料系統！</p>
+            </div>
+            <div class="features">
+                <div class="feature-card" onclick="openSection('materials')">
+                    <div class="feature-icon">📦</div>
+                    <h3>物料管理</h3>
+                    <p>管理物料資料庫</p>
+                </div>
+                <div class="feature-card" onclick="openSection('requests')">
+                    <div class="feature-icon">📋</div>
+                    <h3>叫料單</h3>
+                    <p>建立和管理叫料單</p>
+                </div>
+                <div class="feature-card" onclick="openSection('reports')">
+                    <div class="feature-icon">📊</div>
+                    <h3>報表統計</h3>
+                    <p>查看叫料統計</p>
+                </div>
+            </div>
         </div>
 
-        <div class="features">
-            <div class="feature-card">
-                <div class="feature-icon">📦</div>
-                <h3>物料管理</h3>
-                <p>管理物料資料庫</p>
+        <!-- Materials Section -->
+        <div id="materials-section" class="section" style="display: none;">
+            <div class="section-header">
+                <h2>物料管理</h2>
+                <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">📋</div>
-                <h3>叫料單</h3>
-                <p>建立和管理叫料單</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <h3>報表統計</h3>
-                <p>查看叫料統計</p>
+            <div id="materials-content">
+                <div class="loading">載入中...</div>
             </div>
         </div>
 
-        <div class="note">
-            <h4>⚠️ 提示</h4>
-            <p>您正在使用備用界面。完整的前端應用正在加載中。如果您看到這個頁面，表示前端構建可能尚未完成或未正確部署。但您仍可以使用所有 API 功能。</p>
-            <p style="margin-top: 10px;"><strong>API 端點：</strong></p>
-            <ul style="margin-left: 20px; margin-top: 5px;">
-                <li><code>/api/auth/guest</code> - 訪客登入</li>
-                <li><code>/api/materials</code> - 物料管理</li>
-                <li><code>/api/requests</code> - 叫料單管理</li>
-            </ul>
+        <!-- Requests Section -->
+        <div id="requests-section" class="section" style="display: none;">
+            <div class="section-header">
+                <h2>叫料單管理</h2>
+                <button class="btn-primary" onclick="showCreateRequestForm()">新增叫料單</button>
+            </div>
+            <div id="requests-content">
+                <div class="loading">載入中...</div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div id="reports-section" class="section" style="display: none;">
+            <div class="section-header">
+                <h2>報表統計</h2>
+            </div>
+            <div id="reports-content">
+                <div class="loading">載入中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Material Form Modal -->
+    <div id="material-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="material-modal-title">新增物料</h3>
+                <button class="close" onclick="closeModal('material-modal')">&times;</button>
+            </div>
+            <form id="material-form" onsubmit="saveMaterial(event)">
+                <div class="form-group">
+                    <label>施工類別 *</label>
+                    <select id="construction-category" required></select>
+                </div>
+                <div class="form-group">
+                    <label>材料類別 *</label>
+                    <select id="material-category" required></select>
+                </div>
+                <div class="form-group">
+                    <label>材料名稱 *</label>
+                    <input type="text" id="material-name" required>
+                </div>
+                <div class="form-group">
+                    <label>單位</label>
+                    <input type="text" id="material-unit">
+                </div>
+                <div class="form-group">
+                    <label>描述</label>
+                    <textarea id="material-description"></textarea>
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn-secondary" onclick="closeModal('material-modal')">取消</button>
+                    <button type="submit" class="btn-primary" style="margin-left: 10px;">儲存</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
-        // No authentication required - direct access
-        window.addEventListener('DOMContentLoaded', () => {
-            // Set default user info (no login required)
+        let guestToken = null;
+        let currentSection = null;
+
+        // Initialize: Create guest account and get token
+        async function init() {
+            try {
+                const response = await fetch('/api/auth/guest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    guestToken = data.token;
+                    localStorage.setItem('token', guestToken);
+                }
+            } catch (error) {
+                console.error('初始化錯誤:', error);
+            }
+        }
+
+        // Get API headers with token
+        function getHeaders() {
+            const token = guestToken || localStorage.getItem('token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        // Show home view
+        function showHome() {
+            document.getElementById('home-view').style.display = 'block';
+            ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            currentSection = null;
+        }
+
+        // Open section
+        function openSection(section) {
+            document.getElementById('home-view').style.display = 'none';
+            ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            
+            currentSection = section;
+            const sectionEl = document.getElementById(section + '-section');
+            sectionEl.style.display = 'block';
+            
+            if (section === 'materials') {
+                loadMaterials();
+            } else if (section === 'requests') {
+                loadRequests();
+            } else if (section === 'reports') {
+                loadReports();
+            }
+        }
+
+        // Load materials
+        async function loadMaterials() {
+            const content = document.getElementById('materials-content');
+            content.innerHTML = '<div class="loading">載入中...</div>';
+            
+            try {
+                const response = await fetch('/api/materials', {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayMaterials(data.materials || []);
+                } else {
+                    content.innerHTML = '<div class="alert alert-error">無法載入物料資料</div>';
+                }
+            } catch (error) {
+                content.innerHTML = '<div class="alert alert-error">載入失敗：' + error.message + '</div>';
+            }
+        }
+
+        function displayMaterials(materials) {
+            const content = document.getElementById('materials-content');
+            
+            if (materials.length === 0) {
+                content.innerHTML = '<div class="empty-state">尚無物料資料，請點擊「新增物料」開始添加</div>';
+                return;
+            }
+            
+            let html = '<table><thead><tr><th>施工類別</th><th>材料類別</th><th>材料名稱</th><th>單位</th><th>操作</th></tr></thead><tbody>';
+            
+            materials.forEach(material => {
+                html += `
+                    <tr>
+                        <td>${material.construction_category_name || '-'}</td>
+                        <td>${material.material_category_name || '-'}</td>
+                        <td>${material.name}</td>
+                        <td>${material.unit || '-'}</td>
+                        <td>
+                            <button class="btn-danger" onclick="deleteMaterial(${material.id})">刪除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        }
+
+        // Show add material form
+        async function showAddMaterialForm() {
+            document.getElementById('material-modal-title').textContent = '新增物料';
+            document.getElementById('material-form').reset();
+            
+            // Load categories
+            try {
+                const [ccRes, mcRes] = await Promise.all([
+                    fetch('/api/materials/construction-categories', { headers: getHeaders() }),
+                    fetch('/api/materials/material-categories', { headers: getHeaders() })
+                ]);
+                
+                if (ccRes.ok && mcRes.ok) {
+                    const ccData = await ccRes.json();
+                    const mcData = await mcRes.json();
+                    
+                    const ccSelect = document.getElementById('construction-category');
+                    const mcSelect = document.getElementById('material-category');
+                    
+                    ccSelect.innerHTML = '<option value="">選擇施工類別</option>';
+                    ccData.categories.forEach(cat => {
+                        ccSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+                    });
+                    
+                    mcSelect.innerHTML = '<option value="">選擇材料類別</option>';
+                    mcData.categories.forEach(cat => {
+                        mcSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('載入類別錯誤:', error);
+            }
+            
+            document.getElementById('material-modal').style.display = 'block';
+        }
+
+        // Save material
+        async function saveMaterial(e) {
+            e.preventDefault();
+            
+            const material = {
+                construction_category_id: parseInt(document.getElementById('construction-category').value),
+                material_category_id: parseInt(document.getElementById('material-category').value),
+                name: document.getElementById('material-name').value,
+                unit: document.getElementById('material-unit').value || null,
+                description: document.getElementById('material-description').value || null
+            };
+            
+            try {
+                const response = await fetch('/api/materials', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(material)
+                });
+                
+                if (response.ok) {
+                    closeModal('material-modal');
+                    loadMaterials();
+                } else {
+                    const error = await response.json();
+                    alert('儲存失敗：' + (error.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('儲存失敗：' + error.message);
+            }
+        }
+
+        // Delete material
+        async function deleteMaterial(id) {
+            if (!confirm('確定要刪除此物料嗎？')) return;
+            
+            try {
+                const response = await fetch(`/api/materials/${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    loadMaterials();
+                } else {
+                    alert('刪除失敗');
+                }
+            } catch (error) {
+                alert('刪除失敗：' + error.message);
+            }
+        }
+
+        // Load requests
+        async function loadRequests() {
+            const content = document.getElementById('requests-content');
+            content.innerHTML = '<div class="loading">載入中...</div>';
+            
+            try {
+                const response = await fetch('/api/requests', {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayRequests(data.requests || []);
+                } else {
+                    content.innerHTML = '<div class="alert alert-error">無法載入叫料單資料</div>';
+                }
+            } catch (error) {
+                content.innerHTML = '<div class="alert alert-error">載入失敗：' + error.message + '</div>';
+            }
+        }
+
+        function displayRequests(requests) {
+            const content = document.getElementById('requests-content');
+            
+            if (requests.length === 0) {
+                content.innerHTML = '<div class="empty-state">尚無叫料單，請點擊「新增叫料單」開始創建</div>';
+                return;
+            }
+            
+            let html = '<table><thead><tr><th>單號</th><th>施工類別</th><th>狀態</th><th>建立時間</th><th>操作</th></tr></thead><tbody>';
+            
+            requests.forEach(request => {
+                html += `
+                    <tr>
+                        <td>${request.request_number}</td>
+                        <td>${request.construction_category_name || '-'}</td>
+                        <td>${request.status || 'pending'}</td>
+                        <td>${new Date(request.created_at).toLocaleString('zh-TW')}</td>
+                        <td>
+                            <button class="btn-secondary" onclick="viewRequest(${request.id})">查看</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        }
+
+        function showCreateRequestForm() {
+            alert('新增叫料單功能開發中...');
+        }
+
+        function viewRequest(id) {
+            alert('查看叫料單功能開發中... ID: ' + id);
+        }
+
+        // Load reports
+        async function loadReports() {
+            const content = document.getElementById('reports-content');
+            
+            try {
+                const requestsRes = await fetch('/api/requests', {
+                    headers: getHeaders()
+                });
+                
+                if (requestsRes.ok) {
+                    const data = await requestsRes.json();
+                    const requests = data.requests || [];
+                    
+                    let html = '<div class="welcome-card">';
+                    html += `<h3>統計資訊</h3>`;
+                    html += `<p>總叫料單數：${requests.length}</p>`;
+                    html += `<p>待處理：${requests.filter(r => r.status === 'pending').length}</p>`;
+                    html += `<p>已完成：${requests.filter(r => r.status === 'completed').length}</p>`;
+                    html += '</div>';
+                    
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = '<div class="alert alert-error">無法載入報表資料</div>';
+                }
+            } catch (error) {
+                content.innerHTML = '<div class="alert alert-error">載入失敗：' + error.message + '</div>';
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await init();
             document.getElementById('userName').textContent = '使用者';
             document.getElementById('welcomeMessage').textContent = '歡迎使用叫料系統！';
         });
-
-        function handleLogout() {
-            // No logout needed since no login is required
-            // Just reload the page
-            window.location.reload();
-        }
     </script>
 </body>
 </html>
-
