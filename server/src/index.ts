@@ -94,6 +94,9 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`伺服器運行於端口 ${PORT}`);
+  console.log(`服務器環境: ${process.env.NODE_ENV}`);
+  console.log(`當前工作目錄: ${process.cwd()}`);
+  console.log(`服務器文件位置: ${__dirname}`);
 });
 
 export default app;

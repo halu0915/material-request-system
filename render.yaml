@@ -3,7 +3,7 @@ services:
     name: material-request-system
     env: node
     plan: free
-    buildCommand: npm install:all && (npm run build:server || echo "Server build warning") && (cd client && npm install && npm run build && cd ..) && echo "Build check:" && (test -f client/dist/index.html && echo "✅ Frontend build found!" || echo "❌ Frontend build missing")
+    buildCommand: npm install:all && npm run build:server || echo "Server build warning" && bash build-frontend.sh && echo "✅ All builds completed!"
     startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
