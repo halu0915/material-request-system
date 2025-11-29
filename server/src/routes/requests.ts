@@ -194,7 +194,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
           to: user.email,
           subject: `叫料單已建立 - ${requestNumber}`,
           request: fullRequest,
-          excelBuffer
+          excelBuffer,
+          filename: excelFilename
         });
 
         await query(
