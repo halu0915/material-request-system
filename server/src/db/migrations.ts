@@ -67,14 +67,7 @@ export const createTables = async (): Promise<void> => {
       END $$;
     `);
     
-    // Create unique index that includes specification (allows same name with different specs)
-    // This index ensures uniqueness based on category, name, and specification
-    await query(`
-      CREATE UNIQUE INDEX IF NOT EXISTS materials_unique_with_spec 
-      ON materials (construction_category_id, material_category_id, name, COALESCE(specification, ''))
-    `);
-    
-    // Drop old unique constraint if it exists (for existing databases)
+    // Drop old unique constraint/indexes if they exist (for existing databases)
     await query(`
       DO $$ 
       BEGIN
@@ -85,7 +78,35 @@ export const createTables = async (): Promise<void> => {
         ) THEN
           ALTER TABLE materials DROP CONSTRAINT materials_construction_category_id_material_category_id_name_key;
         END IF;
+        
+        -- Drop old unique index if it exists (different name variations)
+        IF EXISTS (
+          SELECT 1 FROM pg_indexes 
+          WHERE tablename = 'materials' 
+          AND indexname = 'materials_construction_category_id_material_category_id_name_key'
+        ) THEN
+          DROP INDEX IF EXISTS materials_construction_category_id_material_category_id_name_key;
+        END IF;
+        
+        -- Drop any other old unique indexes that don't include specification
+        IF EXISTS (
+          SELECT 1 FROM pg_indexes 
+          WHERE tablename = 'materials' 
+          AND indexname LIKE '%materials%unique%'
+          AND indexname != 'materials_unique_with_spec'
+        ) THEN
+          DROP INDEX IF EXISTS materials_unique_combo;
+        END IF;
       END $$;
+    `);
+    
+    // Create unique index that includes specification (allows same name with different specs)
+    // This index ensures uniqueness based on category, name, and specification
+    // If specification is NULL, it's treated as empty string for uniqueness check
+    await query(`
+      DROP INDEX IF EXISTS materials_unique_with_spec;
+      CREATE UNIQUE INDEX materials_unique_with_spec 
+      ON materials (construction_category_id, material_category_id, name, COALESCE(specification, ''))
     `);
 
     // Delivery addresses table (create before material_requests to avoid foreign key issues)
