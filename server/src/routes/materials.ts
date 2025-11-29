@@ -123,34 +123,6 @@ router.post('/material-categories', authenticateToken, async (req: AuthRequest, 
   }
 });
 
-// Get single material by ID
-router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    const result = await query(
-      `SELECT 
-        m.*,
-        cc.name as construction_category_name,
-        mc.name as material_category_name
-      FROM materials m
-      LEFT JOIN construction_categories cc ON m.construction_category_id = cc.id
-      LEFT JOIN material_categories mc ON m.material_category_id = mc.id
-      WHERE m.id = $1`,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: '找不到物料' });
-    }
-
-    res.json({ material: result.rows[0] });
-  } catch (error) {
-    console.error('取得材料錯誤:', error);
-    res.status(500).json({ error: '取得材料失敗' });
-  }
-});
-
 // Create material
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -290,6 +262,34 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
     }
     console.error('更新材料錯誤:', error);
     res.status(500).json({ error: '更新材料失敗' });
+  }
+});
+
+// Get single material by ID (must be after other routes)
+router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const result = await query(
+      `SELECT 
+        m.*,
+        cc.name as construction_category_name,
+        mc.name as material_category_name
+      FROM materials m
+      LEFT JOIN construction_categories cc ON m.construction_category_id = cc.id
+      LEFT JOIN material_categories mc ON m.material_category_id = mc.id
+      WHERE m.id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到物料' });
+    }
+
+    res.json({ material: result.rows[0] });
+  } catch (error) {
+    console.error('取得材料錯誤:', error);
+    res.status(500).json({ error: '取得材料失敗' });
   }
 });
 
