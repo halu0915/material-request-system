@@ -1483,6 +1483,10 @@
         async function showCreateRequestForm() {
             document.getElementById('request-form').reset();
             
+            // Clear applicant name and contact phone fields
+            document.getElementById('request-applicant-name').value = '';
+            document.getElementById('request-contact-phone').value = '';
+            
             // Load construction categories
             try {
                 const ccRes = await fetch('/api/materials/construction-categories', { headers: getHeaders() });
@@ -1822,11 +1826,29 @@
         async function saveRequest(e) {
             e.preventDefault();
             
-            const applicant_name = document.getElementById('request-applicant-name').value;
-            const contact_phone = document.getElementById('request-contact-phone').value;
+            const delivery_address_id = parseInt(document.getElementById('request-delivery-address').value);
+            if (!delivery_address_id) {
+                alert('請選擇送貨地址');
+                return;
+            }
+            
+            // Get applicant name and contact phone from selected address
+            const selectedAddress = addressesData.find(addr => addr.id === delivery_address_id);
+            if (!selectedAddress) {
+                alert('無法找到選擇的地址資訊');
+                return;
+            }
+            
+            const applicant_name = selectedAddress.contact_person || document.getElementById('request-applicant-name').value;
+            const contact_phone = selectedAddress.contact_phone || document.getElementById('request-contact-phone').value;
+            
+            if (!applicant_name || !contact_phone) {
+                alert('請確保地址中包含聯絡人和電話資訊');
+                return;
+            }
+            
             const work_area = document.getElementById('request-work-area').value;
             const construction_category_id = parseInt(document.getElementById('request-construction-category').value);
-            const delivery_address_id = parseInt(document.getElementById('request-delivery-address').value) || null;
             const notes = document.getElementById('request-notes').value || null;
             
             const items = [];
@@ -1907,11 +1929,16 @@
                         addressSelect.appendChild(option);
                     });
                     
-                    // Set default address if exists
+                    // Set default address if exists and auto-fill
                     const defaultAddr = data.addresses.find(a => a.is_default);
                     if (defaultAddr) {
                         addressSelect.value = defaultAddr.id;
+                        autoFillFromAddress(defaultAddr.id);
                     }
+                    
+                    // Add event listener for address selection change
+                    addressSelect.removeEventListener('change', handleAddressChange);
+                    addressSelect.addEventListener('change', handleAddressChange);
                     
                     return data.addresses;
                 }
@@ -1919,6 +1946,31 @@
                 console.error('載入地址失敗:', error);
             }
             return [];
+        }
+        
+        // Handle address selection change
+        function handleAddressChange(event) {
+            const addressId = parseInt(event.target.value);
+            if (addressId) {
+                autoFillFromAddress(addressId);
+            } else {
+                // Clear fields if no address selected
+                document.getElementById('request-applicant-name').value = '';
+                document.getElementById('request-contact-phone').value = '';
+            }
+        }
+        
+        // Auto-fill applicant name and contact phone from selected address
+        function autoFillFromAddress(addressId) {
+            const address = addressesData.find(addr => addr.id === addressId);
+            if (address) {
+                if (address.contact_person) {
+                    document.getElementById('request-applicant-name').value = address.contact_person;
+                }
+                if (address.contact_phone) {
+                    document.getElementById('request-contact-phone').value = address.contact_phone;
+                }
+            }
         }
         
         // Manage addresses
