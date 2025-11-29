@@ -50,8 +50,7 @@ export const createTables = async (): Promise<void> => {
         unit VARCHAR(50),
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(construction_category_id, material_category_id, name, COALESCE(specification, ''))
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     
@@ -68,7 +67,14 @@ export const createTables = async (): Promise<void> => {
       END $$;
     `);
     
-    // Update unique constraint to include specification (for existing databases)
+    // Create unique index that includes specification (allows same name with different specs)
+    // This index ensures uniqueness based on category, name, and specification
+    await query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS materials_unique_with_spec 
+      ON materials (construction_category_id, material_category_id, name, COALESCE(specification, ''))
+    `);
+    
+    // Drop old unique constraint if it exists (for existing databases)
     await query(`
       DO $$ 
       BEGIN
@@ -78,15 +84,6 @@ export const createTables = async (): Promise<void> => {
           WHERE conname = 'materials_construction_category_id_material_category_id_name_key'
         ) THEN
           ALTER TABLE materials DROP CONSTRAINT materials_construction_category_id_material_category_id_name_key;
-        END IF;
-        
-        -- Add new unique constraint with specification
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint 
-          WHERE conname = 'materials_unique_with_spec'
-        ) THEN
-          ALTER TABLE materials ADD CONSTRAINT materials_unique_with_spec 
-          UNIQUE (construction_category_id, material_category_id, name, COALESCE(specification, ''));
         END IF;
       END $$;
     `);
