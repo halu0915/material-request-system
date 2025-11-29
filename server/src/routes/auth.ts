@@ -21,7 +21,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     try {
       const email = profile.emails?.[0]?.value;
       if (!email) {
-        return done(new Error('無法取得電子郵件'), null);
+        return done(new Error('無法取得電子郵件'), undefined);
       }
 
       let result = await query(
@@ -50,7 +50,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
       return done(null, user);
     } catch (error) {
-      return done(error, null);
+      return done(error, undefined);
     }
   }));
 }

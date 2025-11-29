@@ -1,16 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+export interface AuthUser {
+  id: number;
+  email: string;
+  name?: string;
+}
+
 export interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-    name?: string;
-  };
-  body: any;
-  params: any;
-  query: any;
-  file?: Express.Multer.File;
+  user?: AuthUser;
+}
+
+// Helper function to get user ID from request
+export function getUserId(req: AuthRequest): number | null {
+  return (req.user as any)?.id || null;
 }
 
 export const authenticateToken = (

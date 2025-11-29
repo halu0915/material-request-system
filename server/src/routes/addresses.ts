@@ -1,15 +1,19 @@
 import express, { Response } from 'express';
 import { query } from '../db/connection';
-import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { authenticateToken, AuthRequest, getUserId } from '../middleware/auth';
 
 const router = express.Router();
 
 // Get all delivery addresses for current user
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ error: '未授權' });
+    }
     const result = await query(
       'SELECT * FROM delivery_addresses WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC',
-      [req.user?.id]
+      [userId]
     );
 
     res.json({ addresses: result.rows });
@@ -28,11 +32,16 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: '地址名稱和地址必填' });
     }
 
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ error: '未授權' });
+    }
+
     // If setting as default, unset other defaults
     if (is_default) {
       await query(
         'UPDATE delivery_addresses SET is_default = false WHERE user_id = $1',
-        [req.user?.id]
+        [userId]
       );
     }
 
@@ -40,7 +49,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       `INSERT INTO delivery_addresses (user_id, name, address, contact_person, contact_phone, is_default)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
       [
-        req.user?.id,
+        userId,
         name,
         address,
         contact_person || null,
@@ -80,7 +89,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
     if (is_default) {
       await query(
         'UPDATE delivery_addresses SET is_default = false WHERE user_id = $1 AND id != $2',
-        [req.user?.id, id]
+        [userId, id]
       );
     }
 
@@ -88,7 +97,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
       `UPDATE delivery_addresses 
        SET name = $1, address = $2, contact_person = $3, contact_phone = $4, is_default = $5, updated_at = CURRENT_TIMESTAMP
        WHERE id = $6 AND user_id = $7 RETURNING *`,
-      [name, address, contact_person || null, contact_phone || null, is_default || false, id, req.user?.id]
+      [name, address, contact_person || null, contact_phone || null, is_default || false, id, userId]
     );
 
     if (result.rows.length === 0) {
@@ -106,11 +115,15 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
 router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ error: '未授權' });
+    }
 
     // Check if address belongs to user
     const checkResult = await query(
       'SELECT id FROM delivery_addresses WHERE id = $1 AND user_id = $2',
-      [id, req.user?.id]
+      [id, userId]
     );
 
     if (checkResult.rows.length === 0) {
@@ -129,7 +142,7 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response)
 
     const result = await query(
       'DELETE FROM delivery_addresses WHERE id = $1 AND user_id = $2 RETURNING *',
-      [id, req.user?.id]
+      [id, userId]
     );
 
     if (result.rows.length === 0) {

@@ -75,7 +75,7 @@ if (process.env.NODE_ENV === 'production') {
       // Double check file exists before sending
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath, (err) => {
-          if (err && err.code !== 'ENOENT') {
+          if (err && (err as any).code !== 'ENOENT') {
             console.error('發送 index.html 錯誤:', err.message);
             next(err);
           }

@@ -14,10 +14,10 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
-  destination: (_req: any, _file: Express.Multer.File, cb: multer.StorageEngine) => {
+  destination: (_req: any, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
     cb(null, uploadsDir);
   },
-  filename: (_req: any, file: Express.Multer.File, cb: multer.StorageEngine) => {
+  filename: (_req: any, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
     cb(null, `image-${uniqueSuffix}${ext}`);
