@@ -43,50 +43,55 @@ app.get('/health', (req, res) => {
 });
 
 // Serve static files from client build in production
-if (process.env.NODE_ENV === 'production') {
-  const clientBuildPath = findClientBuild();
+console.log('🔧 開始設置前端文件服務...');
+console.log('環境變數 NODE_ENV:', process.env.NODE_ENV);
+
+// Always try to find client build, regardless of NODE_ENV
+const clientBuildPath = findClientBuild();
+
+if (clientBuildPath) {
+  console.log('✅ 找到前端構建文件，準備提供靜態文件服務...');
   
-  if (clientBuildPath) {
-    // Serve static files
-    app.use(express.static(clientBuildPath, {
-      maxAge: '1y', // Cache static assets
-      etag: true
-    }));
+  // Serve static files
+  app.use(express.static(clientBuildPath, {
+    maxAge: '1y', // Cache static assets
+    etag: true
+  }));
+  
+  // Serve index.html for all non-API routes (SPA routing)
+  app.get('*', (req, res, next) => {
+    // Don't serve client files for API routes or health check
+    if (req.path.startsWith('/api') || req.path === '/health') {
+      return next();
+    }
     
-    // Serve index.html for all non-API routes (SPA routing)
-    app.get('*', (req, res, next) => {
-      // Don't serve client files for API routes or health check
-      if (req.path.startsWith('/api') || req.path === '/health') {
-        return next();
+    // Serve index.html for all other routes (SPA routing)
+    const indexPath = path.join(clientBuildPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('發送 index.html 錯誤:', err);
+        next(err);
       }
-      
-      // Serve index.html for all other routes (SPA routing)
-      const indexPath = path.join(clientBuildPath!, 'index.html');
-      res.sendFile(indexPath, (err) => {
-        if (err) {
-          console.error('發送 index.html 錯誤:', err);
-          next(err);
-        }
-      });
     });
-    
-    console.log('✅ 前端靜態文件服務已啟動');
-  } else {
-    console.warn('⚠️  前端構建文件未找到，只提供 API 服務');
-    // If client build doesn't exist, just show API info
-    app.get('/', (req, res) => {
-      res.json({
-        message: '叫料系統 API 服務運行中',
-        version: '1.0.0',
-        status: 'ok',
-        endpoints: {
-          health: '/health',
-          api: '/api',
-          note: '前端尚未構建或構建文件未找到'
-        }
-      });
+  });
+  
+  console.log('✅ ✅ ✅ 前端靜態文件服務已啟動！');
+  console.log('📍 前端文件位置:', clientBuildPath);
+} else {
+  console.warn('⚠️ ⚠️ ⚠️ 前端構建文件未找到，只提供 API 服務');
+  // If client build doesn't exist, just show API info
+  app.get('/', (req, res) => {
+    res.json({
+      message: '叫料系統 API 服務運行中',
+      version: '1.0.0',
+      status: 'ok',
+      endpoints: {
+        health: '/health',
+        api: '/api',
+        note: '前端尚未構建或構建文件未找到'
+      }
     });
-  }
+  });
 }
 
 // Error handling
