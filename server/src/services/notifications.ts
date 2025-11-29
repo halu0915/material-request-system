@@ -1,9 +1,17 @@
-import XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 import nodemailer from 'nodemailer';
 import axios from 'axios';
 import { google } from 'googleapis';
 
-// Generate Excel file with company header
+// Helper function to apply cell styles
+function applyCellStyle(sheet: any, cellAddress: string, style: any) {
+  if (!sheet[cellAddress]) {
+    sheet[cellAddress] = { t: 's', v: '' };
+  }
+  sheet[cellAddress].s = style;
+}
+
+// Generate Excel file with company header and A4 formatting
 export async function generateExcel(request: any, companyName?: string, taxId?: string, monthlyRequests?: any[]): Promise<Buffer> {
   const workbook = XLSX.utils.book_new();
   
@@ -45,22 +53,126 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
 
   const mainSheet = XLSX.utils.aoa_to_sheet(mainData);
 
-  // Set column widths
+  // Set column widths optimized for A4 (portrait)
   mainSheet['!cols'] = [
-    { wch: 15 }, // 工區
-    { wch: 15 }, // 施工類別
-    { wch: 15 }, // 材料類別
-    { wch: 20 }, // 材料名稱
-    { wch: 20 }, // 材料規格
-    { wch: 10 }, // 單位
-    { wch: 12 }, // 數量
-    { wch: 30 }  // 備註
+    { wch: 12 }, // 工區
+    { wch: 14 }, // 施工類別
+    { wch: 14 }, // 材料類別
+    { wch: 18 }, // 材料名稱
+    { wch: 16 }, // 材料規格
+    { wch: 8 },  // 單位
+    { wch: 10 }, // 數量
+    { wch: 25 }  // 備註
   ];
+
+  // Set row heights
+  mainSheet['!rows'] = [
+    { hpt: 30 }, // Company name row
+    { hpt: 24 }, // Tax ID row
+    { hpt: 12 }, // Empty row
+    { hpt: 18 }, // Request info rows
+    { hpt: 18 },
+    { hpt: 18 },
+    { hpt: 18 },
+    { hpt: 18 },
+    { hpt: 12 }, // Empty row
+    { hpt: 22 }  // Header row
+  ];
+
+  // Apply styles to cells
+  // Company name - Large, bold, centered
+  const companyStyle = {
+    font: { name: '標楷體', sz: 24, bold: true, color: { rgb: '000000' } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: 'FFFFFF' } }
+  };
+  applyCellStyle(mainSheet, 'A1', companyStyle);
+
+  // Tax ID - Large, bold, centered
+  const taxIdStyle = {
+    font: { name: '標楷體', sz: 18, bold: true, color: { rgb: '000000' } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: 'FFFFFF' } }
+  };
+  applyCellStyle(mainSheet, 'A2', taxIdStyle);
+
+  // Request info labels - Bold
+  const labelStyle = {
+    font: { name: '微軟正黑體', sz: 11, bold: true },
+    alignment: { vertical: 'center' },
+    fill: { fgColor: { rgb: 'F0F0F0' } }
+  };
+  for (let i = 3; i <= 7; i++) {
+    applyCellStyle(mainSheet, `A${i + 1}`, labelStyle);
+  }
+
+  // Table header - Bold, centered, with background
+  const headerStyle = {
+    font: { name: '微軟正黑體', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: '4472C4' } },
+    border: {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } }
+    }
+  };
+  const headerRow = 10; // Row index 9 (0-based) = row 10
+  const headerCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  headerCols.forEach((col, idx) => {
+    applyCellStyle(mainSheet, `${col}${headerRow}`, headerStyle);
+  });
+
+  // Data rows - Normal style with borders
+  const dataStyle = {
+    font: { name: '微軟正黑體', sz: 10 },
+    alignment: { vertical: 'center', wrapText: true },
+    border: {
+      top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      left: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      right: { style: 'thin', color: { rgb: 'CCCCCC' } }
+    }
+  };
+  const numRows = mainData.length;
+  for (let r = headerRow + 1; r <= numRows; r++) {
+    headerCols.forEach((col) => {
+      applyCellStyle(mainSheet, `${col}${r}`, dataStyle);
+    });
+  }
+
+  // Center align quantity column
+  const quantityStyle = {
+    ...dataStyle,
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+  };
+  for (let r = headerRow + 1; r <= numRows; r++) {
+    applyCellStyle(mainSheet, `G${r}`, quantityStyle);
+  }
 
   // Merge cells for company header
   if (!mainSheet['!merges']) mainSheet['!merges'] = [];
   mainSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }); // Company name
   mainSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }); // Tax ID
+
+  // Set A4 page setup (portrait)
+  mainSheet['!margins'] = {
+    left: 0.7,
+    right: 0.7,
+    top: 0.75,
+    bottom: 0.75,
+    header: 0.3,
+    footer: 0.3
+  };
+  mainSheet['!pageSetup'] = {
+    paperSize: 9, // A4
+    orientation: 'portrait',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    scale: 100
+  };
 
   XLSX.utils.book_append_sheet(workbook, mainSheet, '叫料單');
   
@@ -182,24 +294,90 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
 
   const reportSheet = XLSX.utils.aoa_to_sheet(reportData);
 
-  // Set column widths
+  // Set column widths optimized for A4
   reportSheet['!cols'] = [
-    { wch: 20 }, // 叫料單號
-    { wch: 15 }, // 建立日期
-    { wch: 15 }, // 工區
-    { wch: 15 }, // 施工類別
-    { wch: 15 }, // 材料類別
-    { wch: 20 }, // 材料名稱
-    { wch: 20 }, // 材料規格
-    { wch: 10 }, // 單位
-    { wch: 12 }, // 數量
-    { wch: 30 }  // 備註
+    { wch: 18 }, // 叫料單號
+    { wch: 12 }, // 建立日期
+    { wch: 10 }, // 工區
+    { wch: 12 }, // 施工類別
+    { wch: 12 }, // 材料類別
+    { wch: 16 }, // 材料名稱
+    { wch: 14 }, // 材料規格
+    { wch: 8 },  // 單位
+    { wch: 10 }, // 數量
+    { wch: 20 }  // 備註
   ];
+
+  // Apply styles
+  const reportCompanyStyle = {
+    font: { name: '標楷體', sz: 24, bold: true, color: { rgb: '000000' } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: 'FFFFFF' } }
+  };
+  applyCellStyle(reportSheet, 'A1', reportCompanyStyle);
+
+  const reportTaxIdStyle = {
+    font: { name: '標楷體', sz: 18, bold: true, color: { rgb: '000000' } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: 'FFFFFF' } }
+  };
+  applyCellStyle(reportSheet, 'A2', reportTaxIdStyle);
+
+  const reportHeaderStyle = {
+    font: { name: '微軟正黑體', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: '4472C4' } },
+    border: {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } }
+    }
+  };
+  const reportHeaderRow = 7;
+  ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].forEach((col) => {
+    applyCellStyle(reportSheet, `${col}${reportHeaderRow}`, reportHeaderStyle);
+  });
+
+  const reportDataStyle = {
+    font: { name: '微軟正黑體', sz: 9 },
+    alignment: { vertical: 'center', wrapText: true },
+    border: {
+      top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      left: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      right: { style: 'thin', color: { rgb: 'CCCCCC' } }
+    }
+  };
+  const numReportRows = reportData.length;
+  for (let r = reportHeaderRow + 1; r <= numReportRows; r++) {
+    ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].forEach((col) => {
+      applyCellStyle(reportSheet, `${col}${r}`, reportDataStyle);
+    });
+  }
 
   // Merge cells for header
   if (!reportSheet['!merges']) reportSheet['!merges'] = [];
   reportSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 9 } }); // Company name
   reportSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 9 } }); // Tax ID
+
+  // Set A4 page setup
+  reportSheet['!margins'] = {
+    left: 0.7,
+    right: 0.7,
+    top: 0.75,
+    bottom: 0.75,
+    header: 0.3,
+    footer: 0.3
+  };
+  reportSheet['!pageSetup'] = {
+    paperSize: 9, // A4
+    orientation: 'portrait',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    scale: 100
+  };
 
   XLSX.utils.book_append_sheet(workbook, reportSheet, '報表');
   
