@@ -723,13 +723,37 @@ export async function generatePDF(request: any, companyName?: string, taxId?: st
 
 // Generate PDF using PDFKit with Chinese font support
 async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?: string): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       const doc = new PDFDocument({
         size: 'A4',
         margins: { top: 50, bottom: 50, left: 50, right: 50 },
         autoFirstPage: true
       });
+
+      // Try to register Chinese font if available
+      let chineseFont: string | null = null;
+      try {
+        // Try to find and register wqy-zenhei font
+        const fontPaths = [
+          '/usr/share/fonts/wqy-zenhei/wqy-zenhei.ttc',
+          '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+          '/System/Library/Fonts/STHeiti Light.ttc',
+          path.join(__dirname, '../fonts/wqy-zenhei.ttc'),
+          path.join(__dirname, '../fonts/wqy-zenhei.ttf')
+        ];
+
+        for (const fontPath of fontPaths) {
+          if (fs.existsSync(fontPath)) {
+            doc.registerFont('ChineseFont', fontPath);
+            chineseFont = 'ChineseFont';
+            console.log(`已註冊中文字體: ${fontPath}`);
+            break;
+          }
+        }
+      } catch (fontError) {
+        console.warn('無法註冊中文字體，將使用預設字體:', fontError);
+      }
 
       const buffers: Buffer[] = [];
       doc.on('data', buffers.push.bind(buffers));
@@ -744,26 +768,30 @@ async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?:
       const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || '統編：00000000';
       const workArea = request.work_area || request.construction_category_name || '';
 
+      // Use Chinese font if available, otherwise use Helvetica
+      const fontFamily = chineseFont || 'Helvetica';
+      const boldFontFamily = chineseFont || 'Helvetica-Bold';
+
       // Company header - center aligned
       doc.fontSize(24)
-         .font('Helvetica-Bold')
+         .font(boldFontFamily)
          .text(company, { align: 'center' });
       
       doc.moveDown(0.5);
       doc.fontSize(18)
-         .font('Helvetica-Bold')
+         .font(boldFontFamily)
          .text(taxIdNumber, { align: 'center' });
       
       doc.moveDown(1.5);
 
       // Request info section
       doc.fontSize(12)
-         .font('Helvetica-Bold')
+         .font(boldFontFamily)
          .text('叫料單資訊', { underline: true });
       
       doc.moveDown(0.5);
       doc.fontSize(10)
-         .font('Helvetica');
+         .font(fontFamily);
 
       // Format info items - use Chinese labels but ensure UTF-8 encoding
       const infoItems = [
@@ -785,7 +813,7 @@ async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?:
 
       // Materials section - simplified list format
       doc.fontSize(12)
-         .font('Helvetica-Bold')
+         .font(boldFontFamily)
          .text('材料項目', { underline: true });
       
       doc.moveDown(0.5);
@@ -794,12 +822,12 @@ async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?:
       let itemNumber = 1;
       for (const item of request.items) {
         doc.fontSize(10)
-           .font('Helvetica-Bold')
+           .font(boldFontFamily)
            .text(`項目 ${itemNumber}：`, { indent: 20 });
         
         doc.moveDown(0.3);
         doc.fontSize(9)
-           .font('Helvetica')
+           .font(fontFamily)
            .text(`  工區：${workArea}`, { indent: 30 })
            .text(`  施工類別：${request.construction_category_name || ''}`, { indent: 30 })
            .text(`  材料類別：${item.material_category_name || ''}`, { indent: 30 })
@@ -835,7 +863,7 @@ async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?:
       // Monthly statistics section
       doc.addPage();
       doc.fontSize(18)
-         .font('Helvetica-Bold')
+         .font(boldFontFamily)
          .text('月統計', { align: 'center' });
       
       doc.moveDown(1);
@@ -844,7 +872,7 @@ async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?:
       const year = now.getFullYear();
       const month = now.getMonth() + 1;
       doc.fontSize(12)
-         .font('Helvetica')
+         .font(fontFamily)
          .text(`統計月份：${year}年${month}月`, { align: 'center' });
       
       doc.moveDown(1);
@@ -866,12 +894,12 @@ async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?:
 
       // Display statistics
       doc.fontSize(10)
-         .font('Helvetica-Bold')
+         .font(boldFontFamily)
          .text('統計摘要：', { indent: 20 });
       
       doc.moveDown(0.5);
       doc.fontSize(9)
-         .font('Helvetica');
+         .font(fontFamily);
 
       for (const key in materialStats) {
         const stat = materialStats[key];
@@ -921,13 +949,13 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
           new Date(request.created_at).toLocaleDateString('zh-TW'),
           workArea,
           request.construction_category_name || '',
-          item.material_category_name || '',
-          item.material_name || '',
+      item.material_category_name || '',
+      item.material_name || '',
           item.material_specification || '',
-          item.unit || item.material_unit || '',
+      item.unit || item.material_unit || '',
           item.quantity,
-          item.notes || ''
-        ]);
+      item.notes || ''
+    ]);
       }
     } else {
       // If no items, still show request info
