@@ -228,8 +228,75 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     { wch: 10 }  // 單位
   ];
   
+  // Apply styles to report statistics sheet
+  const reportStatsTitleStyle = {
+    font: { name: '標楷體', sz: 18, bold: true },
+    alignment: { horizontal: 'center', vertical: 'center' },
+    fill: { fgColor: { rgb: 'D9E1F2' } }
+  };
+  applyCellStyle(statsSheet, 'A1', reportStatsTitleStyle);
+  
+  const reportStatsHeaderStyle = {
+    font: { name: '微軟正黑體', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: '4472C4' } },
+    border: {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } }
+    }
+  };
+  const reportStatsHeaderRow = 4;
+  ['A', 'B', 'C', 'D', 'E'].forEach((col) => {
+    applyCellStyle(statsSheet, `${col}${reportStatsHeaderRow}`, reportStatsHeaderStyle);
+  });
+  
+  const reportStatsDataStyle = {
+    font: { name: '微軟正黑體', sz: 10 },
+    alignment: { vertical: 'center', wrapText: true },
+    border: {
+      top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      left: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      right: { style: 'thin', color: { rgb: 'CCCCCC' } }
+    }
+  };
+  for (let r = reportStatsHeaderRow + 1; r <= statsData.length; r++) {
+    ['A', 'B', 'C', 'D', 'E'].forEach((col) => {
+      applyCellStyle(statsSheet, `${col}${r}`, reportStatsDataStyle);
+    });
+  }
+  
+  // Center align quantity column
+  for (let r = reportStatsHeaderRow + 1; r <= statsData.length; r++) {
+    const quantityStyle = {
+      ...reportStatsDataStyle,
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+    };
+    applyCellStyle(statsSheet, `D${r}`, quantityStyle);
+  }
+  
   if (!statsSheet['!merges']) statsSheet['!merges'] = [];
   statsSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }); // Title
+  
+  // Set A4 page setup for report statistics sheet
+  statsSheet['!margins'] = {
+    left: 0.7,
+    right: 0.7,
+    top: 0.75,
+    bottom: 0.75,
+    header: 0.3,
+    footer: 0.3
+  };
+  statsSheet['!pageSetup'] = {
+    paperSize: 9, // A4
+    orientation: 'portrait',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    scale: 100
+  };
   
   XLSX.utils.book_append_sheet(workbook, statsSheet, '月統計');
 
@@ -430,8 +497,75 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
     { wch: 10 }  // 單位
   ];
   
+  // Apply styles to report statistics sheet
+  const reportStatsTitleStyle = {
+    font: { name: '標楷體', sz: 18, bold: true },
+    alignment: { horizontal: 'center', vertical: 'center' },
+    fill: { fgColor: { rgb: 'D9E1F2' } }
+  };
+  applyCellStyle(statsSheet, 'A1', reportStatsTitleStyle);
+  
+  const reportStatsHeaderStyle = {
+    font: { name: '微軟正黑體', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: '4472C4' } },
+    border: {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } }
+    }
+  };
+  const reportStatsHeaderRow = 4;
+  ['A', 'B', 'C', 'D', 'E'].forEach((col) => {
+    applyCellStyle(statsSheet, `${col}${reportStatsHeaderRow}`, reportStatsHeaderStyle);
+  });
+  
+  const reportStatsDataStyle = {
+    font: { name: '微軟正黑體', sz: 10 },
+    alignment: { vertical: 'center', wrapText: true },
+    border: {
+      top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      left: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      right: { style: 'thin', color: { rgb: 'CCCCCC' } }
+    }
+  };
+  for (let r = reportStatsHeaderRow + 1; r <= statsData.length; r++) {
+    ['A', 'B', 'C', 'D', 'E'].forEach((col) => {
+      applyCellStyle(statsSheet, `${col}${r}`, reportStatsDataStyle);
+    });
+  }
+  
+  // Center align quantity column
+  for (let r = reportStatsHeaderRow + 1; r <= statsData.length; r++) {
+    const quantityStyle = {
+      ...reportStatsDataStyle,
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+    };
+    applyCellStyle(statsSheet, `D${r}`, quantityStyle);
+  }
+  
   if (!statsSheet['!merges']) statsSheet['!merges'] = [];
   statsSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }); // Title
+  
+  // Set A4 page setup for report statistics sheet
+  statsSheet['!margins'] = {
+    left: 0.7,
+    right: 0.7,
+    top: 0.75,
+    bottom: 0.75,
+    header: 0.3,
+    footer: 0.3
+  };
+  statsSheet['!pageSetup'] = {
+    paperSize: 9, // A4
+    orientation: 'portrait',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    scale: 100
+  };
   
   XLSX.utils.book_append_sheet(workbook, statsSheet, '月統計');
 
