@@ -345,19 +345,28 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     ['材料類別', '材料名稱', '材料規格', '總數量', '單位']
   ];
   
-  // Group items by material and sum quantities
+  // Group items by material and sum quantities - accumulate from all monthly requests
   const materialStats: { [key: string]: { name: string; spec: string; unit: string; total: number } } = {};
-  for (const item of request.items) {
-    const key = `${item.material_category_name || ''}_${item.material_name || ''}`;
-    if (!materialStats[key]) {
-      materialStats[key] = {
-        name: item.material_name || '',
-        spec: item.material_specification || '',
-        unit: item.unit || item.material_unit || '',
-        total: 0
-      };
+  
+  // Use monthlyRequests if provided, otherwise fall back to current request only
+  const requestsToProcess = monthlyRequests && monthlyRequests.length > 0 ? monthlyRequests : [request];
+  
+  for (const req of requestsToProcess) {
+    if (req.items && req.items.length > 0) {
+      for (const item of req.items) {
+        // Use material_specification in key to distinguish different specifications
+        const key = `${item.material_category_name || ''}_${item.material_name || ''}_${item.material_specification || ''}`;
+        if (!materialStats[key]) {
+          materialStats[key] = {
+            name: item.material_name || '',
+            spec: item.material_specification || '',
+            unit: item.unit || item.material_unit || '',
+            total: 0
+          };
+        }
+        materialStats[key].total += parseFloat(item.quantity) || 0;
+      }
     }
-    materialStats[key].total += parseFloat(item.quantity) || 0;
   }
   
   for (const key in materialStats) {
