@@ -372,6 +372,11 @@
         table {
             display: table;
         }
+        /* Ensure tables are visible on desktop by default */
+        .section table,
+        .modal table {
+            display: table;
+        }
         .mobile-card-item {
             background: white;
             border: 1px solid #e1e8ed;
@@ -468,7 +473,8 @@
                 width: 100%;
             }
             /* Hide desktop table, show mobile cards */
-            table {
+            .section table,
+            .modal table:not(#request-detail-content table) {
                 display: none !important;
             }
             .mobile-card {
@@ -516,8 +522,10 @@
             }
             /* Request detail modal - keep table for items but make it scrollable */
             #request-detail-content table {
-                display: table;
+                display: table !important;
                 font-size: 0.8rem;
+                width: 100%;
+                overflow-x: auto;
             }
             #request-detail-content table th,
             #request-detail-content table td {
