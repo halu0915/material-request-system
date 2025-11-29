@@ -275,20 +275,30 @@
             border: 1px solid #f5c6cb;
         }
         .request-item {
-            display: flex;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1.5fr 2fr 2fr 1fr;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             align-items: center;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 6px;
         }
-        .request-item select,
-        .request-item input {
-            flex: 1;
+        .request-item select {
+            min-width: 0;
         }
         .request-item input[type="number"] {
-            width: 100px;
+            min-width: 80px;
         }
-        .request-item input[type="text"] {
-            width: 100px;
+        .request-item input[type="text"],
+        .request-item input[type="url"] {
+            min-width: 0;
+        }
+        @media (max-width: 1200px) {
+            .request-item {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
         }
     </style>
 </head>
@@ -338,7 +348,7 @@
                 <div>
                     <button class="btn-secondary" onclick="manageCategories('construction')" style="margin-right: 10px;">管理施工類別</button>
                     <button class="btn-secondary" onclick="manageCategories('material')" style="margin-right: 10px;">管理材料類別</button>
-                    <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
+                <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
                 </div>
             </div>
             <div id="materials-content">
@@ -483,12 +493,15 @@
                             <select class="item-material" required>
                                 <option value="">選擇物料</option>
                             </select>
-                            <input type="number" class="item-quantity" placeholder="數量" step="0.01" required>
-                            <input type="text" class="item-unit" placeholder="單位">
+                            <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
+                            <input type="text" class="item-unit" placeholder="單位" list="unit-history">
                             <input type="text" class="item-notes" placeholder="備註">
+                            <input type="url" class="item-image-url" placeholder="圖片網址（可選）">
+                            <input type="url" class="item-link-url" placeholder="連結網址（可選）">
                             <button type="button" class="btn-danger btn-small" onclick="removeRequestItem(this)">刪除</button>
                         </div>
                     </div>
+                    <datalist id="unit-history"></datalist>
                     <button type="button" class="btn-secondary" onclick="addRequestItem()" style="margin-top: 10px;">新增項目</button>
                 </div>
                 <div style="text-align: right;">
@@ -1057,9 +1070,11 @@
                                 <option value="">選擇物料</option>
                                 ${allMaterials.map(m => `<option value="${m.id}" data-unit="${m.unit || ''}">${m.construction_category_name || ''} - ${m.material_category_name || ''} - ${m.name}</option>`).join('')}
                             </select>
-                            <input type="number" class="item-quantity" placeholder="數量" step="0.01" required>
-                            <input type="text" class="item-unit" placeholder="單位">
+                            <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
+                            <input type="text" class="item-unit" placeholder="單位" list="unit-history">
                             <input type="text" class="item-notes" placeholder="備註">
+                            <input type="url" class="item-image-url" placeholder="圖片網址（可選）">
+                            <input type="url" class="item-link-url" placeholder="連結網址（可選）">
                             <button type="button" class="btn-danger btn-small" onclick="removeRequestItem(this)">刪除</button>
                         </div>
                     `;
@@ -1072,6 +1087,13 @@
                             if (unit) unitInput.value = unit;
                         });
                     });
+                    
+                    // Setup unit history for the first item
+                    const firstUnitInput = itemsContainer.querySelector('.item-unit');
+                    if (firstUnitInput) {
+                        firstUnitInput.id = 'unit-input-0';
+                        setupUnitHistory(firstUnitInput);
+                    }
                 }
             } catch (error) {
                 alert('無法載入物料資料');
@@ -1084,6 +1106,7 @@
         // Add request item
         function addRequestItem() {
             const itemsContainer = document.getElementById('request-items');
+            const itemCount = itemsContainer.children.length;
             const newItem = document.createElement('div');
             newItem.className = 'request-item';
             newItem.innerHTML = `
@@ -1091,9 +1114,11 @@
                     <option value="">選擇物料</option>
                     ${allMaterials.map(m => `<option value="${m.id}" data-unit="${m.unit || ''}">${m.construction_category_name || ''} - ${m.material_category_name || ''} - ${m.name}</option>`).join('')}
                 </select>
-                <input type="number" class="item-quantity" placeholder="數量" step="0.01" required>
-                <input type="text" class="item-unit" placeholder="單位">
+                <input type="number" class="item-quantity" placeholder="數量" step="10" min="0" required>
+                <input type="text" class="item-unit" id="unit-input-${itemCount}" placeholder="單位" list="unit-history">
                 <input type="text" class="item-notes" placeholder="備註">
+                <input type="url" class="item-image-url" placeholder="圖片網址（可選）">
+                <input type="url" class="item-link-url" placeholder="連結網址（可選）">
                 <button type="button" class="btn-danger btn-small" onclick="removeRequestItem(this)">刪除</button>
             `;
             itemsContainer.appendChild(newItem);
@@ -1104,6 +1129,9 @@
                 const unitInput = this.closest('.request-item').querySelector('.item-unit');
                 if (unit) unitInput.value = unit;
             });
+            
+            // Setup unit history for this input
+            setupUnitHistory(newItem.querySelector('.item-unit'));
         }
 
         // Remove request item
@@ -1114,6 +1142,49 @@
             } else {
                 alert('至少需要一個材料項目');
             }
+        }
+
+        // Setup unit history for input field
+        function setupUnitHistory(input) {
+            if (!input) return;
+            
+            // Get existing history from localStorage (specific to this field)
+            const storageKey = 'unit-history-' + input.id || 'unit-history-default';
+            const history = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            
+            // Update datalist
+            const datalist = document.getElementById('unit-history');
+            if (datalist) {
+                datalist.innerHTML = '';
+                history.forEach(unit => {
+                    const option = document.createElement('option');
+                    option.value = unit;
+                    datalist.appendChild(option);
+                });
+            }
+            
+            // Save to history when input loses focus
+            input.addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value && !history.includes(value)) {
+                    history.unshift(value);
+                    // Keep only last 10 entries
+                    if (history.length > 10) {
+                        history.pop();
+                    }
+                    localStorage.setItem(storageKey, JSON.stringify(history));
+                    
+                    // Update datalist
+                    if (datalist) {
+                        datalist.innerHTML = '';
+                        history.forEach(unit => {
+                            const option = document.createElement('option');
+                            option.value = unit;
+                            datalist.appendChild(option);
+                        });
+                    }
+                }
+            });
         }
 
         // Save request
@@ -1130,13 +1201,17 @@
                 const quantity = parseFloat(item.querySelector('.item-quantity').value);
                 const unit = item.querySelector('.item-unit').value || null;
                 const itemNotes = item.querySelector('.item-notes').value || null;
+                const imageUrl = item.querySelector('.item-image-url').value || null;
+                const linkUrl = item.querySelector('.item-link-url').value || null;
                 
                 if (materialId && quantity) {
                     items.push({
                         material_id: parseInt(materialId),
                         quantity: quantity,
                         unit: unit,
-                        notes: itemNotes
+                        notes: itemNotes,
+                        image_url: imageUrl,
+                        link_url: linkUrl
                     });
                 }
             });
@@ -1294,18 +1369,26 @@
                                 <th>數量</th>
                                 <th>單位</th>
                                 <th>備註</th>
+                                <th>圖片</th>
+                                <th>連結</th>
                             </tr>
                         </thead>
                         <tbody>
             `;
             
             items.forEach(item => {
+                const imageDisplay = item.image_url ? 
+                    `<a href="${item.image_url}" target="_blank" style="color: #667eea;">查看圖片</a>` : '-';
+                const linkDisplay = item.link_url ? 
+                    `<a href="${item.link_url}" target="_blank" style="color: #667eea;">開啟連結</a>` : '-';
                 html += `
                     <tr>
                         <td>${item.material_name || '-'}</td>
                         <td>${item.quantity}</td>
                         <td>${item.unit || item.material_unit || '-'}</td>
                         <td>${item.notes || '-'}</td>
+                        <td>${imageDisplay}</td>
+                        <td>${linkDisplay}</td>
                     </tr>
                 `;
             });

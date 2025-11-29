@@ -138,14 +138,16 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       for (const item of items) {
         await client.query(
           `INSERT INTO material_request_items 
-           (request_id, material_id, quantity, unit, notes)
-           VALUES ($1, $2, $3, $4, $5)`,
+           (request_id, material_id, quantity, unit, notes, image_url, link_url)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [
             request.id,
             item.material_id,
             item.quantity,
             item.unit || null,
-            item.notes || null
+            item.notes || null,
+            item.image_url || null,
+            item.link_url || null
           ]
         );
       }

@@ -34,7 +34,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     ['狀態', request.status],
     [],
     // Table header
-    ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註']
+    ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註', '圖片', '連結']
   ];
 
   // Add material items
@@ -47,11 +47,38 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       item.material_specification || '',
       item.unit || item.material_unit || '',
       item.quantity,
-      item.notes || ''
+      item.notes || '',
+      item.image_url || '',
+      item.link_url || ''
     ]);
   }
 
   const mainSheet = XLSX.utils.aoa_to_sheet(mainData);
+  
+  // Add hyperlinks for image_url and link_url columns
+  const headerRow = 10; // Row 10 (0-based index 9)
+  let rowIndex = headerRow + 1; // Start from first data row
+  for (const item of request.items) {
+    // Add hyperlink for image_url (column I)
+    if (item.image_url) {
+      const cellAddress = `I${rowIndex}`;
+      if (mainSheet[cellAddress]) {
+        mainSheet[cellAddress].l = { Target: item.image_url, Tooltip: '查看圖片' };
+        mainSheet[cellAddress].v = '查看圖片';
+      }
+    }
+    
+    // Add hyperlink for link_url (column J)
+    if (item.link_url) {
+      const cellAddress = `J${rowIndex}`;
+      if (mainSheet[cellAddress]) {
+        mainSheet[cellAddress].l = { Target: item.link_url, Tooltip: '開啟連結' };
+        mainSheet[cellAddress].v = '開啟連結';
+      }
+    }
+    
+    rowIndex++;
+  }
 
   // Set column widths optimized for A4 (portrait)
   mainSheet['!cols'] = [
@@ -62,7 +89,9 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     { wch: 16 }, // 材料規格
     { wch: 8 },  // 單位
     { wch: 10 }, // 數量
-    { wch: 25 }  // 備註
+    { wch: 25 }, // 備註
+    { wch: 30 }, // 圖片
+    { wch: 30 }  // 連結
   ];
 
   // Set row heights
@@ -119,7 +148,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     }
   };
   const headerRow = 10; // Row index 9 (0-based) = row 10
-  const headerCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  const headerCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
   headerCols.forEach((col, idx) => {
     applyCellStyle(mainSheet, `${col}${headerRow}`, headerStyle);
   });

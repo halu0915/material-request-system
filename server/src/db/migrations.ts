@@ -109,8 +109,29 @@ export const createTables = async (): Promise<void> => {
         quantity DECIMAL(10, 2) NOT NULL,
         unit VARCHAR(50),
         notes TEXT,
+        image_url VARCHAR(500),
+        link_url VARCHAR(500),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+    
+    // Add image_url and link_url columns if they don't exist (for existing databases)
+    await query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'material_request_items' AND column_name = 'image_url'
+        ) THEN
+          ALTER TABLE material_request_items ADD COLUMN image_url VARCHAR(500);
+        END IF;
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'material_request_items' AND column_name = 'link_url'
+        ) THEN
+          ALTER TABLE material_request_items ADD COLUMN link_url VARCHAR(500);
+        END IF;
+      END $$;
     `);
 
     // User LINE tokens (for notifications)
