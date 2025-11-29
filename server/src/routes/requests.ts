@@ -35,48 +35,47 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
   try {
     const { id } = req.params;
 
-    // Get request
-    const requestResult = await query(
-      `SELECT 
-        mr.*,
-        cc.name as construction_category_name,
-        u.name as user_name,
-        u.email as user_email
-      FROM material_requests mr
-      LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
-      LEFT JOIN users u ON mr.user_id = u.id
-      WHERE mr.id = $1 AND mr.user_id = $2`,
-      [id, req.user?.id]
-    );
+    const fullRequest = await getFullRequest(parseInt(id));
 
-    if (requestResult.rows.length === 0) {
+    if (!fullRequest || fullRequest.user_id !== req.user?.id) {
       return res.status(404).json({ error: '找不到叫料單' });
     }
 
-    // Get request items
-    const itemsResult = await query(
-      `SELECT 
-        mri.*,
-        m.name as material_name,
-        m.unit as material_unit,
-        mc.name as material_category_name
-      FROM material_request_items mri
-      LEFT JOIN materials m ON mri.material_id = m.id
-      LEFT JOIN material_categories mc ON m.material_category_id = mc.id
-      WHERE mri.request_id = $1
-      ORDER BY mc.name, m.name`,
-      [id]
-    );
-
-    res.json({
-      request: requestResult.rows[0],
-      items: itemsResult.rows
-    });
+    res.json({ request: fullRequest, items: fullRequest.items });
   } catch (error) {
     console.error('取得叫料單錯誤:', error);
     res.status(500).json({ error: '取得叫料單失敗' });
   }
 });
+
+// Delete request
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if request exists and belongs to user
+    const checkResult = await query(
+      'SELECT id FROM material_requests WHERE id = $1 AND user_id = $2',
+      [id, req.user?.id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // Delete request (cascade will delete items)
+    await query(
+      'DELETE FROM material_requests WHERE id = $1 AND user_id = $2',
+      [id, req.user?.id]
+    );
+
+    res.json({ message: '叫料單已刪除' });
+  } catch (error) {
+    console.error('刪除叫料單錯誤:', error);
+    res.status(500).json({ error: '刪除叫料單失敗' });
+  }
+});
+
 
 // Generate request number: W00111292005
 // Format: W + 序號(3位) + MMDD + YYYY

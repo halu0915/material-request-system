@@ -364,10 +364,142 @@
             color: #667eea;
             font-size: 18px;
         }
+        /* Mobile Responsive Styles */
         @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            .container {
+                margin: 20px auto;
+                padding: 0 10px;
+            }
+            .welcome-card {
+                padding: 20px;
+            }
+            .welcome-card h2 {
+                font-size: 1.5rem;
+            }
+            .features {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .section {
+                padding: 15px;
+                margin-top: 15px;
+            }
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .section-header h2 {
+                font-size: 1.2rem;
+                width: 100%;
+            }
+            .section-header > div {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .section-header button {
+                width: 100%;
+            }
+            table {
+                font-size: 0.85rem;
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            th, td {
+                padding: 8px 6px;
+                white-space: nowrap;
+            }
             .request-item-row,
             .request-item-row-2col {
                 grid-template-columns: 1fr;
+            }
+            .request-item {
+                padding: 15px;
+            }
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+                max-height: 95vh;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .btn-primary,
+            .btn-secondary,
+            .btn-danger {
+                width: 100%;
+                margin-bottom: 8px;
+                padding: 12px;
+                font-size: 0.9rem;
+            }
+            .btn-small {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+            table td:last-child {
+                white-space: normal;
+            }
+            table td:last-child button {
+                display: block;
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .image-upload-area {
+                padding: 15px;
+            }
+            .upload-content {
+                font-size: 0.9rem;
+            }
+            .upload-content div:first-child {
+                font-size: 24px !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header {
+                padding: 15px;
+            }
+            .header h1 {
+                font-size: 1rem;
+            }
+            .welcome-card h2 {
+                font-size: 1.2rem;
+            }
+            .welcome-card p {
+                font-size: 0.9rem;
+            }
+            .feature-card {
+                padding: 20px;
+            }
+            .feature-icon {
+                font-size: 2rem;
+            }
+            .modal-content {
+                padding: 15px;
+            }
+            .modal-header h3 {
+                font-size: 1.1rem;
+            }
+            table {
+                font-size: 0.75rem;
+            }
+            th, td {
+                padding: 6px 4px;
             }
         }
     </style>
@@ -418,7 +550,8 @@
                 <div>
                     <button class="btn-secondary" onclick="manageCategories('construction')" style="margin-right: 10px;">管理施工類別</button>
                     <button class="btn-secondary" onclick="manageCategories('material')" style="margin-right: 10px;">管理材料類別</button>
-                <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
+                    <button class="btn-secondary" onclick="manageAddresses()" style="margin-right: 10px;">管理地址</button>
+                    <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
                 </div>
             </div>
             <div id="materials-content">
@@ -565,7 +698,6 @@
                     <select id="request-delivery-address" required>
                         <option value="">請選擇送貨地址</option>
                     </select>
-                    <button type="button" class="btn-secondary btn-small" onclick="manageAddresses()" style="margin-top: 5px;">管理地址</button>
                 </div>
                 <div class="form-group">
                     <label>備註</label>
@@ -1110,7 +1242,8 @@
                         <td>
                             <button class="btn-secondary" onclick="viewRequest(${request.id})" style="margin-right: 5px;">查看</button>
                             <button class="btn-primary" onclick="sendRequestEmail(${request.id})" style="margin-right: 5px;">📧 發送郵件</button>
-                            <button class="btn-primary" onclick="downloadRequestExcel(${request.id})">📥 下載Excel</button>
+                            <button class="btn-primary" onclick="downloadRequestExcel(${request.id})" style="margin-right: 5px;">📥 下載Excel</button>
+                            <button class="btn-danger" onclick="deleteRequest(${request.id})">🗑️ 刪除</button>
                         </td>
                     </tr>
                 `;
@@ -1750,6 +1883,28 @@
             }
         }
 
+        // Delete request
+        async function deleteRequest(id) {
+            if (!confirm('確定要刪除此叫料單嗎？此操作無法復原。')) return;
+            
+            try {
+                const response = await fetch(`/api/requests/${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    loadRequests();
+                    alert('叫料單已刪除');
+                } else {
+                    const error = await response.json();
+                    alert('刪除失敗：' + (error.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('刪除失敗：' + error.message);
+            }
+        }
+        
         // Download Excel for request
         async function downloadRequestExcel(id) {
             const companyName = prompt('請輸入公司名稱（可選，留空使用預設值）：') || '';
