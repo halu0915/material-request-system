@@ -50,9 +50,15 @@ if (process.env.NODE_ENV === 'production') {
   console.log('📁 __dirname:', __dirname);
   
   const clientBuildPath = findClientBuild();
+  const publicPath = path.join(__dirname, '../public');
+  const publicHtmlExists = fs.existsSync(path.join(publicPath, 'index.html'));
+  
+  console.log('📁 備用 HTML 路徑:', publicPath);
+  console.log('📁 備用 HTML 存在:', publicHtmlExists);
   
   if (clientBuildPath) {
     console.log('✅ 找到前端構建文件，開始設置靜態文件服務...');
+    console.log('📍 前端構建文件路徑:', clientBuildPath);
     
     // Serve static files
     app.use(express.static(clientBuildPath, {
@@ -80,35 +86,54 @@ if (process.env.NODE_ENV === 'production') {
     console.log('✅ ✅ ✅ 前端靜態文件服務已啟動！');
   } else {
     console.warn('⚠️ ⚠️ ⚠️  前端構建文件未找到！');
-    console.warn('📋 將使用備用 HTML 頁面');
     
-    // Serve a simple HTML page as fallback
-    const publicPath = path.join(__dirname, '../public');
-    if (fs.existsSync(path.join(publicPath, 'index.html'))) {
+    // Always try to serve backup HTML
+    if (publicHtmlExists) {
+      console.warn('📋 將使用備用 HTML 頁面');
       app.use(express.static(publicPath));
-      console.log('✅ 使用備用 HTML 頁面:', publicPath);
-    }
-    
-    // Fallback: simple HTML response for root
-    app.get('/', (req, res, next) => {
-      // Try to serve public/index.html first
-      const publicHtml = path.join(__dirname, '../public/index.html');
-      if (fs.existsSync(publicHtml)) {
-        return res.sendFile(publicHtml);
-      }
+      console.log('✅ 備用 HTML 頁面已設置:', publicPath);
       
-      // Otherwise show API info
-      res.json({
-        message: '叫料系統 API 服務運行中',
-        version: '1.0.0',
-        status: 'ok',
-        endpoints: {
-          health: '/health',
-          api: '/api',
-          guest: '/api/auth/guest - 訪客登入',
-          note: '前端尚未構建，但 API 服務正常運行'
+      // Serve backup HTML for all non-API routes
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api') || req.path === '/health') {
+          return next();
         }
+        const backupHtml = path.join(publicPath, 'index.html');
+        res.sendFile(backupHtml, (err) => {
+          if (err) {
+            console.error('發送備用 HTML 錯誤:', err);
+            next(err);
+          }
+        });
       });
+    } else {
+      console.warn('⚠️ 備用 HTML 頁面也不存在！');
+      // Fallback: simple JSON response for root
+      app.get('/', (req, res) => {
+        res.json({
+          message: '叫料系統 API 服務運行中',
+          version: '1.0.0',
+          status: 'ok',
+          endpoints: {
+            health: '/health',
+            api: '/api',
+            guest: '/api/auth/guest - 訪客登入',
+            note: '前端尚未構建，但 API 服務正常運行'
+          }
+        });
+      });
+    }
+  }
+} else {
+  // In development, serve backup HTML if it exists
+  const publicPath = path.join(__dirname, '../public');
+  if (fs.existsSync(path.join(publicPath, 'index.html'))) {
+    app.use(express.static(publicPath));
+    app.get('/', (req, res) => {
+      if (req.path.startsWith('/api')) {
+        return;
+      }
+      res.sendFile(path.join(publicPath, 'index.html'));
     });
   }
 }
