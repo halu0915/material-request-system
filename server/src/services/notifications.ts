@@ -56,28 +56,34 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   const mainSheet = XLSX.utils.aoa_to_sheet(mainData);
   
   // Add hyperlinks for image_url and link_url columns
-  const headerRow = 10; // Row 10 (0-based index 9)
-  let rowIndex = headerRow + 1; // Start from first data row
+  // Header row is row 10 (0-based index 9), data starts from row 11 (index 10)
+  const headerRowIndex = 9; // 0-based index for row 10
+  let dataRowIndex = headerRowIndex + 1; // Start from first data row (row 11)
+  
   for (const item of request.items) {
-    // Add hyperlink for image_url (column I)
+    // Add hyperlink for image_url (column I, index 8)
     if (item.image_url) {
-      const cellAddress = `I${rowIndex}`;
-      if (mainSheet[cellAddress]) {
-        mainSheet[cellAddress].l = { Target: item.image_url, Tooltip: '查看圖片' };
-        mainSheet[cellAddress].v = '查看圖片';
+      const cellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 8 });
+      if (!mainSheet[cellAddress]) {
+        mainSheet[cellAddress] = { t: 's', v: '' };
       }
+      mainSheet[cellAddress].l = { Target: item.image_url, Tooltip: '查看圖片' };
+      mainSheet[cellAddress].v = '查看圖片';
+      mainSheet[cellAddress].t = 's'; // String type
     }
     
-    // Add hyperlink for link_url (column J)
+    // Add hyperlink for link_url (column J, index 9)
     if (item.link_url) {
-      const cellAddress = `J${rowIndex}`;
-      if (mainSheet[cellAddress]) {
-        mainSheet[cellAddress].l = { Target: item.link_url, Tooltip: '開啟連結' };
-        mainSheet[cellAddress].v = '開啟連結';
+      const cellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 9 });
+      if (!mainSheet[cellAddress]) {
+        mainSheet[cellAddress] = { t: 's', v: '' };
       }
+      mainSheet[cellAddress].l = { Target: item.link_url, Tooltip: '開啟連結' };
+      mainSheet[cellAddress].v = '開啟連結';
+      mainSheet[cellAddress].t = 's'; // String type
     }
     
-    rowIndex++;
+    dataRowIndex++;
   }
 
   // Set column widths optimized for A4 (portrait)
@@ -182,8 +188,8 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
 
   // Merge cells for company header
   if (!mainSheet['!merges']) mainSheet['!merges'] = [];
-  mainSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }); // Company name
-  mainSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }); // Tax ID
+  mainSheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 9 } }); // Company name (span all 10 columns)
+  mainSheet['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 9 } }); // Tax ID (span all 10 columns)
 
   // Set A4 page setup (portrait)
   mainSheet['!margins'] = {
