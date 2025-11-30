@@ -3641,7 +3641,16 @@
                         window.URL.revokeObjectURL(downloadUrl);
                         alert('✅ Excel 檔案下載成功！');
                     } else {
-                        alert('下載失敗');
+                        const errorText = await response.text();
+                        let errorMessage = '下載失敗';
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMessage = errorJson.error || errorMessage;
+                        } catch (e) {
+                            errorMessage = errorText || errorMessage;
+                        }
+                        console.error('下載失敗:', response.status, errorMessage);
+                        alert('下載失敗：' + errorMessage + ' (狀態碼: ' + response.status + ')');
                     }
                 } catch (error) {
                     alert('下載失敗：' + error.message);
