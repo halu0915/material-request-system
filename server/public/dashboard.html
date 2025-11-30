@@ -1969,7 +1969,6 @@
 
         // Manage Categories
         async function manageCategories(type) {
-            window.manageCategories = manageCategories;
             currentManageType = type;
             const content = document.getElementById('category-list-content');
             const title = document.getElementById('category-manage-title');
@@ -2154,7 +2153,6 @@
 
         // Show add material form
         async function showAddMaterialForm() {
-            window.showAddMaterialForm = showAddMaterialForm;
             document.getElementById('material-modal-title').textContent = '新增物料';
             document.getElementById('material-form').reset();
             document.getElementById('material-form').setAttribute('data-material-id', ''); // Clear ID
@@ -2167,6 +2165,9 @@
             await loadCategoriesForMaterialForm();
             document.getElementById('material-modal').style.display = 'block';
         }
+        
+        // Immediately expose showAddMaterialForm to window
+        if (typeof showAddMaterialForm === 'function') window.showAddMaterialForm = showAddMaterialForm;
 
         // Quick add specification - create new material with same category and name but different specification
         async function quickAddSpecification(id) {
@@ -2531,7 +2532,6 @@
 
         // Show create request form
         async function showCreateRequestForm() {
-            window.showCreateRequestForm = showCreateRequestForm;
                 try {
             document.getElementById('request-form').reset();
             
@@ -3102,10 +3102,12 @@
         
         // Manage addresses
         async function manageAddresses() {
-            window.manageAddresses = manageAddresses;
             document.getElementById('address-manage-modal').style.display = 'block';
             await loadAddresses();
         }
+        
+        // Immediately expose manageAddresses to window
+        if (typeof manageAddresses === 'function') window.manageAddresses = manageAddresses;
         
         // Load addresses for management
         async function loadAddresses() {
@@ -3385,10 +3387,12 @@
         }
 
         async function manageCompanies() {
-            window.manageCompanies = manageCompanies;
             document.getElementById('company-manage-modal').style.display = 'block';
             await loadCompanies();
         }
+        
+        // Immediately expose manageCompanies to window
+        if (typeof manageCompanies === 'function') window.manageCompanies = manageCompanies;
 
         async function loadCompanies() {
             // First, try to load default company from environment variables
