@@ -3746,19 +3746,27 @@
         function toggleBottomNav() {
             const bottomNav = document.getElementById('bottom-nav');
             if (window.innerWidth <= 768) {
-                bottomNav.style.display = 'flex';
-                document.body.style.paddingBottom = '70px';
+                if (bottomNav) {
+                    bottomNav.style.display = 'flex';
+                    document.body.style.paddingBottom = '70px';
+                }
             } else {
-                bottomNav.style.display = 'none';
-                document.body.style.paddingBottom = '0';
+                if (bottomNav) {
+                    bottomNav.style.display = 'none';
+                    document.body.style.paddingBottom = '0';
+                }
             }
         }
         
         // Initialize bottom nav visibility
-        toggleBottomNav();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', toggleBottomNav);
+        } else {
+            toggleBottomNav();
+        }
         window.addEventListener('resize', toggleBottomNav);
         
-        // Update nav when section changes
+        // Wrap navigateToSection to update bottom nav
         const originalNavigateToSection = navigateToSection;
         navigateToSection = function(section) {
             originalNavigateToSection(section);
@@ -3769,12 +3777,23 @@
             }
         };
         
-        // Update nav on initial load
-        if (currentSection === null) {
-            updateBottomNav('home');
-        } else {
-            updateBottomNav(currentSection);
+        // Function to open section (used by feature cards)
+        function openSection(section) {
+            navigateToSection(section);
         }
+        
+        // Update nav on initial load
+        setTimeout(() => {
+            if (typeof currentSection !== 'undefined') {
+                if (currentSection === null) {
+                    updateBottomNav('home');
+                } else {
+                    updateBottomNav(currentSection);
+                }
+            } else {
+                updateBottomNav('home');
+            }
+        }, 100);
     </script>
 </body>
 </html>
