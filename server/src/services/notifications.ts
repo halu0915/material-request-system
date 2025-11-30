@@ -402,15 +402,20 @@ async function downloadImage(imageUrl: string): Promise<Buffer | null> {
       }
     }
     
-    // If it's a full URL, download it
+    // If it's a full URL, download it with timeout
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const response = await axios.get(imageUrl, { 
+        responseType: 'arraybuffer',
+        timeout: 10000, // 10 second timeout
+        maxContentLength: 10 * 1024 * 1024, // 10MB max
+        validateStatus: (status) => status === 200
+      });
       return Buffer.from(response.data);
     }
     
     return null;
-  } catch (error) {
-    console.error('下載圖片失敗:', imageUrl, error);
+  } catch (error: any) {
+    console.error('下載圖片失敗:', imageUrl, error.message || error);
     return null;
   }
 }
@@ -426,11 +431,25 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
       return excelBuffer;
     }
     
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(excelBuffer);
+    let workbook: ExcelJS.Workbook;
+    try {
+      workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(excelBuffer);
+    } catch (loadError: any) {
+      console.error('載入 Excel buffer 失敗:', loadError.message || loadError);
+      // Return original buffer if load fails
+      return excelBuffer;
+    }
     
     // Create a new worksheet for images and links
-    const imagesSheet = workbook.addWorksheet('圖片與連結');
+    let imagesSheet: ExcelJS.Worksheet;
+    try {
+      imagesSheet = workbook.addWorksheet('圖片與連結');
+    } catch (sheetError: any) {
+      console.error('創建工作表失敗:', sheetError.message || sheetError);
+      // Return original buffer if sheet creation fails
+      return excelBuffer;
+    }
     
     // Set column widths
     imagesSheet.getColumn(1).width = 20; // 材料名稱
@@ -463,89 +482,130 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
     
     let currentRow = 2;
     
-    // Process each item
+    // Process each item with individual error handling
     for (const item of request.items || []) {
-      if (item.image_url || item.link_url) {
-        const row = imagesSheet.getRow(currentRow);
-        
-        // Material name
-        row.getCell(1).value = item.material_name || '';
-        row.getCell(1).font = { name: '微軟正黑體', size: 11 };
-        row.getCell(1).alignment = { vertical: 'top', wrapText: true };
-        
-        // Material specification
-        row.getCell(2).value = item.material_specification || '';
-        row.getCell(2).font = { name: '微軟正黑體', size: 11 };
-        row.getCell(2).alignment = { vertical: 'top', wrapText: true };
-        
-        // Image
-        if (item.image_url) {
-          const imageBuffer = await downloadImage(item.image_url);
+      try {
+        if (item.image_url || item.link_url) {
+          const row = imagesSheet.getRow(currentRow);
           
-          if (imageBuffer) {
-            // Determine image extension
-            let imageExtension = 'png';
-            if (item.image_url.toLowerCase().endsWith('.jpg') || item.image_url.toLowerCase().endsWith('.jpeg')) {
-              imageExtension = 'jpeg';
-            } else if (item.image_url.toLowerCase().endsWith('.gif')) {
-              imageExtension = 'gif';
+          // Material name
+          row.getCell(1).value = item.material_name || '';
+          row.getCell(1).font = { name: '微軟正黑體', size: 11 };
+          row.getCell(1).alignment = { vertical: 'top', wrapText: true };
+          
+          // Material specification
+          row.getCell(2).value = item.material_specification || '';
+          row.getCell(2).font = { name: '微軟正黑體', size: 11 };
+          row.getCell(2).alignment = { vertical: 'top', wrapText: true };
+          
+          // Image - handle errors individually
+          if (item.image_url) {
+            try {
+              const imageBuffer = await downloadImage(item.image_url);
+              
+              if (imageBuffer) {
+                // Determine image extension
+                let imageExtension = 'png';
+                if (item.image_url.toLowerCase().endsWith('.jpg') || item.image_url.toLowerCase().endsWith('.jpeg')) {
+                  imageExtension = 'jpeg';
+                } else if (item.image_url.toLowerCase().endsWith('.gif')) {
+                  imageExtension = 'gif';
+                }
+                
+                try {
+                  // Add image to workbook
+                  const imageId = workbook.addImage({
+                    buffer: imageBuffer,
+                    extension: imageExtension
+                  });
+                  
+                  // Insert image in column C (index 2)
+                  imagesSheet.addImage(imageId, {
+                    tl: { col: 2, row: currentRow - 1 },
+                    ext: { width: 300, height: 200 } // Adjust size as needed
+                  });
+                  
+                  // Set row height to accommodate image
+                  row.height = 150; // Adjust height as needed (in points)
+                } catch (imageError: any) {
+                  console.error('嵌入圖片失敗:', item.image_url, imageError.message || imageError);
+                  // Fallback to hyperlink if image embedding fails
+                  row.getCell(3).value = {
+                    text: item.image_url,
+                    hyperlink: item.image_url
+                  };
+                  row.getCell(3).font = { name: '微軟正黑體', size: 10, color: { argb: 'FF0066CC' }, underline: true };
+                  row.getCell(3).alignment = { vertical: 'top', wrapText: true };
+                }
+              } else {
+                // If image download fails, add hyperlink text
+                row.getCell(3).value = {
+                  text: item.image_url,
+                  hyperlink: item.image_url
+                };
+                row.getCell(3).font = { name: '微軟正黑體', size: 10, color: { argb: 'FF0066CC' }, underline: true };
+                row.getCell(3).alignment = { vertical: 'top', wrapText: true };
+              }
+            } catch (imageError: any) {
+              console.error('處理圖片失敗:', item.image_url, imageError.message || imageError);
+              // Add hyperlink as fallback
+              row.getCell(3).value = {
+                text: item.image_url,
+                hyperlink: item.image_url
+              };
+              row.getCell(3).font = { name: '微軟正黑體', size: 10, color: { argb: 'FF0066CC' }, underline: true };
+              row.getCell(3).alignment = { vertical: 'top', wrapText: true };
             }
-            
-            // Add image to workbook
-            const imageId = workbook.addImage({
-              buffer: imageBuffer,
-              extension: imageExtension
-            });
-            
-            // Insert image in column C (index 2)
-            imagesSheet.addImage(imageId, {
-              tl: { col: 2, row: currentRow - 1 },
-              ext: { width: 300, height: 200 } // Adjust size as needed
-            });
-            
-            // Set row height to accommodate image
-            row.height = 150; // Adjust height as needed (in points)
-          } else {
-            // If image download fails, add hyperlink text
-            row.getCell(3).value = {
-              text: item.image_url,
-              hyperlink: item.image_url
-            };
-            row.getCell(3).font = { name: '微軟正黑體', size: 10, color: { argb: 'FF0066CC' }, underline: true };
-            row.getCell(3).alignment = { vertical: 'top', wrapText: true };
           }
+          
+          // Link
+          if (item.link_url) {
+            try {
+              row.getCell(4).value = {
+                text: item.link_url,
+                hyperlink: item.link_url
+              };
+              row.getCell(4).font = { name: '微軟正黑體', size: 10, color: { argb: 'FF0066CC' }, underline: true };
+              row.getCell(4).alignment = { vertical: 'top', wrapText: true };
+            } catch (linkError: any) {
+              console.error('添加連結失敗:', item.link_url, linkError.message || linkError);
+              // Just add text if hyperlink fails
+              row.getCell(4).value = item.link_url;
+              row.getCell(4).font = { name: '微軟正黑體', size: 10, color: { argb: 'FF0066CC' } };
+            }
+          }
+          
+          // Add borders to data row
+          ['A', 'B', 'C', 'D'].forEach((col) => {
+            const cell = row.getCell(col);
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FF666666' } },
+              bottom: { style: 'thin', color: { argb: 'FF666666' } },
+              left: { style: 'thin', color: { argb: 'FF666666' } },
+              right: { style: 'thin', color: { argb: 'FF666666' } }
+            };
+          });
+          
+          currentRow++;
         }
-        
-        // Link
-        if (item.link_url) {
-          row.getCell(4).value = {
-            text: item.link_url,
-            hyperlink: item.link_url
-          };
-          row.getCell(4).font = { name: '微軟正黑體', size: 10, color: { argb: 'FF0066CC' }, underline: true };
-          row.getCell(4).alignment = { vertical: 'top', wrapText: true };
-        }
-        
-        // Add borders to data row
-        ['A', 'B', 'C', 'D'].forEach((col) => {
-          const cell = row.getCell(col);
-          cell.border = {
-            top: { style: 'thin', color: { argb: 'FF666666' } },
-            bottom: { style: 'thin', color: { argb: 'FF666666' } },
-            left: { style: 'thin', color: { argb: 'FF666666' } },
-            right: { style: 'thin', color: { argb: 'FF666666' } }
-          };
-        });
-        
-        currentRow++;
+      } catch (itemError: any) {
+        console.error('處理材料項目失敗:', item.material_name, itemError.message || itemError);
+        // Continue with next item
+        continue;
       }
     }
     
     // Generate buffer
-    const buffer = await workbook.xlsx.writeBuffer();
-    return Buffer.from(buffer);
-  } catch (error) {
-    console.error('添加圖片到 Excel 失敗:', error);
+    try {
+      const buffer = await workbook.xlsx.writeBuffer();
+      return Buffer.from(buffer);
+    } catch (writeError: any) {
+      console.error('寫入 Excel buffer 失敗:', writeError.message || writeError);
+      // Return original buffer if write fails
+      return excelBuffer;
+    }
+  } catch (error: any) {
+    console.error('添加圖片到 Excel 失敗:', error.message || error, error.stack);
     // Return original buffer if image addition fails
     return excelBuffer;
   }
