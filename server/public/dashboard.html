@@ -4359,7 +4359,14 @@
                 navigateToSection(section);
             } else {
                 console.error('navigateToSection function not found');
-                console.error('Available on window:', Object.keys(window).filter(k => k.includes('nav') || k.includes('Section') || k.includes('Home')));
+                try {
+                    const available = Object.keys(window).filter(function(k) {
+                        return k.includes('nav') || k.includes('Section') || k.includes('Home');
+                    });
+                    console.error('Available on window:', available);
+                } catch (e) {
+                    console.error('Cannot check available functions:', e);
+                }
                 // Fallback: directly show the section
                 if (section === null) {
                     const homeView = document.getElementById('home-view');
