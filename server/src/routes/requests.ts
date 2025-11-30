@@ -245,7 +245,6 @@ async function generateRequestNumber(categoryCode: string = 'M'): Promise<string
   
   return `${categoryCode}${sequence}${dateStr}${year}`;
 }
-}
 
 // Helper function to generate Excel filename
 // Format: 工區＋叫料單＋時間＿(施工類別).xlsx
