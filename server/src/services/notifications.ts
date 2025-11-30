@@ -611,15 +611,6 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
   }
 }
 
-// Generate HTML template for PDF
-
-// Generate PDF using Puppeteer (preferred method for Chinese support)
-
-// Generate PDF file with same content as Excel
-// Try Puppeteer first (supports Chinese), fallback to PDFKit with font registration
-
-// Generate PDF using PDFKit with Chinese font support
-
 // Generate report Excel (monthly or date range)
 export async function generateReportExcel(requests: any[], startDate?: string, endDate?: string, companyName?: string, taxId?: string): Promise<Buffer> {
   const workbook = XLSX.utils.book_new();
