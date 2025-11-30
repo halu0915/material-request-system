@@ -275,11 +275,41 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     res.status(201).json({ material: result.rows[0] });
   } catch (error: any) {
     console.error('建立材料錯誤:', error);
+    console.error('錯誤詳情:', {
+      code: error.code,
+      constraint: error.constraint,
+      message: error.message,
+      detail: error.detail
+    });
+    
+    // Handle unique constraint violation (23505)
+    if (error.code === '23505') {
+      // Check which constraint was violated
+      let constraintMessage = '資料已存在';
+      if (error.constraint) {
+        if (error.constraint.includes('construction_categories')) {
+          constraintMessage = '施工類別名稱已存在';
+        } else if (error.constraint.includes('material_categories')) {
+          constraintMessage = '材料類別名稱已存在';
+        } else if (error.constraint.includes('materials')) {
+          constraintMessage = '材料已存在（相同的類別、名稱組合）。請檢查資料庫是否還有舊的唯一約束需要移除。';
+        }
+      }
+      
+      return res.status(400).json({ 
+        error: constraintMessage,
+        details: error.detail || error.message || '此資料已存在於資料庫中',
+        code: error.code,
+        constraint: error.constraint
+      });
+    }
+    
     const errorMessage = error.message || '建立材料失敗';
     const errorDetails = error.code ? ` (錯誤代碼: ${error.code})` : '';
     res.status(500).json({ 
       error: '建立材料失敗',
-      details: errorMessage + errorDetails
+      details: errorMessage + errorDetails,
+      code: error.code
     });
   }
 });
