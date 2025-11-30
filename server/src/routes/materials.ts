@@ -285,7 +285,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 });
 
 // Import materials from Excel
-router.post('/import', authenticateToken, upload.single('file'), async (req: AuthRequest, res: Response) => {
+router.post('/import', authenticateToken, upload.single('file'), async (req: AuthRequest & { file?: Express.Multer.File }, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: '請上傳檔案' });
