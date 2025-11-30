@@ -3544,9 +3544,22 @@
                         const contentDisposition = response.headers.get('Content-Disposition');
                         let filename = `叫料單_${id}.xlsx`;
                         if (contentDisposition) {
-                            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                            if (filenameMatch && filenameMatch[1]) {
-                                filename = decodeURIComponent(filenameMatch[1].replace(/['"]/g, ''));
+                            // Try RFC 5987 format first (filename*=UTF-8'')
+                            const rfc5987Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/);
+                            if (rfc5987Match) {
+                                filename = decodeURIComponent(rfc5987Match[1]);
+                            } else {
+                                // Fallback to standard format
+                                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                                if (filenameMatch && filenameMatch[1]) {
+                                    const extracted = filenameMatch[1].replace(/['"]/g, '');
+                                    // Try to decode if it's URL encoded
+                                    try {
+                                        filename = decodeURIComponent(extracted);
+                                    } catch (e) {
+                                        filename = extracted;
+                                    }
+                                }
                             }
                         }
                         

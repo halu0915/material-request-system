@@ -522,12 +522,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       throw error;
     }
   } catch (error: any) {
-    console.error('建立叫料單錯誤:', {
-      message: error.message || error,
-      stack: error.stack,
-      code: error.code,
-      detail: error.detail
-    });
+    console.error('建立叫料單錯誤:', error.message || error, error.stack);
     const errorMessage = error.message || '建立叫料單失敗';
     res.status(500).json({ 
       error: '建立叫料單失敗',
@@ -695,7 +690,9 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
     const filename = generateExcelFilename(fullRequest);
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    // Use RFC 5987 encoding for Chinese filenames
+    const encodedFilename = encodeURIComponent(filename);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`);
     res.send(excelBuffer);
   } catch (error) {
     console.error('產生Excel錯誤:', error);
@@ -744,7 +741,9 @@ router.get('/reports/monthly/:year/:month', authenticateToken, async (req: AuthR
 
     const filename = `叫料單月報表_${year}年${month}月.xlsx`;
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    // Use RFC 5987 encoding for Chinese filenames
+    const encodedFilename = encodeURIComponent(filename);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`);
     res.send(excelBuffer);
   } catch (error) {
     console.error('產生月報表錯誤:', error);
@@ -797,7 +796,9 @@ router.get('/reports/range', authenticateToken, async (req: AuthRequest, res: Re
 
     const filename = `叫料單報表_${start_date}_${end_date}.xlsx`;
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    // Use RFC 5987 encoding for Chinese filenames
+    const encodedFilename = encodeURIComponent(filename);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`);
     res.send(excelBuffer);
   } catch (error) {
     console.error('產生時間區間報表錯誤:', error);
@@ -807,6 +808,13 @@ router.get('/reports/range', authenticateToken, async (req: AuthRequest, res: Re
 
 // Helper function to generate Excel filename
 // Format: 工區＋叫料單＋時間＿(施工類別).xlsx
+function generateExcelFilename(request: any): string {
+  const workArea = request.work_area || '未指定工區';
+  const requestDate = new Date(request.created_at);
+  const dateStr = `${requestDate.getFullYear()}${String(requestDate.getMonth() + 1).padStart(2, '0')}${String(requestDate.getDate()).padStart(2, '0')}`;
+  const constructionCategoryName = request.construction_category_name || '未指定';
+  return `${workArea}叫料單${dateStr}＿(${constructionCategoryName}).xlsx`;
+}
 
 // Helper function to get full request with items
 async function getFullRequest(requestId: number) {
