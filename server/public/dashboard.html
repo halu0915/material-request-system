@@ -3973,6 +3973,41 @@
                 console.error('navigateToSection function not found');
             }
         };
+
+
+        // Expose all functions to global scope for onclick handlers
+        window.showCreateRequestForm = showCreateRequestForm;
+        window.downloadRequestExcel = downloadRequestExcel;
+        window.sendRequestEmail = sendRequestEmail;
+        window.deleteRequest = deleteRequest;
+        window.viewRequest = viewRequest;
+        window.showAddMaterialForm = showAddMaterialForm;
+        window.editMaterialById = editMaterialById;
+        window.deleteMaterial = deleteMaterial;
+        window.quickAddSpecification = quickAddSpecification;
+        window.manageCategories = manageCategories;
+        window.manageAddresses = manageAddresses;
+        window.manageCompanies = manageCompanies;
+        window.showAddCategoryForm = showAddCategoryForm;
+        window.editCategoryById = editCategoryById;
+        window.deleteCategory = deleteCategory;
+        window.showAddAddressForm = showAddAddressForm;
+        window.editAddressById = editAddressById;
+        window.deleteAddress = deleteAddress;
+        window.showAddCompanyForm = showAddCompanyForm;
+        window.editCompanyById = editCompanyById;
+        window.deleteCompany = deleteCompany;
+        window.confirmCompanySelection = confirmCompanySelection;
+        window.closeModal = closeModal;
+        window.removeRequestItem = removeRequestItem;
+        window.addRequestItem = addRequestItem;
+        window.removeImage = removeImage;
+        window.downloadMonthlyReport = downloadMonthlyReport;
+        window.downloadRangeReport = downloadRangeReport;
+        window.clearMaterialFilters = clearMaterialFilters;
+        window.showHome = showHome;
+        window.openSection = openSection;
+        window.navigateToSection = navigateToSection;
 function initializeApp() {
             (async function() {
                 try {
