@@ -451,7 +451,6 @@
         
         /* Bottom Navigation Bar for Mobile */
         .bottom-nav {
-            display: none;
             position: fixed;
             bottom: 0;
             left: 0;
@@ -461,7 +460,7 @@
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             z-index: 999;
             padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-            display: flex;
+            display: none; /* Hidden by default on desktop */
             justify-content: space-around;
             align-items: center;
         }
@@ -3774,26 +3773,40 @@
         // Show/hide bottom nav based on screen size
         function toggleBottomNav() {
             const bottomNav = document.getElementById('bottom-nav');
+            if (!bottomNav) return;
+            
             if (window.innerWidth <= 768) {
-                if (bottomNav) {
-                    bottomNav.style.display = 'flex';
+                bottomNav.style.display = 'flex';
+                if (!document.body.style.paddingBottom || document.body.style.paddingBottom === '0px') {
                     document.body.style.paddingBottom = '70px';
                 }
             } else {
-                if (bottomNav) {
-                    bottomNav.style.display = 'none';
-                    document.body.style.paddingBottom = '0';
-                }
+                bottomNav.style.display = 'none';
+                document.body.style.paddingBottom = '0';
             }
         }
         
-        // Initialize bottom nav visibility
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', toggleBottomNav);
-        } else {
+        // Initialize bottom nav visibility immediately
+        function initBottomNav() {
             toggleBottomNav();
+            // Also check after a short delay to ensure it's visible
+            requestAnimationFrame(() => {
+                toggleBottomNav();
+            });
+        }
+        
+        // Initialize immediately if DOM is ready, otherwise wait
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initBottomNav);
+        } else {
+            initBottomNav();
         }
         window.addEventListener('resize', toggleBottomNav);
+        
+        // Also ensure it's visible after page load
+        window.addEventListener('load', () => {
+            toggleBottomNav();
+        });
         
         // Wrap navigateToSection to update bottom nav
         const originalNavigateToSection = navigateToSection;
