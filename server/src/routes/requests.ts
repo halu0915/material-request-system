@@ -68,7 +68,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
     // Get material items for each request
     const requestsWithItems = await Promise.all(
-      result.rows.map(async (request) => {
+      result.rows.map(async (request: any) => {
         const itemsResult = await query(
           `SELECT 
             mri.*,
