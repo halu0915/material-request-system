@@ -319,98 +319,114 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
       // Get full request data
       const fullRequest = await getFullRequest(request.id);
-
-      // Get all requests from the same month up to and including current request creation time
-      const requestDate = new Date(fullRequest.created_at);
-      const year = requestDate.getFullYear();
-      const month = requestDate.getMonth() + 1;
-      const startOfMonth = new Date(year, month - 1, 1);
-      // Use current request's created_at as the end time (inclusive)
-      const currentRequestTime = new Date(fullRequest.created_at);
       
-      const monthlyRequestsResult = await query(
-        `SELECT id FROM material_requests 
-         WHERE user_id = $1 
-           AND created_at >= $2 
-           AND created_at <= $3
-         ORDER BY created_at`,
-        [req.user?.id, startOfMonth, currentRequestTime]
-      );
-      
-      const monthlyRequests = [];
-      for (const req of monthlyRequestsResult.rows) {
-        const fullReq = await getFullRequest(req.id);
-        if (fullReq) monthlyRequests.push(fullReq);
+      if (!fullRequest) {
+        throw new Error('無法取得叫料單完整資料');
       }
 
-      // Generate Excel with monthly statistics
-      const excelBuffer = await generateExcel(fullRequest, undefined, undefined, monthlyRequests);
-
-      // Generate filename using helper function
-      const excelFilename = generateExcelFilename(fullRequest);
-
-      // Upload to cloud
-      let cloudFileId = null;
-      let excelFileUrl = null;
+      // Generate Excel with error handling - don't fail request creation if Excel generation fails
+      let excelBuffer: Buffer | null = null;
       try {
-        const cloudResult = await uploadToCloud(excelBuffer, excelFilename);
-        cloudFileId = cloudResult.fileId;
-        excelFileUrl = cloudResult.url;
-
-        // Update request with file info
-        await query(
-          'UPDATE material_requests SET excel_file_url = $1, cloud_file_id = $2 WHERE id = $3',
-          [excelFileUrl, cloudFileId, request.id]
+        // Get all requests from the same month up to and including current request creation time
+        const requestDate = new Date(fullRequest.created_at);
+        const year = requestDate.getFullYear();
+        const month = requestDate.getMonth() + 1;
+        const startOfMonth = new Date(year, month - 1, 1);
+        // Use current request's created_at as the end time (inclusive)
+        const currentRequestTime = new Date(fullRequest.created_at);
+        
+        const monthlyRequestsResult = await query(
+          `SELECT id FROM material_requests 
+           WHERE user_id = $1 
+             AND created_at >= $2 
+             AND created_at <= $3
+           ORDER BY created_at`,
+          [req.user?.id, startOfMonth, currentRequestTime]
         );
-      } catch (error) {
-        console.error('上傳雲端失敗:', error);
+        
+        const monthlyRequests = [];
+        for (const req of monthlyRequestsResult.rows) {
+          const fullReq = await getFullRequest(req.id);
+          if (fullReq) monthlyRequests.push(fullReq);
+        }
+
+        // Generate Excel with monthly statistics
+        excelBuffer = await generateExcel(fullRequest, undefined, undefined, monthlyRequests);
+      } catch (excelError: any) {
+        console.error('產生 Excel 失敗，但繼續建立叫料單:', excelError.message || excelError);
+        // Continue without Excel - request creation should still succeed
       }
 
-      // Send email to configured recipients
-      try {
-        // Get recipients from environment variable (comma-separated emails)
-        // Format: PURCHASE_EMAIL_RECIPIENTS=email1@example.com,email2@example.com,email3@example.com
-        const recipientsEnv = process.env.PURCHASE_EMAIL_RECIPIENTS;
-        let recipients: string[] = [];
-        
-        if (recipientsEnv) {
-          // Parse comma-separated emails
-          recipients = recipientsEnv.split(',')
-            .map(email => email.trim())
-            .filter(email => email.length > 0);
-        }
-        
-        // If no recipients configured, send to the user who created the request
-        if (recipients.length === 0) {
-          const userResult = await query(
-            'SELECT email, name FROM users WHERE id = $1',
-            [req.user?.id]
-          );
-          if (userResult.rows.length > 0) {
-            recipients = [userResult.rows[0].email];
-          }
-        }
+      // Upload to cloud and send email (only if Excel was generated successfully)
+      if (excelBuffer) {
+        // Generate filename using helper function
+        const excelFilename = generateExcelFilename(fullRequest);
 
-        if (recipients.length > 0) {
-          // Send email with Excel attachment only
-          await sendEmail({
-            to: recipients,
-            request: fullRequest,
-            excelBuffer,
-            filename: excelFilename
-          });
+        // Upload to cloud
+        let cloudFileId = null;
+        let excelFileUrl = null;
+        try {
+          const cloudResult = await uploadToCloud(excelBuffer, excelFilename);
+          cloudFileId = cloudResult.fileId;
+          excelFileUrl = cloudResult.url;
 
+          // Update request with file info
           await query(
-            'UPDATE material_requests SET email_sent = true WHERE id = $1',
-            [request.id]
+            'UPDATE material_requests SET excel_file_url = $1, cloud_file_id = $2 WHERE id = $3',
+            [excelFileUrl, cloudFileId, request.id]
           );
-          
-          console.log(`郵件已發送給 ${recipients.length} 位收件人:`, recipients.join(', '));
-        } else {
-          console.warn('未設定郵件收件人，跳過郵件發送');
+        } catch (error) {
+          console.error('上傳雲端失敗:', error);
         }
-      } catch (error) {
-        console.error('發送郵件失敗:', error);
+
+        // Send email to configured recipients
+        try {
+          // Get recipients from environment variable (comma-separated emails)
+          // Format: PURCHASE_EMAIL_RECIPIENTS=email1@example.com,email2@example.com,email3@example.com
+          const recipientsEnv = process.env.PURCHASE_EMAIL_RECIPIENTS;
+          let recipients: string[] = [];
+          
+          if (recipientsEnv) {
+            // Parse comma-separated emails
+            recipients = recipientsEnv.split(',')
+              .map(email => email.trim())
+              .filter(email => email.length > 0);
+          }
+          
+          // If no recipients configured, send to the user who created the request
+          if (recipients.length === 0) {
+            const userResult = await query(
+              'SELECT email, name FROM users WHERE id = $1',
+              [req.user?.id]
+            );
+            if (userResult.rows.length > 0) {
+              recipients = [userResult.rows[0].email];
+            }
+          }
+
+          if (recipients.length > 0) {
+            // Send email with Excel attachment only
+            await sendEmail({
+              to: recipients,
+              request: fullRequest,
+              excelBuffer,
+              filename: excelFilename
+            });
+
+            await query(
+              'UPDATE material_requests SET email_sent = true WHERE id = $1',
+              [request.id]
+            );
+            
+            console.log(`郵件已發送給 ${recipients.length} 位收件人:`, recipients.join(', '));
+          } else {
+            console.warn('未設定郵件收件人，跳過郵件發送');
+          }
+        } catch (error) {
+          console.error('發送郵件失敗:', error);
+        }
+      } else {
+        console.warn('Excel 未生成，跳過雲端上傳和郵件發送');
       }
 
       // Send LINE notification
