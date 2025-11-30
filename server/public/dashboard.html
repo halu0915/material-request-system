@@ -4326,26 +4326,8 @@
         }
         
         // Wrap navigateToSection to update bottom nav
-        // Check if navigateToSection exists before wrapping
-        // This needs to be done after navigateToSection is defined and exposed
-        setTimeout(function() {
-            if (typeof window.navigateToSection === 'function') {
-                const originalNavigateToSection = window.navigateToSection;
-                window.navigateToSection = function(section) {
-                    if (originalNavigateToSection) {
-                        originalNavigateToSection(section);
-                    }
-                    if (typeof updateBottomNav === 'function') {
-                        if (section === null) {
-                            updateBottomNav('home');
-                        } else {
-                            updateBottomNav(section);
-                        }
-                    }
-                };
-                console.log('navigateToSection wrapped for bottom nav');
-            }
-        }, 100);
+        // This will be done after functions are defined and exposed
+        // Note: This wrapping is deferred to avoid timing issues
         
         // Function to open section (used by feature cards) - override previous definition
         function openSection(section) {
