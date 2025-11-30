@@ -2487,6 +2487,7 @@
         // Load companies from environment variables
         async function loadDefaultCompanyFromEnv() {
             try {
+                console.log('開始載入環境變數公司資訊...');
                 const response = await fetch('/api/requests/default-company', {
                     headers: getHeaders()
                 });
@@ -2494,6 +2495,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     const envCompanies = data.companies || [];
+                    console.log('環境變數公司數量:', envCompanies.length, envCompanies);
                     
                     if (envCompanies.length > 0) {
                         const companies = getCompanies();
@@ -2516,11 +2518,13 @@
                                     is_default: index === 0, // First one is default
                                     from_env: true
                                 });
+                                console.log('新增環境變數公司:', envCompany.name);
                             } else {
                                 // Update existing env company
                                 filteredCompanies[existingIndex].name = envCompany.name;
                                 filteredCompanies[existingIndex].tax_id = envCompany.tax_id;
                                 filteredCompanies[existingIndex].from_env = true;
+                                console.log('更新環境變數公司:', envCompany.name);
                             }
                         });
                         
@@ -2531,11 +2535,18 @@
                             if (firstEnvCompany) {
                                 filteredCompanies.forEach(c => c.is_default = false);
                                 firstEnvCompany.is_default = true;
+                                console.log('設定預設公司:', firstEnvCompany.name);
                             }
                         }
                         
                         saveCompanies(filteredCompanies);
+                        console.log('環境變數公司載入完成，共', filteredCompanies.filter(c => c.from_env).length, '家公司');
+                    } else {
+                        console.log('環境變數中沒有公司資訊');
                     }
+                } else {
+                    const errorText = await response.text();
+                    console.error('載入環境變數公司失敗:', response.status, errorText);
                 }
             } catch (error) {
                 console.error('載入環境變數公司資訊失敗:', error);
@@ -2694,6 +2705,9 @@
         let companySelectionCallback = null;
 
         async function selectCompany(callback) {
+            // Ensure env companies are loaded before showing selection
+            await loadDefaultCompanyFromEnv();
+            
             companySelectionCallback = callback;
             const companies = getCompanies();
             const dropdown = document.getElementById('company-select-dropdown');
@@ -2702,7 +2716,8 @@
             companies.forEach(company => {
                 const option = document.createElement('option');
                 option.value = company.id;
-                option.textContent = `${company.name} (${company.tax_id})${company.is_default ? ' [預設]' : ''}`;
+                const envLabel = company.from_env ? ' [環境變數]' : '';
+                option.textContent = `${company.name} (${company.tax_id})${company.is_default ? ' [預設]' : ''}${envLabel}`;
                 dropdown.appendChild(option);
             });
 
