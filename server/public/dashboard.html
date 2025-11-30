@@ -637,11 +637,26 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
+        // Expose functions to window for onclick handlers
+        window.showHome = showHome;
+        window.openSection = openSection;
+        window.loadMaterials = loadMaterials;
+        window.loadRequests = loadRequests;
+        window.loadReports = loadReports;
+        window.showAddMaterialForm = showAddMaterialForm;
+        window.saveMaterial = saveMaterial;
+        window.deleteMaterial = deleteMaterial;
+        window.viewRequest = viewRequest;
+        window.showCreateRequestForm = showCreateRequestForm;
+        window.closeModal = closeModal;
+
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', async () => {
             await init();
-            document.getElementById('userName').textContent = '使用者';
-            document.getElementById('welcomeMessage').textContent = '歡迎使用叫料系統！';
+            const userNameEl = document.getElementById('userName');
+            const welcomeMessageEl = document.getElementById('welcomeMessage');
+            if (userNameEl) userNameEl.textContent = '使用者';
+            if (welcomeMessageEl) welcomeMessageEl.textContent = '叫料系統';
         });
     </script>
 </body>
