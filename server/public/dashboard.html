@@ -1435,6 +1435,7 @@
                         <td>${escapeHtml(material.specification || '-')}</td>
                         <td>${escapeHtml(material.unit || '-')}</td>
                         <td>
+                            <button class="btn-primary btn-small" onclick="quickAddSpecification(${material.id})" style="margin-right: 5px;">新增</button>
                             <button class="btn-secondary btn-small" onclick="editMaterialById(${material.id})" style="margin-right: 5px;">編輯</button>
                             <button class="btn-danger btn-small" onclick="deleteMaterial(${material.id})">刪除</button>
                         </td>
@@ -1462,7 +1463,8 @@
                             <span class="mobile-card-item-value">${escapeHtml(material.unit || '-')}</span>
                         </div>
                         <div class="mobile-card-item-actions">
-                            <button class="btn-secondary btn-small" onclick="editMaterialById(${material.id})">編輯</button>
+                            <button class="btn-primary btn-small" onclick="quickAddSpecification(${material.id})" style="margin-bottom: 5px; width: 100%;">新增</button>
+                            <button class="btn-secondary btn-small" onclick="editMaterialById(${material.id})" style="margin-right: 5px;">編輯</button>
                             <button class="btn-danger btn-small" onclick="deleteMaterial(${material.id})">刪除</button>
                         </div>
                     </div>
@@ -1674,8 +1676,60 @@
             document.getElementById('material-form').reset();
             document.getElementById('material-form').setAttribute('data-material-id', ''); // Clear ID
             
+            // Enable all fields for new material
+            document.getElementById('construction-category').disabled = false;
+            document.getElementById('material-category').disabled = false;
+            document.getElementById('material-name').disabled = false;
+            
             await loadCategoriesForMaterialForm();
             document.getElementById('material-modal').style.display = 'block';
+        }
+
+        // Quick add specification - create new material with same category and name but different specification
+        async function quickAddSpecification(id) {
+            try {
+                const response = await fetch(`/api/materials/${id}`, {
+                    headers: getHeaders()
+                });
+                
+                if (!response.ok) {
+                    alert('無法載入物料資料');
+                    return;
+                }
+                
+                const data = await response.json();
+                const material = data.material;
+                
+                document.getElementById('material-modal-title').textContent = '新增物料（相同類別和名稱）';
+                document.getElementById('material-form').setAttribute('data-material-id', ''); // Clear ID for new material
+                
+                const loaded = await loadCategoriesForMaterialForm();
+                if (!loaded) return;
+                
+                // Pre-fill form with existing material's category, name, and unit
+                document.getElementById('construction-category').value = material.construction_category_id;
+                document.getElementById('material-category').value = material.material_category_id;
+                document.getElementById('material-name').value = material.name;
+                // Pre-fill unit if exists
+                document.getElementById('material-unit').value = material.unit || '';
+                // Clear specification for new entry (user must input different specification)
+                document.getElementById('material-specification').value = '';
+                // Clear description
+                document.getElementById('material-description').value = '';
+                
+                // Disable category and name fields (read-only) since they should be the same
+                document.getElementById('construction-category').disabled = true;
+                document.getElementById('material-category').disabled = true;
+                document.getElementById('material-name').disabled = true;
+                
+                // Focus on specification input
+                document.getElementById('material-modal').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('material-specification').focus();
+                }, 100);
+            } catch (error) {
+                alert('載入物料資料失敗：' + error.message);
+            }
         }
 
         // Edit Material by ID
@@ -1698,6 +1752,11 @@
                 
                 const loaded = await loadCategoriesForMaterialForm();
                 if (!loaded) return;
+                
+                // Enable all fields for editing
+                document.getElementById('construction-category').disabled = false;
+                document.getElementById('material-category').disabled = false;
+                document.getElementById('material-name').disabled = false;
                 
                 // Set form values
                 document.getElementById('construction-category').value = material.construction_category_id;
