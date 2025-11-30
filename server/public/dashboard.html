@@ -3500,8 +3500,10 @@
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', async () => {
             await init();
-            document.getElementById('userName').textContent = '使用者';
-            document.getElementById('welcomeMessage').textContent = '歡迎使用叫料系統！';
+            const userNameEl = document.getElementById('userName');
+            const welcomeMessageEl = document.getElementById('welcomeMessage');
+            if (userNameEl) userNameEl.textContent = '使用者';
+            if (welcomeMessageEl) welcomeMessageEl.textContent = '叫料系統';
             
             // Load default company from environment variables
             await loadDefaultCompanyFromEnv();

@@ -275,7 +275,12 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     res.status(201).json({ material: result.rows[0] });
   } catch (error: any) {
     console.error('建立材料錯誤:', error);
-    res.status(500).json({ error: '建立材料失敗' });
+    const errorMessage = error.message || '建立材料失敗';
+    const errorDetails = error.code ? ` (錯誤代碼: ${error.code})` : '';
+    res.status(500).json({ 
+      error: '建立材料失敗',
+      details: errorMessage + errorDetails
+    });
   }
 });
 
