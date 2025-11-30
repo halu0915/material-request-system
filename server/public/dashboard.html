@@ -1754,8 +1754,10 @@
                         // Continue even if filter loading fails
                     }
                     
+                    console.log('準備顯示物料，數量:', filteredMaterials.length);
                     displayMaterials(filteredMaterials);
                     updateMaterialStats();
+                    console.log('物料顯示完成');
                 } else if (response.status === 401 || response.status === 403) {
                     // Token invalid, try to refresh
                     console.warn('Token 無效，嘗試刷新...');
@@ -1777,8 +1779,10 @@
                             // Continue even if filter loading fails
                         }
                         
+                        console.log('準備顯示物料（重試後），數量:', filteredMaterials.length);
                         displayMaterials(filteredMaterials);
                         updateMaterialStats();
+                        console.log('物料顯示完成（重試後）');
                     } else {
                         const errorText = await retryResponse.text();
                         let errorMessage = '無法載入物料資料';
