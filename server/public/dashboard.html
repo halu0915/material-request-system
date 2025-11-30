@@ -4051,86 +4051,75 @@
         // Initialize on page load
         
 
-        // Debug: Log all click events
-        // Expose all functions to global scope for onclick handlers
-        // This must be done after all functions are defined
-        try {
-            // Core navigation functions - expose immediately
-            if (typeof showHome === 'function') {
-                window.showHome = showHome;
-                console.log('showHome exposed to window');
+        // CRITICAL: Expose all functions to global scope immediately after all definitions
+        // This ensures onclick handlers can access these functions
+        // Using IIFE to execute immediately when script loads
+        (function exposeAllFunctionsImmediately() {
+            try {
+                // Core navigation functions - MUST be exposed first
+                if (typeof showHome === 'function') {
+                    window.showHome = showHome;
+                }
+                if (typeof navigateToSection === 'function') {
+                    window.navigateToSection = navigateToSection;
+                }
+                if (typeof openSection === 'function') {
+                    window.openSection = openSection;
+                }
+
+                // Request functions
+                if (typeof showCreateRequestForm === 'function') window.showCreateRequestForm = showCreateRequestForm;
+                if (typeof saveRequest === 'function') window.saveRequest = saveRequest;
+                if (typeof downloadRequestExcel === 'function') window.downloadRequestExcel = downloadRequestExcel;
+                if (typeof sendRequestEmail === 'function') window.sendRequestEmail = sendRequestEmail;
+                if (typeof deleteRequest === 'function') window.deleteRequest = deleteRequest;
+                if (typeof viewRequest === 'function') window.viewRequest = viewRequest;
+                if (typeof removeRequestItem === 'function') window.removeRequestItem = removeRequestItem;
+                if (typeof addRequestItem === 'function') window.addRequestItem = addRequestItem;
+                if (typeof removeImage === 'function') window.removeImage = removeImage;
+
+                // Material functions
+                if (typeof showAddMaterialForm === 'function') window.showAddMaterialForm = showAddMaterialForm;
+                if (typeof editMaterialById === 'function') window.editMaterialById = editMaterialById;
+                if (typeof deleteMaterial === 'function') window.deleteMaterial = deleteMaterial;
+                if (typeof quickAddSpecification === 'function') window.quickAddSpecification = quickAddSpecification;
+                if (typeof clearMaterialFilters === 'function') window.clearMaterialFilters = clearMaterialFilters;
+
+                // Category functions
+                if (typeof manageCategories === 'function') window.manageCategories = manageCategories;
+                if (typeof showAddCategoryForm === 'function') window.showAddCategoryForm = showAddCategoryForm;
+                if (typeof editCategoryById === 'function') window.editCategoryById = editCategoryById;
+                if (typeof deleteCategory === 'function') window.deleteCategory = deleteCategory;
+
+                // Address functions
+                if (typeof manageAddresses === 'function') window.manageAddresses = manageAddresses;
+                if (typeof showAddAddressForm === 'function') window.showAddAddressForm = showAddAddressForm;
+                if (typeof editAddressById === 'function') window.editAddressById = editAddressById;
+                if (typeof deleteAddress === 'function') window.deleteAddress = deleteAddress;
+
+                // Company functions
+                if (typeof manageCompanies === 'function') window.manageCompanies = manageCompanies;
+                if (typeof showAddCompanyForm === 'function') window.showAddCompanyForm = showAddCompanyForm;
+                if (typeof editCompanyById === 'function') window.editCompanyById = editCompanyById;
+                if (typeof deleteCompany === 'function') window.deleteCompany = deleteCompany;
+                if (typeof confirmCompanySelection === 'function') window.confirmCompanySelection = confirmCompanySelection;
+
+                // Utility functions
+                if (typeof closeModal === 'function') window.closeModal = closeModal;
+                if (typeof handleImageUpload === 'function') window.handleImageUpload = handleImageUpload;
+                if (typeof filterMaterialsByCategory === 'function') window.filterMaterialsByCategory = filterMaterialsByCategory;
+                if (typeof loadDeliveryAddresses === 'function') window.loadDeliveryAddresses = loadDeliveryAddresses;
+                if (typeof setupUnitHistory === 'function') window.setupUnitHistory = setupUnitHistory;
+                if (typeof setupQuantityValidation === 'function') window.setupQuantityValidation = setupQuantityValidation;
+                if (typeof downloadMonthlyReport === 'function') window.downloadMonthlyReport = downloadMonthlyReport;
+                if (typeof downloadRangeReport === 'function') window.downloadRangeReport = downloadRangeReport;
+                
+                console.log('✅ 所有函數已暴露到 window 對象');
+            } catch (error) {
+                console.error('❌ 暴露函數到 window 時發生錯誤:', error);
+                alert('函數暴露失敗: ' + error.message);
             }
-            if (typeof navigateToSection === 'function') {
-                window.navigateToSection = navigateToSection;
-                console.log('navigateToSection exposed to window');
-            }
-            if (typeof openSection === 'function') {
-                window.openSection = openSection;
-                console.log('openSection exposed to window');
-            } else {
-                console.error('openSection is not a function, creating fallback');
-                // Fallback if openSection not defined yet
-                window.openSection = function(section) {
-                    console.log('Fallback openSection called with:', section);
-                    if (typeof navigateToSection === 'function') {
-                        navigateToSection(section);
-                    } else {
-                        console.error('navigateToSection function not found');
-                    }
-                };
-            }
-
-            // Request functions
-            if (typeof showCreateRequestForm === 'function') window.showCreateRequestForm = showCreateRequestForm;
-            if (typeof saveRequest === 'function') window.saveRequest = saveRequest;
-            if (typeof downloadRequestExcel === 'function') window.downloadRequestExcel = downloadRequestExcel;
-            if (typeof sendRequestEmail === 'function') window.sendRequestEmail = sendRequestEmail;
-            if (typeof deleteRequest === 'function') window.deleteRequest = deleteRequest;
-            if (typeof viewRequest === 'function') window.viewRequest = viewRequest;
-            if (typeof removeRequestItem === 'function') window.removeRequestItem = removeRequestItem;
-            if (typeof addRequestItem === 'function') window.addRequestItem = addRequestItem;
-            if (typeof removeImage === 'function') window.removeImage = removeImage;
-
-            // Material functions
-            if (typeof showAddMaterialForm === 'function') window.showAddMaterialForm = showAddMaterialForm;
-            if (typeof editMaterialById === 'function') window.editMaterialById = editMaterialById;
-            if (typeof deleteMaterial === 'function') window.deleteMaterial = deleteMaterial;
-            if (typeof quickAddSpecification === 'function') window.quickAddSpecification = quickAddSpecification;
-            if (typeof clearMaterialFilters === 'function') window.clearMaterialFilters = clearMaterialFilters;
-
-            // Category functions
-            if (typeof manageCategories === 'function') window.manageCategories = manageCategories;
-            if (typeof showAddCategoryForm === 'function') window.showAddCategoryForm = showAddCategoryForm;
-            if (typeof editCategoryById === 'function') window.editCategoryById = editCategoryById;
-            if (typeof deleteCategory === 'function') window.deleteCategory = deleteCategory;
-
-            // Address functions
-            if (typeof manageAddresses === 'function') window.manageAddresses = manageAddresses;
-            if (typeof showAddAddressForm === 'function') window.showAddAddressForm = showAddAddressForm;
-            if (typeof editAddressById === 'function') window.editAddressById = editAddressById;
-            if (typeof deleteAddress === 'function') window.deleteAddress = deleteAddress;
-
-            // Company functions
-            if (typeof manageCompanies === 'function') window.manageCompanies = manageCompanies;
-            if (typeof showAddCompanyForm === 'function') window.showAddCompanyForm = showAddCompanyForm;
-            if (typeof editCompanyById === 'function') window.editCompanyById = editCompanyById;
-            if (typeof deleteCompany === 'function') window.deleteCompany = deleteCompany;
-            if (typeof confirmCompanySelection === 'function') window.confirmCompanySelection = confirmCompanySelection;
-
-            // Utility functions
-            if (typeof closeModal === 'function') window.closeModal = closeModal;
-            if (typeof handleImageUpload === 'function') window.handleImageUpload = handleImageUpload;
-            if (typeof filterMaterialsByCategory === 'function') window.filterMaterialsByCategory = filterMaterialsByCategory;
-            if (typeof loadDeliveryAddresses === 'function') window.loadDeliveryAddresses = loadDeliveryAddresses;
-            if (typeof setupUnitHistory === 'function') window.setupUnitHistory = setupUnitHistory;
-            if (typeof setupQuantityValidation === 'function') window.setupQuantityValidation = setupQuantityValidation;
-            if (typeof downloadMonthlyReport === 'function') window.downloadMonthlyReport = downloadMonthlyReport;
-            if (typeof downloadRangeReport === 'function') window.downloadRangeReport = downloadRangeReport;
-
-            console.log('所有函數已暴露到 window 對象');
-        } catch (error) {
-            console.error('暴露函數到 window 時發生錯誤:', error);
-        }
+        })();
 
         function initializeApp() {
             // Ensure all critical functions are exposed to window before initialization
@@ -4256,6 +4245,9 @@
             }
         }
         
+        // CRITICAL: Expose updateBottomNav to window immediately
+        window.updateBottomNav = updateBottomNav;
+        
         // Show/hide bottom nav based on screen size
         function toggleBottomNav() {
             const bottomNav = document.getElementById('bottom-nav');
@@ -4319,62 +4311,6 @@
                 }
             };
         }
-        
-        // Function to open section (used by feature cards) - override previous definition
-        function openSection(section) {
-            console.log('openSection called with:', section);
-            // Use window.navigateToSection to ensure we're using the exposed version
-            if (typeof window.navigateToSection === 'function') {
-                window.navigateToSection(section);
-            } else if (typeof navigateToSection === 'function') {
-                navigateToSection(section);
-            } else {
-                console.error('navigateToSection function not found');
-                // Fallback: directly show the section
-                if (section === null) {
-                    const homeView = document.getElementById('home-view');
-                    if (homeView) homeView.style.display = 'block';
-                    ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.style.display = 'none';
-                    });
-                } else {
-                    const homeView = document.getElementById('home-view');
-                    if (homeView) homeView.style.display = 'none';
-                    ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.style.display = 'none';
-                    });
-                    const sectionEl = document.getElementById(section + '-section');
-                    if (sectionEl) {
-                        sectionEl.style.display = 'block';
-                        if (section === 'materials' && typeof loadMaterials === 'function') {
-                            loadMaterials();
-                        } else if (section === 'requests' && typeof loadRequests === 'function') {
-                            loadRequests();
-                        } else if (section === 'reports' && typeof loadReports === 'function') {
-                            loadReports();
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Ensure openSection is exposed
-        window.openSection = openSection;
-        
-        // Update nav on initial load
-        setTimeout(() => {
-            if (typeof currentSection !== 'undefined') {
-                if (currentSection === null) {
-                    updateBottomNav('home');
-                } else {
-                    updateBottomNav(currentSection);
-                }
-            } else {
-                updateBottomNav('home');
-            }
-        }, 100);
     </script>
 </body>
 </html>
