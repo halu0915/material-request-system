@@ -2044,6 +2044,9 @@
             cardHtml += '</div>';
             content.innerHTML = tableHtml + cardHtml;
         }
+        
+        // Immediately expose manageCategories to window
+        if (typeof manageCategories === 'function') window.manageCategories = manageCategories;
 
         // Show add category form (also handles edit setup)
         function showAddCategoryForm(type) {
