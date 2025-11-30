@@ -213,11 +213,14 @@ async function generateRequestNumber(categoryCode: string = 'M'): Promise<string
   const day = String(now.getDate()).padStart(2, '0');
   const dateStr = month + day; // MMDD format
   
-  // Get start and end of current month
-  const startOfMonth = new Date(year, now.getMonth(), 1);
-  const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
+  // Get start and end of current month (序號會在每月結束時自動歸零，下個月第一天從001開始)
+  // Start: first day of current month at 00:00:00.000
+  const startOfMonth = new Date(year, now.getMonth(), 1, 0, 0, 0, 0);
+  // End: last day of current month at 23:59:59.999
+  const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59, 999);
   
   // Count existing requests in current month with the same category code
+  // This ensures sequence resets to 001 at the start of each new month
   const countResult = await query(
     `SELECT COUNT(*) as count 
      FROM material_requests 
@@ -227,6 +230,7 @@ async function generateRequestNumber(categoryCode: string = 'M'): Promise<string
   );
   
   const currentCount = parseInt(countResult.rows[0].count || '0');
+  // Sequence starts from 001 each month, increments for each request in the same month
   const sequence = String(currentCount + 1).padStart(3, '0'); // 001, 002, 003...
   
   return `${categoryCode}${sequence}${dateStr}${year}`;
