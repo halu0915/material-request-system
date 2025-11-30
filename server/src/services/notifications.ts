@@ -398,7 +398,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       categoryName,
       stat.name,
       stat.spec,
-      String(totalQuantity), // Total quantity: quantity per item * count
+      String(Math.floor(totalQuantity)), // Total quantity: quantity per item * count (integer only)
       stat.unit
     ]);
   }
@@ -525,7 +525,7 @@ function generatePDFHTML(request: any, companyName?: string, taxId?: string): st
         <td style="padding: 8px; border: 1px solid #ddd;">${item.material_name || ''}</td>
         <td style="padding: 8px; border: 1px solid #ddd;">${item.material_specification || ''}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${item.unit || item.material_unit || ''}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${item.quantity}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${Math.floor(parseFloat(item.quantity) || 0)}</td>
         <td style="padding: 8px; border: 1px solid #ddd;">${item.notes || ''}</td>
       </tr>
       ${(item.image_url || item.link_url) ? `
@@ -549,7 +549,7 @@ function generatePDFHTML(request: any, companyName?: string, taxId?: string): st
         <td style="padding: 8px; border: 1px solid #ddd;">${categoryName}</td>
         <td style="padding: 8px; border: 1px solid #ddd;">${stat.name}</td>
         <td style="padding: 8px; border: 1px solid #ddd;">${stat.spec}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${stat.total}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${Math.floor(stat.total)}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${stat.unit}</td>
       </tr>
     `;
@@ -864,7 +864,7 @@ async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?:
            .text(`  材料類別：${item.material_category_name || ''}`, { indent: 30 })
            .text(`  材料名稱：${item.material_name || ''}`, { indent: 30 })
            .text(`  材料規格：${item.material_specification || ''}`, { indent: 30 })
-           .text(`  數量：${item.quantity} ${item.unit || item.material_unit || ''}`, { indent: 30 });
+           .text(`  數量：${Math.floor(parseFloat(item.quantity) || 0)} ${item.unit || item.material_unit || ''}`, { indent: 30 });
         
         if (item.notes) {
           doc.text(`  備註：${item.notes}`, { indent: 30 });
@@ -935,7 +935,7 @@ async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?:
       for (const key in materialStats) {
         const stat = materialStats[key];
         const categoryName = key.split('_')[0];
-        const summaryText = `${categoryName} - ${stat.name} (${stat.spec})：${stat.total} ${stat.unit}`;
+        const summaryText = `${categoryName} - ${stat.name} (${stat.spec})：${Math.floor(stat.total)} ${stat.unit}`;
         doc.text(`  ${summaryText}`, { indent: 30 });
         doc.moveDown(0.3);
         
@@ -984,7 +984,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
       item.material_name || '',
           item.material_specification || '',
       item.unit || item.material_unit || '',
-          item.quantity,
+          Math.floor(parseFloat(item.quantity) || 0),
       item.notes || ''
     ]);
       }
@@ -1392,7 +1392,7 @@ export async function sendEmail(options: {
           <td style="padding: 8px;">${item.material_category_name || '-'}</td>
           <td style="padding: 8px;"><strong>${item.material_name || '-'}</strong></td>
           <td style="padding: 8px;">${item.material_specification || '-'}</td>
-          <td style="padding: 8px; text-align: right;">${item.quantity}</td>
+          <td style="padding: 8px; text-align: right;">${Math.floor(parseFloat(item.quantity) || 0)}</td>
           <td style="padding: 8px;">${item.unit || item.material_unit || '-'}</td>
           <td style="padding: 8px;">${item.notes || '-'}</td>
         </tr>
@@ -1484,7 +1484,7 @@ export async function sendLineNotify(options: {
     message += '材料明細：\n';
 
     for (const item of options.request.items) {
-      message += `- ${item.material_category_name || ''} | ${item.material_name || ''} | 數量：${item.quantity} ${item.unit || item.material_unit || ''}\n`;
+      message += `- ${item.material_category_name || ''} | ${item.material_name || ''} | 數量：${Math.floor(parseFloat(item.quantity) || 0)} ${item.unit || item.material_unit || ''}\n`;
     }
 
     if (options.request.notes) {
