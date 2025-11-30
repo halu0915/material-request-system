@@ -1700,7 +1700,7 @@
                         <td>${escapeHtml(request.work_area || '-')}</td>
                         <td>${escapeHtml(request.construction_category_name || '-')}</td>
                         <td>${escapeHtml(request.first_material_name || '-')}</td>
-                        <td>${escapeHtml(request.first_material_quantity || 0)}</td>
+                        <td>${escapeHtml(Math.floor(request.first_material_quantity || 0))}</td>
                         <td>
                             <button class="btn-secondary" onclick="viewRequest(${request.id})" style="margin-right: 5px;">查看</button>
                             <button class="btn-primary" onclick="sendRequestEmail(${request.id})" style="margin-right: 5px;">📧 發送郵件</button>
@@ -1728,7 +1728,7 @@
                         </div>
                         <div class="mobile-card-item-row">
                             <span class="mobile-card-item-label">數量</span>
-                            <span class="mobile-card-item-value">${escapeHtml(request.first_material_quantity || 0)}</span>
+                            <span class="mobile-card-item-value">${escapeHtml(Math.floor(request.first_material_quantity || 0))}</span>
                         </div>
                         <div class="mobile-card-item-actions">
                             <button class="btn-secondary" onclick="viewRequest(${request.id})">查看</button>
@@ -1787,7 +1787,7 @@
                                 <select class="item-material" required>
                                     <option value="">請先選擇施工類別</option>
                                 </select>
-                                <input type="number" class="item-quantity" placeholder="數量" step="10" required>
+                                <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if (this.value < 1) this.value = '';" required>
                                 <input type="text" class="item-unit" id="unit-input-0" placeholder="單位" list="unit-history">
                             </div>
                             <div class="request-item-row-full">
@@ -1918,7 +1918,7 @@
                     <select class="item-material" required>
                         ${materialOptions}
                     </select>
-                                <input type="number" class="item-quantity" placeholder="數量" step="10" required>
+                                <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if (this.value < 1) this.value = '';" required>
                     <input type="text" class="item-unit" id="unit-input-${itemCount}" placeholder="單位" list="unit-history">
                 </div>
                 <div class="request-item-row-full">
@@ -2058,9 +2058,30 @@
             if (!input) return;
             
             input.addEventListener('blur', function() {
-                const value = parseFloat(this.value);
-                if (!isNaN(value) && value < 1) {
+                const value = parseInt(this.value, 10);
+                if (isNaN(value) || value < 1) {
                     this.value = 5;
+                } else {
+                    // Ensure no decimal point
+                    this.value = Math.floor(value);
+                }
+            });
+            
+            // Prevent decimal point input
+            input.addEventListener('keydown', function(e) {
+                if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+                    e.preventDefault();
+                }
+            });
+            
+            // Remove decimal point on paste
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const cleanValue = pastedText.replace(/[^0-9]/g, '');
+                const intValue = parseInt(cleanValue, 10);
+                if (!isNaN(intValue) && intValue >= 1) {
+                    this.value = intValue;
                 }
             });
         }
@@ -2142,7 +2163,7 @@
             
             document.querySelectorAll('.request-item').forEach((item, index) => {
                 const materialId = item.querySelector('.item-material').value;
-                const quantity = parseFloat(item.querySelector('.item-quantity').value);
+                const quantity = parseInt(item.querySelector('.item-quantity').value, 10);
                 const unit = item.querySelector('.item-unit').value || null;
                 const itemNotes = item.querySelector('.item-notes').value || null;
                 const imageUrlInput = item.querySelector('.item-image-url');
@@ -2953,7 +2974,7 @@
                 html += `
                     <tr>
                         <td>${item.material_name || '-'}</td>
-                        <td>${item.quantity}</td>
+                        <td>${Math.floor(item.quantity || 0)}</td>
                         <td>${item.unit || item.material_unit || '-'}</td>
                         <td>${item.notes || '-'}</td>
                         <td>${imageDisplay}</td>
