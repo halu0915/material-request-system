@@ -3956,7 +3956,24 @@
         }
         
         // Initialize on page load
-        function initializeApp() {
+        
+
+        // Debug: Log all click events
+        document.addEventListener('click', function(e) {
+            console.log('Click detected:', e.target, e.target.onclick, e.target.className);
+        }, true);
+
+        // Ensure all onclick handlers are available globally
+        window.showHome = showHome;
+        window.navigateToSection = navigateToSection;
+        window.openSection = function(section) {
+            if (typeof navigateToSection === 'function') {
+                navigateToSection(section);
+            } else {
+                console.error('navigateToSection function not found');
+            }
+        };
+function initializeApp() {
             (async function() {
                 try {
                     await init();
