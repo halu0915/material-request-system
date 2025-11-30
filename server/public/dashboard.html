@@ -2468,34 +2468,235 @@
             }
         }
 
+        // Company management functions
+        function getCompanies() {
+            const companiesJson = localStorage.getItem('companies');
+            return companiesJson ? JSON.parse(companiesJson) : [];
+        }
+
+        function saveCompanies(companies) {
+            localStorage.setItem('companies', JSON.stringify(companies));
+        }
+
+        function getDefaultCompany() {
+            const companies = getCompanies();
+            return companies.find(c => c.is_default) || companies[0] || null;
+        }
+
+        async function manageCompanies() {
+            document.getElementById('company-manage-modal').style.display = 'block';
+            await loadCompanies();
+        }
+
+        async function loadCompanies() {
+            const companies = getCompanies();
+            const content = document.getElementById('company-list-content');
+            
+            if (companies.length === 0) {
+                content.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">尚無公司資料，請點擊「新增公司」按鈕新增</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>公司名稱</th><th>統編</th><th>預設</th><th>操作</th></tr></thead><tbody>';
+            companies.forEach(company => {
+                html += `
+                    <tr>
+                        <td>${escapeHtml(company.name)}</td>
+                        <td>${escapeHtml(company.tax_id)}</td>
+                        <td>${company.is_default ? '✓' : ''}</td>
+                        <td>
+                            <button class="btn-secondary" onclick="editCompanyById('${company.id}')" style="margin-right: 5px;">編輯</button>
+                            <button class="btn-danger" onclick="deleteCompany('${company.id}')">刪除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            html += '</tbody></table>';
+
+            // Mobile card view
+            html += '<div class="mobile-card">';
+            companies.forEach(company => {
+                html += `
+                    <div class="mobile-card-item">
+                        <div class="mobile-card-item-header">${escapeHtml(company.name)}</div>
+                        <div class="mobile-card-item-row">
+                            <span class="mobile-card-item-label">統編</span>
+                            <span class="mobile-card-item-value">${escapeHtml(company.tax_id)}</span>
+                        </div>
+                        ${company.is_default ? '<div class="mobile-card-item-row"><span class="mobile-card-item-label">預設</span><span class="mobile-card-item-value">✓</span></div>' : ''}
+                        <div class="mobile-card-item-actions">
+                            <button class="btn-secondary" onclick="editCompanyById('${company.id}')">編輯</button>
+                            <button class="btn-danger" onclick="deleteCompany('${company.id}')">刪除</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            content.innerHTML = html;
+        }
+
+        function showAddCompanyForm() {
+            document.getElementById('company-modal-title').textContent = '新增公司';
+            document.getElementById('company-form').reset();
+            document.getElementById('company-id').value = '';
+            document.getElementById('company-is-default').checked = false;
+            document.getElementById('company-modal').style.display = 'block';
+        }
+
+        function editCompanyById(id) {
+            const companies = getCompanies();
+            const company = companies.find(c => c.id === id);
+            if (!company) {
+                alert('找不到公司資料');
+                return;
+            }
+
+            document.getElementById('company-modal-title').textContent = '編輯公司';
+            document.getElementById('company-id').value = company.id;
+            document.getElementById('company-name').value = company.name;
+            document.getElementById('company-tax-id').value = company.tax_id;
+            document.getElementById('company-is-default').checked = company.is_default || false;
+            document.getElementById('company-modal').style.display = 'block';
+        }
+
+        function saveCompany(event) {
+            event.preventDefault();
+            const id = document.getElementById('company-id').value;
+            const name = document.getElementById('company-name').value.trim();
+            const taxId = document.getElementById('company-tax-id').value.trim();
+            const isDefault = document.getElementById('company-is-default').checked;
+
+            if (!name || !taxId) {
+                alert('請填寫完整資料');
+                return;
+            }
+
+            const companies = getCompanies();
+            
+            if (isDefault) {
+                // Remove default flag from other companies
+                companies.forEach(c => c.is_default = false);
+            }
+
+            if (id) {
+                // Update existing
+                const index = companies.findIndex(c => c.id === id);
+                if (index !== -1) {
+                    companies[index] = { id, name, tax_id: taxId, is_default: isDefault };
+                }
+            } else {
+                // Add new
+                const newId = 'company_' + Date.now();
+                companies.push({ id: newId, name, tax_id: taxId, is_default: isDefault });
+            }
+
+            saveCompanies(companies);
+            closeModal('company-modal');
+            loadCompanies();
+            alert(id ? '公司更新成功！' : '公司建立成功！');
+        }
+
+        function deleteCompany(id) {
+            if (!confirm('確定要刪除此公司嗎？')) return;
+            
+            const companies = getCompanies();
+            const filtered = companies.filter(c => c.id !== id);
+            saveCompanies(filtered);
+            loadCompanies();
+            alert('公司已刪除');
+        }
+
+        // Company selection for Excel/Email
+        let companySelectionCallback = null;
+
+        async function selectCompany(callback) {
+            companySelectionCallback = callback;
+            const companies = getCompanies();
+            const dropdown = document.getElementById('company-select-dropdown');
+            
+            dropdown.innerHTML = '<option value="">-- 請選擇公司 --</option>';
+            companies.forEach(company => {
+                const option = document.createElement('option');
+                option.value = company.id;
+                option.textContent = `${company.name} (${company.tax_id})${company.is_default ? ' [預設]' : ''}`;
+                dropdown.appendChild(option);
+            });
+
+            // Set default company if exists
+            const defaultCompany = getDefaultCompany();
+            if (defaultCompany) {
+                dropdown.value = defaultCompany.id;
+            }
+
+            document.getElementById('company-select-name').value = '';
+            document.getElementById('company-select-tax-id').value = '';
+            document.getElementById('company-select-modal').style.display = 'block';
+        }
+
+        function confirmCompanySelection() {
+            const dropdown = document.getElementById('company-select-dropdown');
+            const nameInput = document.getElementById('company-select-name');
+            const taxIdInput = document.getElementById('company-select-tax-id');
+
+            let companyName = '';
+            let taxId = '';
+
+            if (dropdown.value) {
+                // Selected from dropdown
+                const companies = getCompanies();
+                const selected = companies.find(c => c.id === dropdown.value);
+                if (selected) {
+                    companyName = selected.name;
+                    taxId = selected.tax_id;
+                }
+            } else {
+                // Manual input
+                companyName = nameInput.value.trim();
+                taxId = taxIdInput.value.trim();
+            }
+
+            if (!companyName && !taxId) {
+                // Use empty values (will use default from env)
+                companyName = '';
+                taxId = '';
+            }
+
+            closeModal('company-select-modal');
+            
+            if (companySelectionCallback) {
+                companySelectionCallback(companyName, taxId);
+                companySelectionCallback = null;
+            }
+        }
+
         // Send email for request
         async function sendRequestEmail(id) {
             if (!confirm('確定要發送郵件嗎？')) return;
             
-            const companyName = prompt('請輸入公司名稱（可選，留空使用預設值）：') || '';
-            const taxId = prompt('請輸入統編（可選，留空使用預設值）：') || '';
-            
-            try {
-                const params = new URLSearchParams();
-                if (companyName) params.append('company_name', companyName);
-                if (taxId) params.append('tax_id', taxId);
-                
-                const url = `/api/requests/${id}/send-email${params.toString() ? '?' + params.toString() : ''}`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: getHeaders()
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    alert(`✅ ${data.message}\n收件人：${data.recipients.join(', ')}`);
-                } else {
-                    const error = await response.json();
-                    alert('發送失敗：' + (error.error || '未知錯誤'));
+            await selectCompany(async (companyName, taxId) => {
+                try {
+                    const params = new URLSearchParams();
+                    if (companyName) params.append('company_name', companyName);
+                    if (taxId) params.append('tax_id', taxId);
+                    
+                    const url = `/api/requests/${id}/send-email${params.toString() ? '?' + params.toString() : ''}`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: getHeaders()
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        alert(`✅ ${data.message}\n收件人：${data.recipients.join(', ')}`);
+                    } else {
+                        const error = await response.json();
+                        alert('發送失敗：' + (error.error || '未知錯誤'));
+                    }
+                } catch (error) {
+                    alert('發送失敗：' + error.message);
                 }
-            } catch (error) {
-                alert('發送失敗：' + error.message);
-            }
+            });
         }
 
         // Delete request
