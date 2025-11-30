@@ -458,6 +458,11 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   buffer = await addImagesToExcel(buffer, request);
   
   return buffer;
+  } catch (error: any) {
+    console.error('generateExcel錯誤:', error);
+    console.error('錯誤詳情:', error.message, error.stack);
+    throw new Error('產生Excel失敗: ' + (error.message || '未知錯誤'));
+  }
 }
 
 // Helper function to download image from URL or local path
