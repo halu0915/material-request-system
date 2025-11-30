@@ -107,43 +107,37 @@ export const createTables = async (): Promise<void> => {
       END $$;
     `);
     
-    // Drop old unique constraint/indexes if they exist (for existing databases)
+    // Drop ALL unique constraints and indexes on materials table
+    // This allows creating multiple materials with same category, name, and specification
     await query(`
       DO $$ 
+      DECLARE
+        constraint_record RECORD;
+        index_record RECORD;
       BEGIN
-        -- Drop old unique constraint if it exists
-        IF EXISTS (
-          SELECT 1 FROM pg_constraint 
-          WHERE conname = 'materials_construction_category_id_material_category_id_name_key'
-        ) THEN
-          ALTER TABLE materials DROP CONSTRAINT materials_construction_category_id_material_category_id_name_key;
-        END IF;
+        -- Drop all unique constraints on materials table
+        FOR constraint_record IN 
+          SELECT conname
+          FROM pg_constraint c
+          JOIN pg_class t ON c.conrelid = t.oid
+          WHERE t.relname = 'materials'
+          AND c.contype = 'u'
+        LOOP
+          EXECUTE 'ALTER TABLE materials DROP CONSTRAINT IF EXISTS ' || constraint_record.conname;
+          RAISE NOTICE 'Dropped constraint: %', constraint_record.conname;
+        END LOOP;
         
-        -- Drop old unique index if it exists (different name variations)
-        IF EXISTS (
-          SELECT 1 FROM pg_indexes 
-          WHERE tablename = 'materials' 
-          AND indexname = 'materials_construction_category_id_material_category_id_name_key'
-        ) THEN
-          DROP INDEX IF EXISTS materials_construction_category_id_material_category_id_name_key;
-        END IF;
-        
-        -- Drop any other old unique indexes that don't include specification
-        IF EXISTS (
-          SELECT 1 FROM pg_indexes 
-          WHERE tablename = 'materials' 
-          AND indexname LIKE '%materials%unique%'
-          AND indexname != 'materials_unique_with_spec'
-        ) THEN
-          DROP INDEX IF EXISTS materials_unique_combo;
-        END IF;
+        -- Drop all unique indexes on materials table
+        FOR index_record IN 
+          SELECT indexname
+          FROM pg_indexes
+          WHERE tablename = 'materials'
+          AND indexdef LIKE '%UNIQUE%'
+        LOOP
+          EXECUTE 'DROP INDEX IF EXISTS ' || index_record.indexname;
+          RAISE NOTICE 'Dropped index: %', index_record.indexname;
+        END LOOP;
       END $$;
-    `);
-    
-    // Remove unique index to allow duplicate materials with same category, name, and specification
-    // Users can now create multiple materials with identical specifications if needed
-    await query(`
-      DROP INDEX IF EXISTS materials_unique_with_spec;
     `);
 
     // Delivery addresses table (create before material_requests to avoid foreign key issues)
