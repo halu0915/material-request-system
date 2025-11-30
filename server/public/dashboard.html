@@ -4281,6 +4281,9 @@
                 if (typeof showHome === 'function') window.showHome = showHome;
                 if (typeof openSection === 'function') window.openSection = openSection;
                 if (typeof navigateToSection === 'function') window.navigateToSection = navigateToSection;
+                if (typeof loadMaterials === 'function') window.loadMaterials = loadMaterials;
+                if (typeof loadRequests === 'function') window.loadRequests = loadRequests;
+                if (typeof loadReports === 'function') window.loadReports = loadReports;
                 if (typeof manageCategories === 'function') window.manageCategories = manageCategories;
                 if (typeof manageAddresses === 'function') window.manageAddresses = manageAddresses;
                 if (typeof manageCompanies === 'function') window.manageCompanies = manageCompanies;
@@ -4288,13 +4291,13 @@
                 if (typeof showCreateRequestForm === 'function') window.showCreateRequestForm = showCreateRequestForm;
                 
                 // Verify critical functions are exposed
-                const criticalFunctions = ['showHome', 'openSection', 'navigateToSection'];
+                const criticalFunctions = ['showHome', 'openSection', 'navigateToSection', 'loadMaterials', 'loadRequests', 'loadReports'];
                 const missing = criticalFunctions.filter(fn => typeof window[fn] !== 'function');
                 
                 if (missing.length > 0) {
                     console.error('❌ 以下關鍵函數未暴露:', missing);
                 } else {
-                    console.log('✅ 所有關鍵函數已確認暴露');
+                    console.log('✅ 所有關鍵函數已確認暴露（包括導航和加載函數）');
                 }
             } catch (finalError) {
                 console.error('❌ 最終函數暴露檢查失敗:', finalError);
