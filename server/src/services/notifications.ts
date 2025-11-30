@@ -619,7 +619,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
                   
                   // Add image to workbook
                   const imageId = workbook.addImage({
-                    buffer: Buffer.from(imageBuffer as any) as any as any ? imageBuffer : Buffer.from(imageBuffer),
+                    buffer: Buffer.from(imageBuffer as any) as any,
                     extension: imageExtension as 'png' | 'jpeg' | 'gif'
                   });
                   
