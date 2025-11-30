@@ -59,20 +59,51 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     // Main item row - only include notes, no image/link references
     // Clean notes: remove any image_url or link_url references to prevent format issues
     let cleanNotes = item.notes || '';
-    // Remove any image_url or link_url if they were accidentally added to notes
-    if (cleanNotes && (item.image_url || item.link_url)) {
-      // Remove image URL from notes if present
-      if (item.image_url && cleanNotes.includes(item.image_url)) {
-        cleanNotes = cleanNotes.replace(item.image_url, '').trim();
+    
+    // Comprehensive cleaning: remove ALL image/link references
+    if (cleanNotes) {
+      // Remove image URL from notes if present (handle various URL formats)
+      if (item.image_url) {
+        // Remove full URL
+        cleanNotes = cleanNotes.replace(new RegExp(item.image_url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+        // Remove partial URL matches
+        const urlParts = item.image_url.split('/');
+        if (urlParts.length > 0) {
+          const filename = urlParts[urlParts.length - 1];
+          cleanNotes = cleanNotes.replace(new RegExp(filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+        }
       }
+      
       // Remove link URL from notes if present
-      if (item.link_url && cleanNotes.includes(item.link_url)) {
-        cleanNotes = cleanNotes.replace(item.link_url, '').trim();
+      if (item.link_url) {
+        // Remove full URL
+        cleanNotes = cleanNotes.replace(new RegExp(item.link_url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+        // Remove partial URL matches
+        const urlParts = item.link_url.split('/');
+        if (urlParts.length > 0) {
+          const domain = urlParts[2] || urlParts[0];
+          if (domain) {
+            cleanNotes = cleanNotes.replace(new RegExp(domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+          }
+        }
       }
-      // Remove common image/link text patterns
-      cleanNotes = cleanNotes.replace(/圖片[:：]?/gi, '').trim();
-      cleanNotes = cleanNotes.replace(/連結[:：]?/gi, '').trim();
-      cleanNotes = cleanNotes.replace(/圖片連結[:：]?/gi, '').trim();
+      
+      // Remove common image/link text patterns (more comprehensive)
+      cleanNotes = cleanNotes.replace(/圖片[:：]?\s*/gi, '').trim();
+      cleanNotes = cleanNotes.replace(/連結[:：]?\s*/gi, '').trim();
+      cleanNotes = cleanNotes.replace(/圖片連結[:：]?\s*/gi, '').trim();
+      cleanNotes = cleanNotes.replace(/image[:：]?\s*/gi, '').trim();
+      cleanNotes = cleanNotes.replace(/link[:：]?\s*/gi, '').trim();
+      cleanNotes = cleanNotes.replace(/http[s]?:\/\/[^\s]+/gi, '').trim(); // Remove any remaining URLs
+      cleanNotes = cleanNotes.replace(/www\.[^\s]+/gi, '').trim(); // Remove www URLs
+      
+      // Remove multiple spaces and clean up
+      cleanNotes = cleanNotes.replace(/\s+/g, ' ').trim();
+      
+      // Limit notes length to prevent format issues (max 100 characters)
+      if (cleanNotes.length > 100) {
+        cleanNotes = cleanNotes.substring(0, 97) + '...';
+      }
     }
     
     mainData.push([
@@ -83,7 +114,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       item.material_specification || '',
       item.unit || item.material_unit || '',
       Math.floor(parseFloat(item.quantity) || 0),
-      cleanNotes // Only show clean notes, no image/link text
+      cleanNotes || '' // Only show clean notes, no image/link text, ensure it's always a string
     ]);
   }
 
@@ -186,7 +217,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   // Data rows - Normal style with borders (適中偏大)
   const dataStyle = {
     font: { name: '微軟正黑體', sz: 11 },
-    alignment: { vertical: 'center', wrapText: false },
+    alignment: { vertical: 'center', horizontal: 'left', wrapText: false },
     border: {
       top: { style: 'thin', color: { rgb: '666666' } },
       bottom: { style: 'thin', color: { rgb: '666666' } },
@@ -195,14 +226,25 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     }
   };
   
+  // Special style for notes column - ensure no wrapping and truncate if needed
+  const notesStyle = {
+    ...dataStyle,
+    alignment: { vertical: 'center', horizontal: 'left', wrapText: false }
+  };
+  
   const numRows = mainData.length;
   let currentRow = headerRow + 1;
   
   // Apply styles to all data rows (no image/link rows anymore)
   for (let i = headerRow + 1; i < mainData.length; i++) {
     // Regular data row
-    headerCols.forEach((col) => {
-      applyCellStyle(mainSheet, `${col}${currentRow}`, dataStyle);
+    headerCols.forEach((col, colIndex) => {
+      // Use notesStyle for the last column (備註), dataStyle for others
+      if (colIndex === headerCols.length - 1) {
+        applyCellStyle(mainSheet, `${col}${currentRow}`, notesStyle);
+      } else {
+        applyCellStyle(mainSheet, `${col}${currentRow}`, dataStyle);
+      }
     });
     currentRow++;
   }
@@ -215,6 +257,11 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   for (let r = headerRow + 1; r <= numRows; r++) {
     applyCellStyle(mainSheet, `F${r}`, centerStyle); // 單位
     applyCellStyle(mainSheet, `G${r}`, centerStyle); // 數量
+  }
+  
+  // Ensure notes column (H) has no wrapping for all data rows
+  for (let r = headerRow + 1; r <= numRows; r++) {
+    applyCellStyle(mainSheet, `H${r}`, notesStyle); // 備註 - no wrapping
   }
 
   // Merge cells for company header
