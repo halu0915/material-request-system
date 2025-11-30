@@ -1608,8 +1608,17 @@
 
         // Show home view
         function showHome() {
-            navigateToSection(null);
+            if (typeof window.navigateToSection === 'function') {
+                window.navigateToSection(null);
+            } else if (typeof navigateToSection === 'function') {
+                navigateToSection(null);
+            } else {
+                console.error('navigateToSection not available');
+            }
         }
+        
+        // Immediately expose showHome to window
+        window.showHome = showHome;
 
         // Navigate to section with browser history support
         function navigateToSection(section) {
