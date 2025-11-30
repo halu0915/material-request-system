@@ -4169,6 +4169,11 @@
                 if (typeof deleteCompany === 'function') window.deleteCompany = deleteCompany;
                 if (typeof confirmCompanySelection === 'function') window.confirmCompanySelection = confirmCompanySelection;
 
+                // Section loading functions - CRITICAL for navigation
+                if (typeof loadMaterials === 'function') window.loadMaterials = loadMaterials;
+                if (typeof loadRequests === 'function') window.loadRequests = loadRequests;
+                if (typeof loadReports === 'function') window.loadReports = loadReports;
+                
                 // Utility functions
                 if (typeof closeModal === 'function') window.closeModal = closeModal;
                 if (typeof handleImageUpload === 'function') window.handleImageUpload = handleImageUpload;
