@@ -25,12 +25,6 @@
             position: relative;
             z-index: 100;
             -webkit-backdrop-filter: blur(10px);
-            -webkit--webkit-backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
         .header-content {
@@ -64,8 +58,6 @@
             padding: 8px 16px;
             border-radius: 20px;
             -webkit-backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-                -webkit-backdrop-filter: blur(5px);
                 backdrop-filter: blur(5px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
@@ -670,8 +662,6 @@
                 background: rgba(255, 255, 255, 0.15);
                 padding: 6px 12px;
                 border-radius: 16px;
-                -webkit-backdrop-filter: blur(5px);
-                -webkit-backdrop-filter: blur(5px);
                 -webkit-backdrop-filter: blur(5px);
                 backdrop-filter: blur(5px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1501,8 +1491,6 @@
         let constructionCategories = [];
         let materialCategories = [];
 
-        // Initialize: Create guest account and get token
-        async 
         // Safari compatibility check
         if (!window.Promise) {
             console.error('此瀏覽器不支援 Promise，請更新瀏覽器');
@@ -1510,6 +1498,9 @@
         if (!window.fetch) {
             console.error('此瀏覽器不支援 fetch，請更新瀏覽器');
         }
+
+        // Initialize: Create guest account and get token
+        async function init() {
 
         function init() {
             try {
