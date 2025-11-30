@@ -2484,12 +2484,65 @@
             return companies.find(c => c.is_default) || companies[0] || null;
         }
 
+        // Load default company from environment variables
+        async function loadDefaultCompanyFromEnv() {
+            try {
+                const response = await fetch('/api/requests/default-company', {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.company_name && data.tax_id) {
+                        // Check if env company already exists in localStorage
+                        const companies = getCompanies();
+                        const envCompanyId = 'env_default_company';
+                        const existingEnvCompany = companies.find(c => c.id === envCompanyId);
+                        
+                        if (!existingEnvCompany) {
+                            // Add env company as default if not exists
+                            companies.unshift({
+                                id: envCompanyId,
+                                name: data.company_name,
+                                tax_id: data.tax_id,
+                                is_default: true,
+                                from_env: true
+                            });
+                            // Remove default flag from other companies
+                            companies.forEach(c => {
+                                if (c.id !== envCompanyId) {
+                                    c.is_default = false;
+                                }
+                            });
+                            saveCompanies(companies);
+                        } else {
+                            // Update env company info if exists
+                            existingEnvCompany.name = data.company_name;
+                            existingEnvCompany.tax_id = data.tax_id;
+                            existingEnvCompany.from_env = true;
+                            // Ensure it's default
+                            if (!existingEnvCompany.is_default) {
+                                companies.forEach(c => c.is_default = false);
+                                existingEnvCompany.is_default = true;
+                            }
+                            saveCompanies(companies);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('載入環境變數公司資訊失敗:', error);
+            }
+        }
+
         async function manageCompanies() {
             document.getElementById('company-manage-modal').style.display = 'block';
             await loadCompanies();
         }
 
         async function loadCompanies() {
+            // First, try to load default company from environment variables
+            await loadDefaultCompanyFromEnv();
+            
             const companies = getCompanies();
             const content = document.getElementById('company-list-content');
             
@@ -2498,16 +2551,19 @@
                 return;
             }
 
-            let html = '<table><thead><tr><th>公司名稱</th><th>統編</th><th>預設</th><th>操作</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>公司名稱</th><th>統編</th><th>來源</th><th>預設</th><th>操作</th></tr></thead><tbody>';
             companies.forEach(company => {
+                const source = company.from_env ? '<span style="color: #667eea;">環境變數</span>' : '手動新增';
+                const canDelete = !company.from_env;
                 html += `
                     <tr>
                         <td>${escapeHtml(company.name)}</td>
                         <td>${escapeHtml(company.tax_id)}</td>
+                        <td>${source}</td>
                         <td>${company.is_default ? '✓' : ''}</td>
                         <td>
-                            <button class="btn-secondary" onclick="editCompanyById('${company.id}')" style="margin-right: 5px;">編輯</button>
-                            <button class="btn-danger" onclick="deleteCompany('${company.id}')">刪除</button>
+                            ${canDelete ? `<button class="btn-secondary" onclick="editCompanyById('${company.id}')" style="margin-right: 5px;">編輯</button>` : '<span style="color: #999;">不可編輯</span>'}
+                            ${canDelete ? `<button class="btn-danger" onclick="deleteCompany('${company.id}')">刪除</button>` : ''}
                         </td>
                     </tr>
                 `;
@@ -2517,6 +2573,8 @@
             // Mobile card view
             html += '<div class="mobile-card">';
             companies.forEach(company => {
+                const source = company.from_env ? '<span style="color: #667eea;">環境變數</span>' : '手動新增';
+                const canDelete = !company.from_env;
                 html += `
                     <div class="mobile-card-item">
                         <div class="mobile-card-item-header">${escapeHtml(company.name)}</div>
@@ -2524,10 +2582,14 @@
                             <span class="mobile-card-item-label">統編</span>
                             <span class="mobile-card-item-value">${escapeHtml(company.tax_id)}</span>
                         </div>
+                        <div class="mobile-card-item-row">
+                            <span class="mobile-card-item-label">來源</span>
+                            <span class="mobile-card-item-value">${source}</span>
+                        </div>
                         ${company.is_default ? '<div class="mobile-card-item-row"><span class="mobile-card-item-label">預設</span><span class="mobile-card-item-value">✓</span></div>' : ''}
                         <div class="mobile-card-item-actions">
-                            <button class="btn-secondary" onclick="editCompanyById('${company.id}')">編輯</button>
-                            <button class="btn-danger" onclick="deleteCompany('${company.id}')">刪除</button>
+                            ${canDelete ? `<button class="btn-secondary" onclick="editCompanyById('${company.id}')">編輯</button>` : ''}
+                            ${canDelete ? `<button class="btn-danger" onclick="deleteCompany('${company.id}')">刪除</button>` : '<span style="color: #999; font-size: 0.9em;">環境變數公司不可編輯</span>'}
                         </div>
                     </div>
                 `;
@@ -2550,6 +2612,11 @@
             const company = companies.find(c => c.id === id);
             if (!company) {
                 alert('找不到公司資料');
+                return;
+            }
+
+            if (company.from_env) {
+                alert('無法編輯環境變數設定的公司');
                 return;
             }
 
@@ -2599,9 +2666,16 @@
         }
 
         function deleteCompany(id) {
+            const companies = getCompanies();
+            const company = companies.find(c => c.id === id);
+            
+            if (company && company.from_env) {
+                alert('無法刪除環境變數設定的公司');
+                return;
+            }
+            
             if (!confirm('確定要刪除此公司嗎？')) return;
             
-            const companies = getCompanies();
             const filtered = companies.filter(c => c.id !== id);
             saveCompanies(filtered);
             loadCompanies();
@@ -3035,6 +3109,9 @@
             await init();
             document.getElementById('userName').textContent = '使用者';
             document.getElementById('welcomeMessage').textContent = '歡迎使用叫料系統！';
+            
+            // Load default company from environment variables
+            await loadDefaultCompanyFromEnv();
             
             // Handle browser back/forward buttons
             window.addEventListener('popstate', handlePopState);
