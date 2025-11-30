@@ -1747,7 +1747,12 @@
                     filteredMaterials = [...allMaterials];
                     
                     // Load categories for filters
-                    await loadCategoriesForFilters();
+                    try {
+                        await loadCategoriesForFilters();
+                    } catch (filterError) {
+                        console.error('載入篩選類別失敗:', filterError);
+                        // Continue even if filter loading fails
+                    }
                     
                     displayMaterials(filteredMaterials);
                     updateMaterialStats();
@@ -1765,11 +1770,16 @@
                         filteredMaterials = [...allMaterials];
                         
                         // Load categories for filters
-                        await loadCategoriesForFilters();
+                        try {
+                            await loadCategoriesForFilters();
+                        } catch (filterError) {
+                            console.error('載入篩選類別失敗:', filterError);
+                            // Continue even if filter loading fails
+                        }
                         
                         displayMaterials(filteredMaterials);
                         updateMaterialStats();
-                } else {
+                    } else {
                         const errorText = await retryResponse.text();
                         let errorMessage = '無法載入物料資料';
                         try {
@@ -1779,6 +1789,7 @@
                             console.error('API 錯誤響應:', errorText);
                         }
                         content.innerHTML = '<div class="alert alert-error">' + escapeHtml(errorMessage) + '</div>';
+                        console.error('載入物料失敗 (重試後):', retryResponse.status, errorMessage);
                     }
                 } else {
                     const errorText = await response.text();
