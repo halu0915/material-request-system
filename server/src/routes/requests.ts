@@ -233,6 +233,58 @@ async function generateRequestNumber(categoryCode: string = 'M'): Promise<string
   // Sequence starts from 001 each month, increments for each request in the same month
   const sequence = String(currentCount + 1).padStart(3, '0'); // 001, 002, 003...
   
+
+// Helper function to get full request with items
+async function getFullRequest(requestId: number) {
+  try {
+    const requestResult = await query(
+      `SELECT 
+        mr.*,
+        cc.name as construction_category_name,
+        u.name as user_name,
+        u.email as user_email,
+        da.name as delivery_address_name,
+        da.address as delivery_address,
+        da.contact_person as delivery_contact_person,
+        da.contact_phone as delivery_contact_phone
+      FROM material_requests mr
+      LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
+      LEFT JOIN users u ON mr.user_id = u.id
+      LEFT JOIN delivery_addresses da ON mr.delivery_address_id = da.id
+      WHERE mr.id = $1`,
+      [requestId]
+    );
+
+    if (requestResult.rows.length === 0) {
+      return null;
+    }
+
+    const request = requestResult.rows[0];
+
+    const itemsResult = await query(
+      `SELECT 
+        mri.*,
+        m.name as material_name,
+        m.specification as material_specification,
+        m.unit as material_unit,
+        mc.name as material_category_name
+      FROM material_request_items mri
+      LEFT JOIN materials m ON mri.material_id = m.id
+      LEFT JOIN material_categories mc ON m.material_category_id = mc.id
+      WHERE mri.request_id = $1
+      ORDER BY mc.name, m.name`,
+      [requestId]
+    );
+
+    return {
+      ...request,
+      items: itemsResult.rows
+    };
+  } catch (error: any) {
+    console.error("取得完整叫料單資料錯誤:", error.message || error, error.stack);
+    throw error;
+  }
+}
   return `${categoryCode}${sequence}${dateStr}${year}`;
 }
 
@@ -758,51 +810,6 @@ function generateExcelFilename(request: any): string {
 }
 
 // Helper function to get full request with items
-async function getFullRequest(requestId: number) {
-  const requestResult = await query(
-    `SELECT 
-      mr.*,
-      cc.name as construction_category_name,
-      u.name as user_name,
-      u.email as user_email,
-      da.name as delivery_address_name,
-      da.address as delivery_address,
-      da.contact_person as delivery_contact_person,
-      da.contact_phone as delivery_contact_phone
-    FROM material_requests mr
-    LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
-    LEFT JOIN users u ON mr.user_id = u.id
-    LEFT JOIN delivery_addresses da ON mr.delivery_address_id = da.id
-    WHERE mr.id = $1`,
-    [requestId]
-  );
-
-  if (requestResult.rows.length === 0) {
-    return null;
-  }
-
-  const request = requestResult.rows[0];
-
-  const itemsResult = await query(
-    `SELECT 
-      mri.*,
-      m.name as material_name,
-      m.specification as material_specification,
-      m.unit as material_unit,
-      mc.name as material_category_name
-    FROM material_request_items mri
-    LEFT JOIN materials m ON mri.material_id = m.id
-    LEFT JOIN material_categories mc ON m.material_category_id = mc.id
-    WHERE mri.request_id = $1
-    ORDER BY mc.name, m.name`,
-    [requestId]
-  );
-
-  return {
-    ...request,
-    items: itemsResult.rows
-  };
-}
 
 export default router;
 
