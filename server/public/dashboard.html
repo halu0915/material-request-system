@@ -481,6 +481,25 @@
             .section-header button {
                 width: 100%;
             }
+            /* Mobile: materials filters */
+            #materials-filters {
+                padding: 15px !important;
+            }
+            #materials-filters > div:first-child {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            #materials-filters .form-group {
+                margin-bottom: 0 !important;
+            }
+            #materials-filters button {
+                width: 100%;
+                margin-top: 5px;
+            }
+            #materials-stats {
+                flex-direction: column;
+                gap: 10px !important;
+            }
             /* Mobile: hide all tables */
             table,
             #materials-content > table,
@@ -718,6 +737,36 @@
                     <button class="btn-secondary" onclick="manageAddresses()" style="margin-right: 10px;">管理地址</button>
                     <button class="btn-secondary" onclick="manageCompanies()" style="margin-right: 10px;">管理公司</button>
                     <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
+                </div>
+            </div>
+            <!-- Materials Filter and Search Bar -->
+            <div id="materials-filters" style="display: none; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end; margin-bottom: 15px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #333;">🔍 搜尋物料</label>
+                        <input type="text" id="material-search" placeholder="輸入材料名稱、規格或單位..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #333;">施工類別</label>
+                        <select id="filter-construction-category" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: white;">
+                            <option value="">全部施工類別</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #333;">材料類別</label>
+                        <select id="filter-material-category" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: white;">
+                            <option value="">全部材料類別</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="clearMaterialFilters()" style="padding: 10px 20px; white-space: nowrap;">清除篩選</button>
+                </div>
+                <div id="materials-stats" style="display: flex; gap: 20px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid #e0e0e0;">
+                    <div style="color: #666; font-size: 14px;">
+                        <strong style="color: #667eea;">總數：</strong><span id="total-materials-count">0</span>
+                    </div>
+                    <div style="color: #666; font-size: 14px;">
+                        <strong style="color: #667eea;">顯示：</strong><span id="filtered-materials-count">0</span>
+                    </div>
                 </div>
             </div>
             <div id="materials-content">
@@ -1043,6 +1092,9 @@
         let guestToken = null;
         let currentSection = null;
         let allMaterials = [];
+        let filteredMaterials = [];
+        let constructionCategories = [];
+        let materialCategories = [];
 
         // Initialize: Create guest account and get token
         async function init() {
@@ -1140,6 +1192,10 @@
                 // Load section data
             if (section === 'materials') {
                 loadMaterials();
+                // Setup filters after a short delay to ensure DOM is ready
+                setTimeout(() => {
+                    setupMaterialFilters();
+                }, 100);
             } else if (section === 'requests') {
                 loadRequests();
             } else if (section === 'reports') {
@@ -1198,7 +1254,13 @@
                 if (response.ok) {
                     const data = await response.json();
                     allMaterials = data.materials || [];
-                    displayMaterials(allMaterials);
+                    filteredMaterials = [...allMaterials];
+                    
+                    // Load categories for filters
+                    await loadCategoriesForFilters();
+                    
+                    displayMaterials(filteredMaterials);
+                    updateMaterialStats();
                 } else if (response.status === 401 || response.status === 403) {
                     // Token invalid, try to refresh
                     console.warn('Token 無效，嘗試刷新...');
@@ -1210,7 +1272,13 @@
                     if (retryResponse.ok) {
                         const data = await retryResponse.json();
                         allMaterials = data.materials || [];
-                        displayMaterials(allMaterials);
+                        filteredMaterials = [...allMaterials];
+                        
+                        // Load categories for filters
+                        await loadCategoriesForFilters();
+                        
+                        displayMaterials(filteredMaterials);
+                        updateMaterialStats();
                 } else {
                         const errorText = await retryResponse.text();
                         let errorMessage = '無法載入物料資料';
@@ -1240,6 +1308,103 @@
             }
         }
 
+        // Load categories for filter dropdowns
+        async function loadCategoriesForFilters() {
+            try {
+                const [ccRes, mcRes] = await Promise.all([
+                    fetch('/api/materials/construction-categories', { headers: getHeaders() }),
+                    fetch('/api/materials/material-categories', { headers: getHeaders() })
+                ]);
+                
+                if (ccRes.ok && mcRes.ok) {
+                    const ccData = await ccRes.json();
+                    const mcData = await mcRes.json();
+                    
+                    constructionCategories = ccData.categories || [];
+                    materialCategories = mcData.categories || [];
+                    
+                    // Populate filter dropdowns
+                    const ccFilter = document.getElementById('filter-construction-category');
+                    const mcFilter = document.getElementById('filter-material-category');
+                    
+                    if (ccFilter) {
+                        ccFilter.innerHTML = '<option value="">全部施工類別</option>';
+                        constructionCategories.forEach(cat => {
+                            ccFilter.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+                        });
+                    }
+                    
+                    if (mcFilter) {
+                        mcFilter.innerHTML = '<option value="">全部材料類別</option>';
+                        materialCategories.forEach(cat => {
+                            mcFilter.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+                        });
+                    }
+                    
+                    // Show filters if materials exist
+                    const filtersDiv = document.getElementById('materials-filters');
+                    if (filtersDiv && allMaterials.length > 0) {
+                        filtersDiv.style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('載入類別錯誤:', error);
+            }
+        }
+        
+        // Filter materials based on search and category filters
+        function filterMaterials() {
+            const searchTerm = (document.getElementById('material-search')?.value || '').toLowerCase().trim();
+            const constructionCategoryId = document.getElementById('filter-construction-category')?.value || '';
+            const materialCategoryId = document.getElementById('filter-material-category')?.value || '';
+            
+            filteredMaterials = allMaterials.filter(material => {
+                // Search filter
+                const matchesSearch = !searchTerm || 
+                    (material.name && material.name.toLowerCase().includes(searchTerm)) ||
+                    (material.specification && material.specification.toLowerCase().includes(searchTerm)) ||
+                    (material.unit && material.unit.toLowerCase().includes(searchTerm)) ||
+                    (material.construction_category_name && material.construction_category_name.toLowerCase().includes(searchTerm)) ||
+                    (material.material_category_name && material.material_category_name.toLowerCase().includes(searchTerm));
+                
+                // Construction category filter
+                const matchesConstruction = !constructionCategoryId || 
+                    material.construction_category_id == constructionCategoryId;
+                
+                // Material category filter
+                const matchesMaterial = !materialCategoryId || 
+                    material.material_category_id == materialCategoryId;
+                
+                return matchesSearch && matchesConstruction && matchesMaterial;
+            });
+            
+            displayMaterials(filteredMaterials);
+            updateMaterialStats();
+        }
+        
+        // Clear all filters
+        function clearMaterialFilters() {
+            document.getElementById('material-search').value = '';
+            document.getElementById('filter-construction-category').value = '';
+            document.getElementById('filter-material-category').value = '';
+            filteredMaterials = [...allMaterials];
+            displayMaterials(filteredMaterials);
+            updateMaterialStats();
+        }
+        
+        // Update material statistics
+        function updateMaterialStats() {
+            const totalCount = document.getElementById('total-materials-count');
+            const filteredCount = document.getElementById('filtered-materials-count');
+            
+            if (totalCount) {
+                totalCount.textContent = allMaterials.length;
+            }
+            if (filteredCount) {
+                filteredCount.textContent = filteredMaterials.length;
+            }
+        }
+        
         function displayMaterials(materials) {
             const content = document.getElementById('materials-content');
             
@@ -1249,7 +1414,11 @@
             }
             
             if (materials.length === 0) {
-                content.innerHTML = '<div class="empty-state">尚無物料資料，請先建立類別，然後點擊「新增物料」開始添加</div>';
+                if (allMaterials.length === 0) {
+                    content.innerHTML = '<div class="empty-state">尚無物料資料，請先建立類別，然後點擊「新增物料」開始添加</div>';
+                } else {
+                    content.innerHTML = '<div class="empty-state">沒有符合篩選條件的物料，請調整篩選條件或<a href="javascript:clearMaterialFilters()" style="color: #667eea; text-decoration: underline;">清除篩選</a></div>';
+                }
                 return;
             }
             
@@ -1262,7 +1431,7 @@
                     <tr>
                         <td>${escapeHtml(material.construction_category_name || '-')}</td>
                         <td>${escapeHtml(material.material_category_name || '-')}</td>
-                        <td>${escapeHtml(material.name)}</td>
+                        <td><strong>${escapeHtml(material.name)}</strong></td>
                         <td>${escapeHtml(material.specification || '-')}</td>
                         <td>${escapeHtml(material.unit || '-')}</td>
                         <td>
@@ -1611,7 +1780,7 @@
                 
                 if (response.ok) {
                     closeModal('material-modal');
-                    loadMaterials();
+                    await loadMaterials();
                     alert(materialId ? '物料更新成功！' : '物料建立成功！');
                 } else {
                     const error = await response.json();
@@ -1633,7 +1802,7 @@
                 });
                 
                 if (response.ok) {
-                    loadMaterials();
+                    await loadMaterials();
                     alert('物料已刪除');
                 } else {
                     const error = await response.json();
@@ -3178,6 +3347,32 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
+        // Setup material filter event listeners
+        function setupMaterialFilters() {
+            const searchInput = document.getElementById('material-search');
+            const constructionFilter = document.getElementById('filter-construction-category');
+            const materialFilter = document.getElementById('filter-material-category');
+            
+            if (searchInput) {
+                // Debounce search input
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        filterMaterials();
+                    }, 300);
+                });
+            }
+            
+            if (constructionFilter) {
+                constructionFilter.addEventListener('change', filterMaterials);
+            }
+            
+            if (materialFilter) {
+                materialFilter.addEventListener('change', filterMaterials);
+            }
+        }
+        
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', async () => {
             await init();
@@ -3186,6 +3381,9 @@
             
             // Load default company from environment variables
             await loadDefaultCompanyFromEnv();
+            
+            // Setup material filter event listeners
+            setupMaterialFilters();
             
             // Handle browser back/forward buttons
             window.addEventListener('popstate', handlePopState);
