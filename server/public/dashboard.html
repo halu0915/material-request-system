@@ -2645,6 +2645,9 @@
                     alert('無法開啟新增叫料單表單: ' + error.message);
                 }
         }
+        
+        // Immediately expose showCreateRequestForm to window
+        if (typeof showCreateRequestForm === 'function') window.showCreateRequestForm = showCreateRequestForm;
 
         // Filter materials by construction category
         function filterMaterialsByCategory(constructionCategoryId) {
