@@ -298,6 +298,13 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
       // Create request items
       for (const item of items) {
+        // Validate quantity: must be non-negative integer
+        const quantity = Math.max(0, Math.floor(parseFloat(item.quantity) || 0));
+        
+        if (!item.material_id) {
+          throw new Error('材料ID必填');
+        }
+        
         await client.query(
           `INSERT INTO material_request_items 
            (request_id, material_id, quantity, unit, notes, image_url, link_url)
@@ -305,7 +312,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
           [
             request.id,
             item.material_id,
-            item.quantity,
+            quantity,
             item.unit || null,
             item.notes || null,
             item.image_url || null,

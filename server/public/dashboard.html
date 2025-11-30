@@ -878,7 +878,7 @@
                             <select class="item-material" required>
                                 <option value="">選擇物料</option>
                             </select>
-                            <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if (this.value < 1) this.value = '';" required>
+                            <input type="number" class="item-quantity" placeholder="數量" step="1" min="0" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required>
                             <input type="text" class="item-unit" placeholder="單位" list="unit-history">
                             <input type="text" class="item-notes" placeholder="備註">
                             <input type="url" class="item-image-url" placeholder="圖片網址（可選）">
@@ -1787,7 +1787,7 @@
                                 <select class="item-material" required>
                                     <option value="">請先選擇施工類別</option>
                                 </select>
-                                <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if (this.value < 1) this.value = '';" required>
+                                <input type="number" class="item-quantity" placeholder="數量" step="1" min="0" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required>
                                 <input type="text" class="item-unit" id="unit-input-0" placeholder="單位" list="unit-history">
                             </div>
                             <div class="request-item-row-full">
@@ -1918,7 +1918,7 @@
                     <select class="item-material" required>
                         ${materialOptions}
                     </select>
-                                <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if (this.value < 1) this.value = '';" required>
+                                <input type="number" class="item-quantity" placeholder="數量" step="1" min="0" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required>
                     <input type="text" class="item-unit" id="unit-input-${itemCount}" placeholder="單位" list="unit-history">
                 </div>
                 <div class="request-item-row-full">
@@ -2053,35 +2053,37 @@
             }
         }
 
-        // Setup quantity validation - auto-adjust to 5 if < 1
+        // Setup quantity validation - ensure non-negative integer only
         function setupQuantityValidation(input) {
             if (!input) return;
             
             input.addEventListener('blur', function() {
                 const value = parseInt(this.value, 10);
-                if (isNaN(value) || value < 1) {
-                    this.value = 5;
+                if (isNaN(value) || value < 0) {
+                    this.value = 0;
                 } else {
                     // Ensure no decimal point
                     this.value = Math.floor(value);
                 }
             });
             
-            // Prevent decimal point input
+            // Prevent decimal point and negative sign input
             input.addEventListener('keydown', function(e) {
                 if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
                     e.preventDefault();
                 }
             });
             
-            // Remove decimal point on paste
+            // Remove decimal point and negative sign on paste
             input.addEventListener('paste', function(e) {
                 e.preventDefault();
                 const pastedText = (e.clipboardData || window.clipboardData).getData('text');
                 const cleanValue = pastedText.replace(/[^0-9]/g, '');
                 const intValue = parseInt(cleanValue, 10);
-                if (!isNaN(intValue) && intValue >= 1) {
+                if (!isNaN(intValue) && intValue >= 0) {
                     this.value = intValue;
+                } else {
+                    this.value = 0;
                 }
             });
         }
@@ -2163,21 +2165,23 @@
             
             document.querySelectorAll('.request-item').forEach((item, index) => {
                 const materialId = item.querySelector('.item-material').value;
-                const quantity = parseInt(item.querySelector('.item-quantity').value, 10);
+                const quantityInput = item.querySelector('.item-quantity');
+                const quantity = quantityInput ? parseInt(quantityInput.value, 10) : 0;
                 const unit = item.querySelector('.item-unit').value || null;
                 const itemNotes = item.querySelector('.item-notes').value || null;
                 const imageUrlInput = item.querySelector('.item-image-url');
                 const imageUrl = imageUrlInput ? imageUrlInput.value || null : null;
                 const linkUrl = item.querySelector('.item-link-url').value || null;
                 
-                if (materialId && quantity) {
-                    if (quantity <= 1) {
+                if (materialId) {
+                    // Validate quantity: must be non-negative integer
+                    if (isNaN(quantity) || quantity < 0) {
                         hasInvalidQuantity = true;
                         return;
                     }
                     items.push({
                         material_id: parseInt(materialId),
-                        quantity: quantity,
+                        quantity: Math.max(0, Math.floor(quantity)), // Ensure non-negative integer
                         unit: unit,
                         notes: itemNotes,
                         image_url: imageUrl,
@@ -2187,7 +2191,7 @@
             });
             
             if (hasInvalidQuantity) {
-                alert('數量必須大於1');
+                alert('數量必須為非負整數（不能為負數或小數）');
                 return;
             }
             
