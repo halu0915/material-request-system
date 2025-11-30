@@ -1146,7 +1146,7 @@
         <div id="materials-section" class="section" style="display: none;">
             <div class="section-header">
                 <h2>
-                    <button class="back-btn" onclick="showHome()">←</button>
+                    <button class="back-btn" onclick="if(typeof window.showHome==='function'){window.showHome();}else if(typeof showHome==='function'){showHome();}else{console.error('showHome not available');}">←</button>
                     <span>物料管理</span>
                 </h2>
                 <div>
@@ -1196,7 +1196,7 @@
         <div id="requests-section" class="section" style="display: none;">
             <div class="section-header">
                 <h2>
-                    <button class="back-btn" onclick="showHome()">←</button>
+                    <button class="back-btn" onclick="if(typeof window.showHome==='function'){window.showHome();}else if(typeof showHome==='function'){showHome();}else{console.error('showHome not available');}">←</button>
                     <span>叫料單管理</span>
                 </h2>
                 <button class="btn-primary" onclick="showCreateRequestForm()">新增叫料單</button>
@@ -1210,7 +1210,7 @@
         <div id="reports-section" class="section" style="display: none;">
             <div class="section-header">
                 <h2>
-                    <button class="back-btn" onclick="showHome()">←</button>
+                    <button class="back-btn" onclick="if(typeof window.showHome==='function'){window.showHome();}else if(typeof showHome==='function'){showHome();}else{console.error('showHome not available');}">←</button>
                     <span>報表統計</span>
                 </h2>
             </div>
@@ -1781,7 +1781,7 @@
                         
                         displayMaterials(filteredMaterials);
                         updateMaterialStats();
-                    } else {
+                } else {
                         const errorText = await retryResponse.text();
                         let errorMessage = '無法載入物料資料';
                         try {
@@ -4150,7 +4150,7 @@
             (async function() {
                 try {
                     console.log('開始初始化應用...');
-                    await init();
+            await init();
                     const userNameEl = document.getElementById('userName');
                     const welcomeMessageEl = document.getElementById('welcomeMessage');
                     if (userNameEl) userNameEl.textContent = '使用者';
@@ -4327,23 +4327,31 @@
         
         // Wrap navigateToSection to update bottom nav
         // Check if navigateToSection exists before wrapping
-        if (typeof navigateToSection !== 'undefined') {
-            const originalNavigateToSection = navigateToSection;
-            navigateToSection = function(section) {
-                if (originalNavigateToSection) {
-                    originalNavigateToSection(section);
-                }
-                if (section === null) {
-                    updateBottomNav('home');
-                } else {
-                    updateBottomNav(section);
-                }
-            };
-        }
+        // This needs to be done after navigateToSection is defined and exposed
+        setTimeout(function() {
+            if (typeof window.navigateToSection === 'function') {
+                const originalNavigateToSection = window.navigateToSection;
+                window.navigateToSection = function(section) {
+                    if (originalNavigateToSection) {
+                        originalNavigateToSection(section);
+                    }
+                    if (typeof updateBottomNav === 'function') {
+                        if (section === null) {
+                            updateBottomNav('home');
+                        } else {
+                            updateBottomNav(section);
+                        }
+                    }
+                };
+                console.log('navigateToSection wrapped for bottom nav');
+            }
+        }, 100);
         
         // Function to open section (used by feature cards) - override previous definition
         function openSection(section) {
             console.log('openSection called with:', section);
+            console.log('window.navigateToSection type:', typeof window.navigateToSection);
+            console.log('navigateToSection type:', typeof navigateToSection);
             // Use window.navigateToSection to ensure we're using the exposed version
             if (typeof window.navigateToSection === 'function') {
                 window.navigateToSection(section);
@@ -4351,6 +4359,7 @@
                 navigateToSection(section);
             } else {
                 console.error('navigateToSection function not found');
+                console.error('Available on window:', Object.keys(window).filter(k => k.includes('nav') || k.includes('Section') || k.includes('Home')));
                 // Fallback: directly show the section
                 if (section === null) {
                     const homeView = document.getElementById('home-view');
