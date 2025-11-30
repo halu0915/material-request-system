@@ -534,7 +534,6 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       details: errorMessage
     });
   });
-  }
 });
 
 // Send email for request manually
