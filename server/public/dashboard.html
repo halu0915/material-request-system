@@ -17,16 +17,15 @@
             color: #2c3e50;
         }
         .header {
-            background: #ffffff;
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 100%);
             color: #2c3e50;
             padding: 24px 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            border-bottom: 1px solid #e8e8e8;
+            box-shadow: 0 2px 8px rgba(255, 200, 100, 0.15);
+            border-bottom: 1px solid rgba(255, 200, 100, 0.3);
             position: sticky;
             top: 0;
             z-index: 100;
             backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.95);
         }
         .header-content {
             max-width: 1200px;
@@ -39,19 +38,20 @@
             font-size: 1.5rem;
             cursor: pointer;
             font-weight: 600;
-            color: #2c3e50;
+            color: #8b4513;
             letter-spacing: -0.02em;
             transition: color 0.2s ease;
         }
         .header h1:hover {
-            color: #4facfe;
+            color: #d2691e;
         }
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
-            color: #6b7280;
+            color: #6b4513;
             font-size: 0.9375rem;
+            font-weight: 500;
         }
         .container {
             max-width: 1200px;
@@ -616,8 +616,10 @@
                 position: sticky;
                 top: 0;
                 z-index: 100;
-                background: rgba(255, 255, 255, 0.98);
+                background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 100%);
                 backdrop-filter: blur(10px);
+                box-shadow: 0 2px 8px rgba(255, 200, 100, 0.15);
+                border-bottom: 1px solid rgba(255, 200, 100, 0.3);
             }
             .header-content {
                 flex-direction: row;
@@ -628,13 +630,14 @@
                 font-size: 1.25rem;
                 flex: 1;
                 font-weight: 600;
-                color: #2c3e50;
+                color: #8b4513;
                 letter-spacing: -0.01em;
             }
             .user-info {
                 gap: 8px;
                 font-size: 0.875rem;
-                color: #6b7280;
+                color: #6b4513;
+                font-weight: 500;
             }
             .user-info button {
                 padding: 8px 12px;
