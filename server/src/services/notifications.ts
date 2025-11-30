@@ -486,7 +486,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   // Generate buffer
   let buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   
-  // Add images to Excel using ExcelJS
+  // Add images and links to a new worksheet using ExcelJS
   buffer = await addImagesToExcel(buffer, request);
   
   return buffer;
@@ -519,64 +519,129 @@ async function downloadImage(imageUrl: string): Promise<Buffer | null> {
   }
 }
 
-// Add images to Excel file
+// Add images and links to a new worksheet in Excel file
 async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buffer> {
   try {
+    // Check if there are any items with images or links
+    const hasImagesOrLinks = request.items && request.items.some((item: any) => item.image_url || item.link_url);
+    
+    if (!hasImagesOrLinks) {
+      // No images or links, return original buffer
+      return excelBuffer;
+    }
+    
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(excelBuffer);
     
-    // Get the first worksheet (main sheet)
-    const worksheet = workbook.getWorksheet(1) || workbook.worksheets[0];
-    if (!worksheet) {
-      return excelBuffer; // Return original if no worksheet found
-    }
+    // Create a new worksheet for images and links
+    const imagesSheet = workbook.addWorksheet('圖片與連結');
     
-    // Find the header row (row 10, 0-based index 9)
-    const headerRowIndex = 9; // Row 10 (0-based)
-    let dataRowIndex = headerRowIndex + 1; // Start from first data row (row 11)
+    // Set column widths
+    imagesSheet.getColumn(1).width = 20; // 材料名稱
+    imagesSheet.getColumn(2).width = 15; // 材料規格
+    imagesSheet.getColumn(3).width = 50; // 圖片
+    imagesSheet.getColumn(4).width = 50; // 連結
+    
+    // Add header row
+    const headerRow = imagesSheet.getRow(1);
+    headerRow.values = ['材料名稱', '材料規格', '圖片', '連結'];
+    headerRow.font = { name: '微軟正黑體', size: 12, bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF4472C4' }
+    };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.height = 26;
+    
+    // Add borders to header
+    ['A1', 'B1', 'C1', 'D1'].forEach((cellAddress) => {
+      const cell = imagesSheet.getCell(cellAddress);
+      cell.border = {
+        top: { style: 'medium' },
+        bottom: { style: 'medium' },
+        left: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+    
+    let currentRow = 2;
     
     // Process each item
     for (const item of request.items || []) {
-      if (item.image_url) {
-        // Download image
-        const imageBuffer = await downloadImage(item.image_url);
-        
-        if (imageBuffer) {
-          // Add image to the row below the item (in column I, which is index 8)
-          // The image row is the row after the main item row
-          const imageRowIndex = dataRowIndex; // Same row as item, or row below
-          
-          // Determine image extension
-          let imageExtension = 'png';
-          if (item.image_url.toLowerCase().endsWith('.jpg') || item.image_url.toLowerCase().endsWith('.jpeg')) {
-            imageExtension = 'jpeg';
-          } else if (item.image_url.toLowerCase().endsWith('.gif')) {
-            imageExtension = 'gif';
-          }
-          
-          // Add image to worksheet
-          const imageId = workbook.addImage({
-            buffer: imageBuffer,
-            extension: imageExtension
-          });
-          
-          // Insert image in column I (index 8), spanning to column L (index 11)
-          // Position it below the item row
-          worksheet.addImage(imageId, {
-            tl: { col: 8, row: imageRowIndex },
-            ext: { width: 200, height: 150 } // Adjust size as needed
-          });
-          
-          // Increase row height to accommodate image
-          const row = worksheet.getRow(imageRowIndex + 1);
-          row.height = 120; // Adjust height as needed (in points)
-        }
-      }
-      
-      // Move to next item row
-      dataRowIndex += 1;
       if (item.image_url || item.link_url) {
-        dataRowIndex += 1; // Skip image/link row if exists
+        const row = imagesSheet.getRow(currentRow);
+        
+        // Material name
+        row.getCell(1).value = item.material_name || '';
+        row.getCell(1).font = { name: '微軟正黑體', size: 11 };
+        row.getCell(1).alignment = { vertical: 'top', wrapText: true };
+        
+        // Material specification
+        row.getCell(2).value = item.material_specification || '';
+        row.getCell(2).font = { name: '微軟正黑體', size: 11 };
+        row.getCell(2).alignment = { vertical: 'top', wrapText: true };
+        
+        // Image
+        if (item.image_url) {
+          const imageBuffer = await downloadImage(item.image_url);
+          
+          if (imageBuffer) {
+            // Determine image extension
+            let imageExtension = 'png';
+            if (item.image_url.toLowerCase().endsWith('.jpg') || item.image_url.toLowerCase().endsWith('.jpeg')) {
+              imageExtension = 'jpeg';
+            } else if (item.image_url.toLowerCase().endsWith('.gif')) {
+              imageExtension = 'gif';
+            }
+            
+            // Add image to workbook
+            const imageId = workbook.addImage({
+              buffer: imageBuffer,
+              extension: imageExtension
+            });
+            
+            // Insert image in column C (index 2)
+            imagesSheet.addImage(imageId, {
+              tl: { col: 2, row: currentRow - 1 },
+              ext: { width: 300, height: 200 } // Adjust size as needed
+            });
+            
+            // Set row height to accommodate image
+            row.height = 150; // Adjust height as needed (in points)
+          } else {
+            // If image download fails, add hyperlink text
+            row.getCell(3).value = {
+              text: item.image_url,
+              hyperlink: item.image_url
+            };
+            row.getCell(3).font = { name: '微軟正黑體', size: 10, color: { argb: 'FF0066CC' }, underline: true };
+            row.getCell(3).alignment = { vertical: 'top', wrapText: true };
+          }
+        }
+        
+        // Link
+        if (item.link_url) {
+          row.getCell(4).value = {
+            text: item.link_url,
+            hyperlink: item.link_url
+          };
+          row.getCell(4).font = { name: '微軟正黑體', size: 10, color: { argb: 'FF0066CC' }, underline: true };
+          row.getCell(4).alignment = { vertical: 'top', wrapText: true };
+        }
+        
+        // Add borders to data row
+        ['A', 'B', 'C', 'D'].forEach((col) => {
+          const cell = row.getCell(col);
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FF666666' } },
+            bottom: { style: 'thin', color: { argb: 'FF666666' } },
+            left: { style: 'thin', color: { argb: 'FF666666' } },
+            right: { style: 'thin', color: { argb: 'FF666666' } }
+          };
+        });
+        
+        currentRow++;
       }
     }
     
