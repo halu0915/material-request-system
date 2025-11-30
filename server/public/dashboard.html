@@ -1672,7 +1672,9 @@
         // Open section
         function openSection(section) {
             console.log('openSection called with:', section);
-            if (typeof navigateToSection === 'function') {
+            if (typeof window.navigateToSection === 'function') {
+                window.navigateToSection(section);
+            } else if (typeof navigateToSection === 'function') {
                 navigateToSection(section);
             } else {
                 console.error('navigateToSection is not a function');
@@ -1770,11 +1772,16 @@
                         filteredMaterials = [...allMaterials];
                         
                         // Load categories for filters
-                        await loadCategoriesForFilters();
+                        try {
+                            await loadCategoriesForFilters();
+                        } catch (filterError) {
+                            console.error('載入篩選類別失敗:', filterError);
+                            // Continue even if filter loading fails
+                        }
                         
                         displayMaterials(filteredMaterials);
                         updateMaterialStats();
-                } else {
+                    } else {
                         const errorText = await retryResponse.text();
                         let errorMessage = '無法載入物料資料';
                         try {
