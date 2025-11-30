@@ -4356,7 +4356,7 @@
             // Fallback for very old browsers
             window.onload = initializeApp;
         }
-    
+</script>
     
     <!-- Bottom Navigation Bar for Mobile -->
     <nav class="bottom-nav" id="bottom-nav">
@@ -4453,6 +4453,54 @@
         // Note: This wrapping is deferred to avoid timing issues
         
         // Function to open section (used by feature cards) - override previous definition
+        function openSection(section) {
+            console.log('openSection called with:', section);
+            console.log('window.navigateToSection type:', typeof window.navigateToSection);
+            console.log('navigateToSection type:', typeof navigateToSection);
+            // Use window.navigateToSection to ensure we're using the exposed version
+            if (typeof window.navigateToSection === 'function') {
+                window.navigateToSection(section);
+            } else if (typeof navigateToSection === 'function') {
+                navigateToSection(section);
+            } else {
+                console.error('navigateToSection function not found');
+                try {
+                    const available = Object.keys(window).filter(function(k) {
+                        return k.includes('nav') || k.includes('Section') || k.includes('Home');
+                    });
+                    console.error('Available on window:', available);
+                } catch (e) {
+                    console.error('Cannot check available functions:', e);
+                }
+                // Fallback: directly show the section
+                if (section === null) {
+                    const homeView = document.getElementById('home-view');
+                    if (homeView) homeView.style.display = 'block';
+                    ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                } else {
+                    const homeView = document.getElementById('home-view');
+                    if (homeView) homeView.style.display = 'none';
+                    ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                    const sectionEl = document.getElementById(section + '-section');
+                    if (sectionEl) {
+                        sectionEl.style.display = 'block';
+                        if (section === 'materials' && typeof loadMaterials === 'function') {
+                            loadMaterials();
+                        } else if (section === 'requests' && typeof loadRequests === 'function') {
+                            loadRequests();
+                        } else if (section === 'reports' && typeof loadReports === 'function') {
+                            loadReports();
+                        }
+                    }
+                }
+            }
+        }
         
         // Ensure openSection is exposed
         window.openSection = openSection;
