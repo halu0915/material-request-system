@@ -7,7 +7,9 @@ export interface AuthUser {
   name?: string;
 }
 
-export interface AuthRequest extends Request {
+// Extend Express Request to include user
+// Using intersection type to ensure all Request properties are preserved
+export type AuthRequest = Request & {
   user?: AuthUser;
 }
 

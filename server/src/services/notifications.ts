@@ -5,6 +5,8 @@ import axios from 'axios';
 import { google } from 'googleapis';
 import * as fs from 'fs';
 import * as path from 'path';
+import puppeteer from 'puppeteer';
+import PDFDocument from 'pdfkit';
 
 // Helper function to format datetime to minute (without seconds)
 function formatDateTimeToMinute(dateString: string): string {
@@ -434,7 +436,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
     let workbook: ExcelJS.Workbook;
     try {
       workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(Buffer.from(excelBuffer));
+      await workbook.xlsx.load(excelBuffer instanceof Buffer ? excelBuffer : Buffer.from(excelBuffer));
     } catch (loadError: any) {
       console.error('載入 Excel buffer 失敗:', loadError.message || loadError);
       // Return original buffer if load fails
@@ -598,7 +600,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
     // Generate buffer
     try {
       const buffer = await workbook.xlsx.writeBuffer();
-      return Buffer.from(buffer);
+      return buffer instanceof Buffer ? buffer : Buffer.from(buffer);
     } catch (writeError: any) {
       console.error('寫入 Excel buffer 失敗:', writeError.message || writeError);
       // Return original buffer if write fails
