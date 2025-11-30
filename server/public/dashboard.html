@@ -1813,13 +1813,49 @@
             e.preventDefault();
             
             const materialId = document.getElementById('material-form').getAttribute('data-material-id');
+            
+            // Get values even if fields are disabled
+            const constructionCategoryEl = document.getElementById('construction-category');
+            const materialCategoryEl = document.getElementById('material-category');
+            const materialNameEl = document.getElementById('material-name');
+            const specificationEl = document.getElementById('material-specification');
+            const unitEl = document.getElementById('material-unit');
+            const descriptionEl = document.getElementById('material-description');
+            
+            // Temporarily enable disabled fields to get their values
+            const wasConstructionDisabled = constructionCategoryEl.disabled;
+            const wasMaterialDisabled = materialCategoryEl.disabled;
+            const wasNameDisabled = materialNameEl.disabled;
+            
+            if (wasConstructionDisabled) constructionCategoryEl.disabled = false;
+            if (wasMaterialDisabled) materialCategoryEl.disabled = false;
+            if (wasNameDisabled) materialNameEl.disabled = false;
+            
+            const construction_category_id = parseInt(constructionCategoryEl.value);
+            const material_category_id = parseInt(materialCategoryEl.value);
+            const name = materialNameEl.value.trim();
+            const specification = specificationEl.value.trim() || null;
+            const unit = unitEl.value.trim() || null;
+            const description = descriptionEl.value.trim() || null;
+            
+            // Restore disabled state
+            if (wasConstructionDisabled) constructionCategoryEl.disabled = true;
+            if (wasMaterialDisabled) materialCategoryEl.disabled = true;
+            if (wasNameDisabled) materialNameEl.disabled = true;
+            
+            // Validate required fields
+            if (!construction_category_id || !material_category_id || !name) {
+                alert('請填寫所有必填欄位（施工類別、材料類別、材料名稱）');
+                return;
+            }
+            
             const material = {
-                construction_category_id: parseInt(document.getElementById('construction-category').value),
-                material_category_id: parseInt(document.getElementById('material-category').value),
-                name: document.getElementById('material-name').value,
-                specification: document.getElementById('material-specification').value || null,
-                unit: document.getElementById('material-unit').value || null,
-                description: document.getElementById('material-description').value || null
+                construction_category_id,
+                material_category_id,
+                name,
+                specification,
+                unit,
+                description
             };
             
             let endpoint = '/api/materials';
@@ -1831,22 +1867,29 @@
             }
             
             try {
+                console.log('準備儲存物料，資料：', material);
+                
                 const response = await fetch(endpoint, {
                     method: method,
                     headers: getHeaders(),
                     body: JSON.stringify(material)
                 });
                 
+                const responseData = await response.json();
+                console.log('伺服器回應：', response.status, responseData);
+                
                 if (response.ok) {
                     closeModal('material-modal');
                     await loadMaterials();
                     alert(materialId ? '物料更新成功！' : '物料建立成功！');
                 } else {
-                    const error = await response.json();
-                    alert('儲存失敗：' + (error.error || '未知錯誤'));
+                    const errorMsg = responseData.error || responseData.details || '未知錯誤';
+                    console.error('儲存失敗：', errorMsg, responseData);
+                    alert('儲存失敗：' + errorMsg + (responseData.details ? '\n詳情：' + responseData.details : ''));
                 }
             } catch (error) {
-                alert('儲存失敗：' + error.message);
+                console.error('儲存物料發生錯誤：', error);
+                alert('儲存失敗：' + (error.message || '網路錯誤，請檢查連線'));
             }
         }
 
