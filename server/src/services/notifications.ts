@@ -534,7 +534,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
                 
                 try {
                   // Calculate optimal image size based on column width
-                  // Column width 60 = approximately 450 pixels (Excel uses character units)
+                  // Column width 60 characters ≈ 450 pixels at 96 DPI
                   // We'll use a maximum width of 400 pixels and maintain aspect ratio
                   const maxWidth = 400; // pixels
                   const maxHeight = 300; // pixels
@@ -548,7 +548,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
                   // Try to get actual image dimensions from buffer
                   // This is a simplified approach - for production, use a proper image library
                   try {
-                    // Basic PNG/JPEG header parsing for dimensions
+                    // Basic PNG header parsing for dimensions
                     if (imageExtension === 'png' && imageBuffer.length >= 24) {
                       const width = imageBuffer.readUInt32BE(16);
                       const height = imageBuffer.readUInt32BE(20);
@@ -564,9 +564,10 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
                           imageWidth = Math.round(imageHeight * aspectRatio);
                         }
                       }
-                    } else if ((imageExtension === 'jpeg' || imageExtension === 'jpeg') && imageBuffer.length >= 20) {
+                    } else if (imageExtension === 'jpeg' && imageBuffer.length >= 20) {
                       // JPEG dimensions are more complex, use default for now
                       // In production, use a library like 'image-size' or 'sharp'
+                      // For now, use standard thumbnail size
                     }
                   } catch (dimError) {
                     // If dimension parsing fails, use defaults
@@ -580,19 +581,16 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
                   });
                   
                   // Insert image in column C (index 2) with optimized size
-                  // Excel uses EMU (English Metric Units) for positioning
-                  // 1 pixel ≈ 9525 EMU
-                  const emuWidth = imageWidth * 9525;
-                  const emuHeight = imageHeight * 9525;
-                  
+                  // ExcelJS addImage uses pixels directly for ext parameter
                   imagesSheet.addImage(imageId, {
                     tl: { col: 2, row: currentRow - 1 },
-                    ext: { width: emuWidth, height: emuHeight }
+                    ext: { width: imageWidth, height: imageHeight }
                   });
                   
                   // Set row height to accommodate image (convert pixels to points)
-                  // 1 point ≈ 1.33 pixels, but we'll add some padding
-                  const rowHeightPoints = Math.max(120, Math.round(imageHeight / 1.33) + 20);
+                  // Excel row height is in points: 1 point = 1/72 inch ≈ 1.33 pixels at 96 DPI
+                  // Add padding for better visual appearance
+                  const rowHeightPoints = Math.max(120, Math.round(imageHeight / 1.33) + 30);
                   row.height = Math.min(rowHeightPoints, 400); // Cap at 400 points
                   
                   // Center align the image cell
