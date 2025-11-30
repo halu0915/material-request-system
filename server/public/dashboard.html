@@ -4162,8 +4162,21 @@
                         console.log('showHome re-exposed');
                     }
                     if (typeof navigateToSection === 'function') {
-                        window.navigateToSection = navigateToSection;
-                        console.log('navigateToSection re-exposed');
+                        // Wrap navigateToSection to update bottom nav
+                        const originalNavigateToSection = navigateToSection;
+                        window.navigateToSection = function(section) {
+                            if (originalNavigateToSection) {
+                                originalNavigateToSection(section);
+                            }
+                            if (typeof updateBottomNav === 'function') {
+                                if (section === null) {
+                                    updateBottomNav('home');
+                                } else {
+                                    updateBottomNav(section);
+                                }
+                            }
+                        };
+                        console.log('navigateToSection re-exposed and wrapped for bottom nav');
                     }
                     if (typeof openSection === 'function') {
                         window.openSection = openSection;
