@@ -123,8 +123,7 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response)
 
     // Check if request exists and belongs to user
     const checkResult = await query(
-      'SELECT id ,
-      m.specification as material_specificationFROM material_requests WHERE id = $1 AND user_id = $2',
+      'SELECT id FROM material_requests WHERE id = $1 AND user_id = $2',
       [id, req.user?.id]
     );
 
@@ -139,9 +138,14 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response)
     );
 
     res.json({ message: '叫料單已刪除' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('刪除叫料單錯誤:', error);
-    res.status(500).json({ error: '刪除叫料單失敗' });
+    console.error('錯誤詳情:', error.message, error.stack);
+    res.status(500).json({ 
+      error: '刪除叫料單失敗',
+      message: error.message || '未知錯誤',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

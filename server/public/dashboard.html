@@ -3580,20 +3580,34 @@
             if (!confirm('確定要刪除此叫料單嗎？此操作無法復原。')) return;
             
             try {
+                console.log('準備刪除叫料單，ID:', id);
                 const response = await fetch(`/api/requests/${id}`, {
                     method: 'DELETE',
                     headers: getHeaders()
                 });
                 
+                console.log('刪除回應狀態:', response.status);
+                
                 if (response.ok) {
+                    const data = await response.json();
+                    console.log('刪除成功:', data);
                     loadRequests();
-                    alert('叫料單已刪除');
+                    alert('✅ 叫料單已刪除');
                 } else {
-                    const error = await response.json();
-                    alert('刪除失敗：' + (error.error || '未知錯誤'));
+                    const errorText = await response.text();
+                    let errorMessage = '刪除失敗';
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.error || errorJson.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = errorText || errorMessage;
+                    }
+                    console.error('刪除失敗:', response.status, errorMessage);
+                    alert('刪除失敗：' + errorMessage + ' (狀態碼: ' + response.status + ')');
                 }
-            } catch (error) {
-                alert('刪除失敗：' + error.message);
+            } catch (error: any) {
+                console.error('刪除錯誤:', error);
+                alert('刪除失敗：' + (error.message || '未知錯誤'));
             }
         }
         
