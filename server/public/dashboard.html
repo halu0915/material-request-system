@@ -4133,6 +4133,21 @@
         }
 
         function initializeApp() {
+            // Ensure all critical functions are exposed to window before initialization
+            // This is a safety net to ensure onclick handlers work
+            try {
+                if (typeof manageCategories === 'function') window.manageCategories = manageCategories;
+                if (typeof manageAddresses === 'function') window.manageAddresses = manageAddresses;
+                if (typeof manageCompanies === 'function') window.manageCompanies = manageCompanies;
+                if (typeof showAddMaterialForm === 'function') window.showAddMaterialForm = showAddMaterialForm;
+                if (typeof showCreateRequestForm === 'function') window.showCreateRequestForm = showCreateRequestForm;
+                if (typeof openSection === 'function') window.openSection = openSection;
+                if (typeof showHome === 'function') window.showHome = showHome;
+                console.log('✅ 關鍵函數已在 initializeApp 中暴露');
+            } catch (e) {
+                console.error('暴露函數時發生錯誤:', e);
+            }
+            
             (async function() {
                 try {
             await init();
