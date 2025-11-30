@@ -1620,47 +1620,76 @@
 
         // Navigate to section with browser history support
         function navigateToSection(section) {
-            // Update display
-            if (section === null) {
-            document.getElementById('home-view').style.display = 'block';
-            ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                document.getElementById(id).style.display = 'none';
-            });
-            currentSection = null;
-            } else {
-            document.getElementById('home-view').style.display = 'none';
-            ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                document.getElementById(id).style.display = 'none';
-            });
-            
-            currentSection = section;
-            const sectionEl = document.getElementById(section + '-section');
-            sectionEl.style.display = 'block';
-            
-                // Load section data
-            if (section === 'materials') {
-                loadMaterials();
-                // Setup filters after a short delay to ensure DOM is ready
-                setTimeout(() => {
-                    setupMaterialFilters();
-                }, 100);
-            } else if (section === 'requests') {
-                loadRequests();
-            } else if (section === 'reports') {
-                loadReports();
-            }
-            }
-            
-            // Update browser history
-            const url = section ? `#${section}` : '#';
-            if (window.location.hash !== url) {
-                if (section === null && window.location.hash) {
-                    // Going back to home
-                    history.pushState({ section: null }, '', window.location.pathname);
-                } else if (section) {
-                    // Going to a section
-                    history.pushState({ section: section }, '', `#${section}`);
+            console.log('navigateToSection called with:', section);
+            try {
+                // Update display
+                if (section === null) {
+                    const homeView = document.getElementById('home-view');
+                    if (homeView) homeView.style.display = 'block';
+                    ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                    currentSection = null;
+                } else {
+                    const homeView = document.getElementById('home-view');
+                    if (homeView) homeView.style.display = 'none';
+                    ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                    
+                    currentSection = section;
+                    const sectionEl = document.getElementById(section + '-section');
+                    if (!sectionEl) {
+                        console.error('Section element not found:', section + '-section');
+                        alert('找不到 ' + section + ' 頁面元素');
+                        return;
+                    }
+                    sectionEl.style.display = 'block';
+                    
+                    // Load section data
+                    if (section === 'materials') {
+                        if (typeof loadMaterials === 'function') {
+                            loadMaterials();
+                            // Setup filters after a short delay to ensure DOM is ready
+                            setTimeout(() => {
+                                if (typeof setupMaterialFilters === 'function') {
+                                    setupMaterialFilters();
+                                }
+                            }, 100);
+                        } else if (typeof window.loadMaterials === 'function') {
+                            window.loadMaterials();
+                        }
+                    } else if (section === 'requests') {
+                        if (typeof loadRequests === 'function') {
+                            loadRequests();
+                        } else if (typeof window.loadRequests === 'function') {
+                            window.loadRequests();
+                        }
+                    } else if (section === 'reports') {
+                        if (typeof loadReports === 'function') {
+                            loadReports();
+                        } else if (typeof window.loadReports === 'function') {
+                            window.loadReports();
+                        }
+                    }
                 }
+                
+                // Update browser history
+                const url = section ? `#${section}` : '#';
+                if (window.location.hash !== url) {
+                    if (section === null && window.location.hash) {
+                        // Going back to home
+                        history.pushState({ section: null }, '', window.location.pathname);
+                    } else if (section) {
+                        // Going to a section
+                        history.pushState({ section: section }, '', `#${section}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error in navigateToSection:', error);
+                alert('導航錯誤: ' + error.message);
             }
         }
         
@@ -1670,19 +1699,35 @@
         // Open section
         function openSection(section) {
             console.log('openSection called with:', section);
-            if (typeof navigateToSection === 'function') {
-                navigateToSection(section);
-            } else {
-                console.error('navigateToSection is not a function');
-                // Fallback: directly show the section
+            try {
+                // Try to use navigateToSection from window first
+                if (typeof window.navigateToSection === 'function') {
+                    window.navigateToSection(section);
+                    return;
+                }
+                // Fallback to local navigateToSection
+                if (typeof navigateToSection === 'function') {
+                    navigateToSection(section);
+                    return;
+                }
+            } catch (error) {
+                console.error('Error in openSection:', error);
+            }
+            
+            // Fallback: directly show the section if navigateToSection is not available
+            console.log('Using fallback navigation for section:', section);
+            try {
                 if (section === null) {
-                    document.getElementById('home-view').style.display = 'block';
+                    const homeView = document.getElementById('home-view');
+                    if (homeView) homeView.style.display = 'block';
                     ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el) el.style.display = 'none';
                     });
+                    currentSection = null;
                 } else {
-                    document.getElementById('home-view').style.display = 'none';
+                    const homeView = document.getElementById('home-view');
+                    if (homeView) homeView.style.display = 'none';
                     ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el) el.style.display = 'none';
@@ -1690,15 +1735,35 @@
                     const sectionEl = document.getElementById(section + '-section');
                     if (sectionEl) {
                         sectionEl.style.display = 'block';
+                        currentSection = section;
+                        
+                        // Load section data
                         if (section === 'materials') {
-                            if (typeof loadMaterials === 'function') loadMaterials();
+                            if (typeof loadMaterials === 'function') {
+                                loadMaterials();
+                            } else if (typeof window.loadMaterials === 'function') {
+                                window.loadMaterials();
+                            }
                         } else if (section === 'requests') {
-                            if (typeof loadRequests === 'function') loadRequests();
+                            if (typeof loadRequests === 'function') {
+                                loadRequests();
+                            } else if (typeof window.loadRequests === 'function') {
+                                window.loadRequests();
+                            }
                         } else if (section === 'reports') {
-                            if (typeof loadReports === 'function') loadReports();
+                            if (typeof loadReports === 'function') {
+                                loadReports();
+                            } else if (typeof window.loadReports === 'function') {
+                                window.loadReports();
+                            }
                         }
+                    } else {
+                        console.error('Section element not found:', section + '-section');
                     }
                 }
+            } catch (fallbackError) {
+                console.error('Error in fallback navigation:', fallbackError);
+                alert('無法打開 ' + section + ' 頁面，請檢查控制台錯誤訊息');
             }
         }
         
