@@ -147,7 +147,66 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response)
 
 // Generate request number: W00111292005
 // Format: W + 序號(3位) + MMDD + YYYY
-async function generateRequestNumber(): Promise<string> {
+// Helper function to get material category code from category name
+function getMaterialCategoryCode(categoryName: string): string {
+  if (!categoryName) return 'M'; // Default to 'M' if no category
+  
+  // Special mappings for specific categories
+  const specialMappings: { [key: string]: string } = {
+    '接線盒': 'B', // BOX
+    '鍍鋅鋼管': 'T', // Tube
+    'PVC管': 'P',
+    'pvc管': 'P',
+    'PVC': 'P',
+    'pvc': 'P',
+  };
+  
+  // Check special mappings first (case-insensitive)
+  const normalizedName = categoryName.trim();
+  const lowerName = normalizedName.toLowerCase();
+  
+  // Check exact match first
+  if (specialMappings[normalizedName]) {
+    return specialMappings[normalizedName];
+  }
+  
+  // Check lowercase match
+  if (specialMappings[lowerName]) {
+    return specialMappings[lowerName];
+  }
+  
+  // Try to find English letters in the category name (e.g., "PVC管" -> "P")
+  const englishMatch = categoryName.match(/[A-Za-z]/);
+  if (englishMatch) {
+    return englishMatch[0].toUpperCase();
+  }
+  
+  // If no English letter found, use mapping based on common Chinese characters
+  const chineseMappings: { [key: string]: string } = {
+    '管': 'T', // Tube
+    '盒': 'B', // Box
+    '線': 'W', // Wire
+    '板': 'P', // Plate
+    '材': 'M', // Material
+    '料': 'M', // Material
+    '鋼': 'S', // Steel
+    '鐵': 'I', // Iron
+    '銅': 'C', // Copper
+    '鋁': 'A', // Aluminum
+  };
+  
+  // Check if category name contains any mapped Chinese character
+  for (const [char, code] of Object.entries(chineseMappings)) {
+    if (categoryName.includes(char)) {
+      return code;
+    }
+  }
+  
+  // Default fallback
+  return 'M';
+}
+
+async function generateRequestNumber(categoryCode: string = 'M'): Promise<string> {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -158,18 +217,19 @@ async function generateRequestNumber(): Promise<string> {
   const startOfMonth = new Date(year, now.getMonth(), 1);
   const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
   
-  // Count existing requests in current month
+  // Count existing requests in current month with the same category code
   const countResult = await query(
     `SELECT COUNT(*) as count 
      FROM material_requests 
-     WHERE created_at >= $1 AND created_at <= $2`,
-    [startOfMonth, endOfMonth]
+     WHERE created_at >= $1 AND created_at <= $2 
+       AND request_number LIKE $3`,
+    [startOfMonth, endOfMonth, `${categoryCode}%`]
   );
   
   const currentCount = parseInt(countResult.rows[0].count || '0');
   const sequence = String(currentCount + 1).padStart(3, '0'); // 001, 002, 003...
   
-  return `W${sequence}${dateStr}${year}`;
+  return `${categoryCode}${sequence}${dateStr}${year}`;
 }
 
 // Create material request
@@ -181,8 +241,30 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: '施工類別和材料項目必填' });
     }
 
-    // Generate request number: W00111292005
-    const requestNumber = await generateRequestNumber();
+    // Get first material's category to generate request number prefix
+    let categoryCode = 'M'; // Default code
+    if (items.length > 0 && items[0].material_id) {
+      try {
+        const materialResult = await query(
+          `SELECT mc.name as material_category_name
+           FROM materials m
+           LEFT JOIN material_categories mc ON m.material_category_id = mc.id
+           WHERE m.id = $1`,
+          [items[0].material_id]
+        );
+        
+        if (materialResult.rows.length > 0 && materialResult.rows[0].material_category_name) {
+          categoryCode = getMaterialCategoryCode(materialResult.rows[0].material_category_name);
+        }
+      } catch (error) {
+        console.error('取得材料類別錯誤:', error);
+        // Continue with default code
+      }
+    }
+
+    // Generate request number: CategoryCode + sequence + date
+    // Example: P00111292025 (P for PVC管, 001 is sequence, 1129 is MMDD, 2025 is year)
+    const requestNumber = await generateRequestNumber(categoryCode);
 
     // Get database client for transaction
     const { getClient } = await import('../db/connection');
