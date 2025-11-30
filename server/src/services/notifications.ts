@@ -52,9 +52,9 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註']
   ];
 
-  // Add material items with image and link in separate rows below each item
+  // Add material items (images and links will be in separate worksheet)
   for (const item of request.items) {
-    // Main item row
+    // Main item row - only include notes, no image/link references
     mainData.push([
       workArea,
       request.construction_category_name || '',
@@ -63,74 +63,11 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       item.material_specification || '',
       item.unit || item.material_unit || '',
       Math.floor(parseFloat(item.quantity) || 0),
-      item.notes || ''
+      item.notes || '' // Only show notes, no image/link text
     ]);
-    
-    // Add image and link rows below the item (vertical layout)
-    if (item.image_url || item.link_url) {
-      const imageLinkRow = ['', '', '', '', '', '', '', ''];
-      if (item.image_url) {
-        imageLinkRow[7] = `圖片：${item.image_url}`;
-      }
-      if (item.link_url) {
-        imageLinkRow[7] += (item.image_url ? ' | ' : '') + `連結：${item.link_url}`;
-      }
-      mainData.push(imageLinkRow);
-    }
   }
 
   const mainSheet = XLSX.utils.aoa_to_sheet(mainData);
-  
-  // Add hyperlinks for image_url and link_url in the notes column (column H, index 7)
-  // Header row is row 10 (0-based index 9), data starts from row 11 (index 10)
-  const headerRowIndex = 9; // 0-based index for row 10
-  let dataRowIndex = headerRowIndex + 1; // Start from first data row (row 11)
-  
-  for (const item of request.items) {
-    // Add hyperlinks in the notes column (column H) for image and link
-    if (item.image_url || item.link_url) {
-      const notesCellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 7 }); // Column H (index 7)
-      if (!mainSheet[notesCellAddress]) {
-        mainSheet[notesCellAddress] = { t: 's', v: '' };
-      }
-      
-      // If there's an image link row below, add hyperlinks there
-      if (item.image_url || item.link_url) {
-        dataRowIndex++; // Move to the image/link row
-        const linkRowCellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 7 }); // Column H
-        
-        if (item.image_url) {
-          const imageCellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 7 });
-          if (!mainSheet[imageCellAddress]) {
-            mainSheet[imageCellAddress] = { t: 's', v: '' };
-          }
-          mainSheet[imageCellAddress].l = { Target: item.image_url, Tooltip: '查看圖片' };
-          mainSheet[imageCellAddress].v = '查看圖片';
-          mainSheet[imageCellAddress].t = 's';
-        }
-        
-        if (item.link_url) {
-          const linkCellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: 7 });
-          if (!mainSheet[linkCellAddress]) {
-            mainSheet[linkCellAddress] = { t: 's', v: '' };
-          }
-          // If image already exists, append link text
-          if (item.image_url && mainSheet[linkCellAddress].v) {
-            mainSheet[linkCellAddress].v += ' | ';
-          }
-          mainSheet[linkCellAddress].l = { Target: item.link_url, Tooltip: '開啟連結' };
-          if (!item.image_url) {
-            mainSheet[linkCellAddress].v = '開啟連結';
-          } else {
-            mainSheet[linkCellAddress].v = (mainSheet[linkCellAddress].v || '查看圖片') + ' | 開啟連結';
-          }
-          mainSheet[linkCellAddress].t = 's';
-        }
-      }
-    }
-    
-    dataRowIndex++; // Move to next item
-  }
 
   // Set column widths optimized for A4 (portrait) - balanced for readability
   mainSheet['!cols'] = [
@@ -141,7 +78,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     { wch: 16 }, // 材料規格 (increased)
     { wch: 9 },  // 單位 (increased)
     { wch: 10 }, // 數量 (increased)
-    { wch: 24 }  // 備註（包含圖片和連結）(increased)
+    { wch: 24 }  // 備註
   ];
 
   // Set row heights - optimized for A4 one page, larger for readability
@@ -160,13 +97,9 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   ];
   
   // Add row heights for data rows - larger for readability
-  // Each item has 1 main row + 1 image/link row (if exists)
+  // Each item has only 1 main row (images/links are in separate worksheet)
   for (let i = 0; i < request.items.length; i++) {
     rowHeights.push({ hpt: 20 }); // Main item row
-    // Check if this item has image or link
-    if (request.items[i].image_url || request.items[i].link_url) {
-      rowHeights.push({ hpt: 18 }); // Image/link row (slightly smaller)
-    }
   }
   
   mainSheet['!rows'] = rowHeights;
@@ -242,52 +175,15 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     }
   };
   
-  // Style for image/link rows - slightly different to distinguish
-  const imageLinkStyle = {
-    font: { name: '微軟正黑體', sz: 10, color: { rgb: '0066CC' } },
-    alignment: { vertical: 'center', wrapText: false },
-    fill: { fgColor: { rgb: 'F0F8FF' } }, // Light blue background
-    border: {
-      top: { style: 'thin', color: { rgb: 'CCCCCC' } },
-      bottom: { style: 'thin', color: { rgb: '666666' } },
-      left: { style: 'thin', color: { rgb: '666666' } },
-      right: { style: 'thin', color: { rgb: '666666' } }
-    }
-  };
-  
   const numRows = mainData.length;
   let currentRow = headerRow + 1;
   
-  // Apply styles row by row, checking if it's an image/link row
+  // Apply styles to all data rows (no image/link rows anymore)
   for (let i = headerRowIndex + 1; i < mainData.length; i++) {
-    const rowData = mainData[i];
-    // Check if this is an image/link row (all cells empty except last column)
-    const isImageLinkRow = rowData && rowData[7] && 
-                          (rowData[7].toString().includes('圖片：') || 
-                           rowData[7].toString().includes('連結：') ||
-                           rowData[7].toString().includes('查看圖片') ||
-                           rowData[7].toString().includes('開啟連結'));
-    
-    if (isImageLinkRow) {
-      // Apply image/link style to all columns
-      headerCols.forEach((col) => {
-        applyCellStyle(mainSheet, `${col}${currentRow}`, imageLinkStyle);
-      });
-      // Make the link cell (H column) have hyperlink style
-      const linkCell = mainSheet[XLSX.utils.encode_cell({ r: currentRow - 1, c: 7 })];
-      if (linkCell && linkCell.l) {
-        // Keep hyperlink but update style
-        linkCell.s = {
-          ...imageLinkStyle,
-          font: { ...imageLinkStyle.font, underline: true }
-        };
-      }
-    } else {
-      // Regular data row
-      headerCols.forEach((col) => {
-        applyCellStyle(mainSheet, `${col}${currentRow}`, dataStyle);
-      });
-    }
+    // Regular data row
+    headerCols.forEach((col) => {
+      applyCellStyle(mainSheet, `${col}${currentRow}`, dataStyle);
+    });
     currentRow++;
   }
 
