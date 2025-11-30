@@ -159,6 +159,8 @@ function getMaterialCategoryCode(categoryName: string): string {
     'pvc管': 'P',
     'PVC': 'P',
     'pvc': 'P',
+    '五金': 'G', // Hardware
+    '五金類': 'G',
   };
   
   // Check special mappings first (case-insensitive)
@@ -173,6 +175,11 @@ function getMaterialCategoryCode(categoryName: string): string {
   // Check lowercase match
   if (specialMappings[lowerName]) {
     return specialMappings[lowerName];
+  }
+  
+  // Check if contains "五金" (Hardware)
+  if (normalizedName.includes('五金') || lowerName.includes('五金')) {
+    return 'G';
   }
   
   // Try to find English letters in the category name (e.g., "PVC管" -> "P")
@@ -234,21 +241,6 @@ async function generateRequestNumber(categoryCode: string = 'M'): Promise<string
   const sequence = String(currentCount + 1).padStart(3, '0'); // 001, 002, 003...
   
   return `${categoryCode}${sequence}${dateStr}${year}`;
-}
-
-// Helper function to get material category code
-function getMaterialCategoryCode(categoryName: string): string {
-  if (!categoryName) return 'M';
-  
-  const name = categoryName.trim().toUpperCase();
-  
-  // Map common material categories to codes
-  if (name.includes('PVC') || name.includes('管')) return 'P';
-  if (name.includes('BOX') || name.includes('接線盒')) return 'B';
-  if (name.includes('TUBE') || name.includes('鍍鋅') || name.includes('鋼管')) return 'T';
-  
-  // Default: use first letter of category name
-  return name.charAt(0) || 'M';
 }
 
 // Helper function to generate request number
