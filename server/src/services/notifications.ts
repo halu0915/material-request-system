@@ -38,7 +38,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       throw new Error('請求項目為空或無效');
     }
 
-    const workbook = XLSX.utils.book_new();
+  const workbook = XLSX.utils.book_new();
 
     // Get company info from environment or use defaults
     const company = companyName || process.env.COMPANY_NAME || '公司名稱';
@@ -518,7 +518,8 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
     let workbook: ExcelJS.Workbook;
     try {
       workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(Buffer.isBuffer(excelBuffer) ? excelBuffer as Buffer : Buffer.from(excelBuffer as any));
+      const bufferToLoad: Buffer = Buffer.isBuffer(excelBuffer) ? excelBuffer : Buffer.from(excelBuffer as any);
+      await workbook.xlsx.load(bufferToLoad as any);
     } catch (loadError: any) {
       console.error('載入 Excel buffer 失敗:', loadError.message || loadError);
       // Return original buffer if load fails
@@ -639,8 +640,9 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
                   }
                   
                   // Add image to workbook
+                  const imageBufferForExcel: Buffer = imageBuffer instanceof Buffer ? imageBuffer : Buffer.from(imageBuffer as any);
                   const imageId = workbook.addImage({
-                    buffer: imageBuffer instanceof Buffer ? imageBuffer : Buffer.from(imageBuffer),
+                    buffer: imageBufferForExcel as any,
                     extension: imageExtension as 'png' | 'jpeg' | 'gif'
                   });
                   
@@ -730,7 +732,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
     // Generate buffer
     try {
       const buffer = await workbook.xlsx.writeBuffer();
-      return buffer instanceof Buffer ? buffer : Buffer.from(buffer);
+      return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer as ArrayBuffer);
     } catch (writeError: any) {
       console.error('寫入 Excel buffer 失敗:', writeError.message || writeError);
       // Return original buffer if write fails
