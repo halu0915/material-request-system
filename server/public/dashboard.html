@@ -3921,31 +3921,66 @@
         }
         
         // Initialize on page load
-        window.addEventListener('DOMContentLoaded', async () => {
-            await init();
-            const userNameEl = document.getElementById('userName');
-            const welcomeMessageEl = document.getElementById('welcomeMessage');
-            if (userNameEl) userNameEl.textContent = '使用者';
-            if (welcomeMessageEl) welcomeMessageEl.textContent = '叫料系統';
-            
-            // Load default company from environment variables
-            await loadDefaultCompanyFromEnv();
-            
-            // Setup material filter event listeners
-            setupMaterialFilters();
-            
-            // Handle browser back/forward buttons
-            window.addEventListener('popstate', handlePopState);
-            
-            // Check URL hash on load
-            const section = getSectionFromHash();
-            if (section) {
-                navigateToSection(section);
+        function initializeApp() {
+            (async function() {
+                try {
+                    await init();
+                    const userNameEl = document.getElementById('userName');
+                    const welcomeMessageEl = document.getElementById('welcomeMessage');
+                    if (userNameEl) userNameEl.textContent = '使用者';
+                    if (welcomeMessageEl) welcomeMessageEl.textContent = '叫料系統';
+                    
+                    // Load default company from environment variables
+                    if (typeof loadDefaultCompanyFromEnv === 'function') {
+                        await loadDefaultCompanyFromEnv();
+                    }
+                    
+                    // Setup material filter event listeners
+                    if (typeof setupMaterialFilters === 'function') {
+                        setupMaterialFilters();
+                    }
+                    
+                    // Handle browser back/forward buttons
+                    if (typeof handlePopState === 'function') {
+                        window.addEventListener('popstate', handlePopState);
+                    }
+                    
+                    // Check URL hash on load
+                    if (typeof getSectionFromHash === 'function') {
+                        const section = getSectionFromHash();
+                        if (section && typeof navigateToSection === 'function') {
+                            navigateToSection(section);
+                        } else {
+                            if (window.history && window.history.replaceState) {
+                                history.replaceState({ section: null }, '', window.location.pathname);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('應用初始化錯誤:', error);
+                }
+            })();
+        }
+        
+        // Use DOMContentLoaded with fallback for Safari
+        if (document.addEventListener) {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeApp);
             } else {
-                // Initialize history for home
-                history.replaceState({ section: null }, '', window.location.pathname);
+                // DOM already loaded
+                initializeApp();
             }
-        });
+        } else if (document.attachEvent) {
+            // IE8 fallback
+            document.attachEvent('onreadystatechange', function() {
+                if (document.readyState === 'complete') {
+                    initializeApp();
+                }
+            });
+        } else {
+            // Fallback for very old browsers
+            window.onload = initializeApp;
+        }
     </script>
     
     <!-- Bottom Navigation Bar for Mobile -->
@@ -4008,11 +4043,21 @@
         
         // Initialize bottom nav visibility immediately
         function initBottomNav() {
-            toggleBottomNav();
-            // Also check after a short delay to ensure it's visible
-            requestAnimationFrame(() => {
+            try {
                 toggleBottomNav();
-            });
+                // Also check after a short delay to ensure it's visible
+                if (window.requestAnimationFrame) {
+                    requestAnimationFrame(function() {
+                        toggleBottomNav();
+                    });
+                } else {
+                    setTimeout(function() {
+                        toggleBottomNav();
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('初始化底部導航錯誤:', error);
+            }
         }
         
         // Initialize immediately if DOM is ready, otherwise wait
@@ -4021,12 +4066,12 @@
         } else {
             initBottomNav();
         }
-        window.addEventListener('resize', toggleBottomNav);
-        
-        // Also ensure it's visible after page load
-        window.addEventListener('load', () => {
-            toggleBottomNav();
-        });
+        if (window.addEventListener) {
+            window.addEventListener('resize', toggleBottomNav);
+            window.addEventListener('load', function() {
+                toggleBottomNav();
+            });
+        }
         
         // Wrap navigateToSection to update bottom nav
         // Check if navigateToSection exists before wrapping
