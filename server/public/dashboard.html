@@ -963,6 +963,81 @@
         </div>
     </div>
 
+    <!-- Company Management Modal -->
+    <div id="company-manage-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>管理公司</h3>
+                <button class="close" onclick="closeModal('company-manage-modal')">&times;</button>
+            </div>
+            <div style="margin-bottom: 15px; text-align: right;">
+                <button class="btn-primary" onclick="showAddCompanyForm()">新增公司</button>
+            </div>
+            <div id="company-list-content">
+                <div class="loading">載入中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Form Modal -->
+    <div id="company-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="company-modal-title">新增公司</h3>
+                <button class="close" onclick="closeModal('company-modal')">&times;</button>
+            </div>
+            <form id="company-form" onsubmit="saveCompany(event)">
+                <input type="hidden" id="company-id">
+                <div class="form-group">
+                    <label>公司名稱 *</label>
+                    <input type="text" id="company-name" placeholder="例如：ABC建設股份有限公司" required>
+                </div>
+                <div class="form-group">
+                    <label>統編 *</label>
+                    <input type="text" id="company-tax-id" placeholder="例如：12345678" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="company-is-default"> 設為預設公司
+                    </label>
+                </div>
+                <div class="form-group" style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn-secondary" onclick="closeModal('company-modal')">取消</button>
+                    <button type="submit" class="btn-primary" style="margin-left: 10px;">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Company Selection Modal -->
+    <div id="company-select-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>選擇公司</h3>
+                <button class="close" onclick="closeModal('company-select-modal')">&times;</button>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">選擇已保存的公司：</label>
+                <select id="company-select-dropdown" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                    <option value="">-- 請選擇公司 --</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 15px; text-align: center; color: #666;">或</div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">公司名稱：</label>
+                <input type="text" id="company-select-name" placeholder="輸入公司名稱" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">統編：</label>
+                <input type="text" id="company-select-tax-id" placeholder="輸入統編" style="width: 100%; padding: 8px; margin-bottom: 15px;">
+            </div>
+            <div style="text-align: right;">
+                <button type="button" class="btn-secondary" onclick="closeModal('company-select-modal')">取消</button>
+                <button type="button" class="btn-primary" onclick="confirmCompanySelection()" style="margin-left: 10px;">確認</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let guestToken = null;
         let currentSection = null;
@@ -2447,36 +2522,35 @@
         
         // Download Excel for request
         async function downloadRequestExcel(id) {
-            const companyName = prompt('請輸入公司名稱（可選，留空使用預設值）：') || '';
-            const taxId = prompt('請輸入統編（可選，留空使用預設值）：') || '';
-            
-            try {
-                const params = new URLSearchParams();
-                if (companyName) params.append('company_name', companyName);
-                if (taxId) params.append('tax_id', taxId);
-                
-                const url = `/api/requests/${id}/excel${params.toString() ? '?' + params.toString() : ''}`;
-                const response = await fetch(url, {
-                    headers: getHeaders()
-                });
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const downloadUrl = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = `叫料單_${id}.xlsx`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(downloadUrl);
-                    alert('✅ Excel 檔案下載成功！');
-                } else {
-                    alert('下載失敗');
+            await selectCompany(async (companyName, taxId) => {
+                try {
+                    const params = new URLSearchParams();
+                    if (companyName) params.append('company_name', companyName);
+                    if (taxId) params.append('tax_id', taxId);
+                    
+                    const url = `/api/requests/${id}/excel${params.toString() ? '?' + params.toString() : ''}`;
+                    const response = await fetch(url, {
+                        headers: getHeaders()
+                    });
+                    
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const downloadUrl = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = downloadUrl;
+                        a.download = `叫料單_${id}.xlsx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(downloadUrl);
+                        alert('✅ Excel 檔案下載成功！');
+                    } else {
+                        alert('下載失敗');
+                    }
+                } catch (error) {
+                    alert('下載失敗：' + error.message);
                 }
-            } catch (error) {
-                alert('下載失敗：' + error.message);
-            }
+            });
         }
 
         // View request detail
@@ -2628,7 +2702,10 @@
                             </div>
                         </div>
                         <div style="margin-top: 30px;">
-                            <h3 style="margin-bottom: 20px;">報表下載</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="margin: 0;">報表下載</h3>
+                                <button class="btn-secondary" onclick="manageCompanies()">管理公司</button>
+                            </div>
                             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                                 <div style="flex: 1; min-width: 300px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
                                     <h4>月報表</h4>
@@ -2671,36 +2748,35 @@
                 return;
             }
             
-            const companyName = prompt('請輸入公司名稱（可選，留空使用預設值）：') || '';
-            const taxId = prompt('請輸入統編（可選，留空使用預設值）：') || '';
-            
-            try {
-                const params = new URLSearchParams();
-                if (companyName) params.append('company_name', companyName);
-                if (taxId) params.append('tax_id', taxId);
-                
-                const url = `/api/requests/reports/monthly/${year}/${month}${params.toString() ? '?' + params.toString() : ''}`;
-                const response = await fetch(url, {
-                    headers: getHeaders()
-                });
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const downloadUrl = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = `叫料單月報表_${year}年${month}月.xlsx`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(downloadUrl);
-                } else {
-                    const error = await response.json();
-                    alert('下載失敗：' + (error.error || '未知錯誤'));
+            await selectCompany(async (companyName, taxId) => {
+                try {
+                    const params = new URLSearchParams();
+                    if (companyName) params.append('company_name', companyName);
+                    if (taxId) params.append('tax_id', taxId);
+                    
+                    const url = `/api/requests/reports/monthly/${year}/${month}${params.toString() ? '?' + params.toString() : ''}`;
+                    const response = await fetch(url, {
+                        headers: getHeaders()
+                    });
+                    
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const downloadUrl = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = downloadUrl;
+                        a.download = `叫料單月報表_${year}年${month}月.xlsx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(downloadUrl);
+                    } else {
+                        const error = await response.json();
+                        alert('下載失敗：' + (error.error || '未知錯誤'));
+                    }
+                } catch (error) {
+                    alert('下載失敗：' + error.message);
                 }
-            } catch (error) {
-                alert('下載失敗：' + error.message);
-            }
+            });
         }
 
         // Download date range report
@@ -2718,38 +2794,37 @@
                 return;
             }
             
-            const companyName = prompt('請輸入公司名稱（可選，留空使用預設值）：') || '';
-            const taxId = prompt('請輸入統編（可選，留空使用預設值）：') || '';
-            
-            try {
-                const params = new URLSearchParams();
-                params.append('start_date', startDate);
-                params.append('end_date', endDate);
-                if (companyName) params.append('company_name', companyName);
-                if (taxId) params.append('tax_id', taxId);
-                
-                const url = `/api/requests/reports/range?${params.toString()}`;
-                const response = await fetch(url, {
-                    headers: getHeaders()
-                });
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const downloadUrl = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = `叫料單報表_${startDate}_${endDate}.xlsx`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(downloadUrl);
-                } else {
-                    const error = await response.json();
-                    alert('下載失敗：' + (error.error || '未知錯誤'));
+            await selectCompany(async (companyName, taxId) => {
+                try {
+                    const params = new URLSearchParams();
+                    params.append('start_date', startDate);
+                    params.append('end_date', endDate);
+                    if (companyName) params.append('company_name', companyName);
+                    if (taxId) params.append('tax_id', taxId);
+                    
+                    const url = `/api/requests/reports/range?${params.toString()}`;
+                    const response = await fetch(url, {
+                        headers: getHeaders()
+                    });
+                    
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const downloadUrl = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = downloadUrl;
+                        a.download = `叫料單報表_${startDate}_${endDate}.xlsx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(downloadUrl);
+                    } else {
+                        const error = await response.json();
+                        alert('下載失敗：' + (error.error || '未知錯誤'));
+                    }
+                } catch (error) {
+                    alert('下載失敗：' + error.message);
                 }
-            } catch (error) {
-                alert('下載失敗：' + error.message);
-            }
+            });
         }
 
         function closeModal(modalId) {
