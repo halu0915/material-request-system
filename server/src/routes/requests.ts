@@ -247,6 +247,33 @@ async function generateRequestNumber(categoryCode: string = 'M'): Promise<string
 }
 
 // Helper function to generate request number
+async function generateRequestNumber(categoryCode: string = 'M'): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const dateStr = month + day; // MMDD format
+  
+  // Get start and end of current month (序號會在每月結束時自動歸零，下個月第一天從001開始)
+  const startOfMonth = new Date(year, now.getMonth(), 1, 0, 0, 0, 0);
+  const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59, 999);
+  
+  // Count existing requests in current month with the same category code
+  const countResult = await query(
+    `SELECT COUNT(*) as count 
+     FROM material_requests 
+     WHERE created_at >= $1 AND created_at <= $2 
+       AND request_number LIKE $3`,
+    [startOfMonth, endOfMonth, `${categoryCode}%`]
+  );
+  
+  const currentCount = parseInt(countResult.rows[0].count || '0');
+  const sequence = String(currentCount + 1).padStart(3, '0'); // 001, 002, 003...
+  
+  return `${categoryCode}${sequence}${dateStr}${year}`;
+}
+
+// Helper function to generate Excel filename
 function generateExcelFilename(request: any): string {
   const workArea = request.work_area || '工區';
   const constructionCategory = request.construction_category_name || '';
@@ -506,7 +533,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       error: '建立叫料單失敗',
       details: errorMessage
     });
-  }
+  });
 });
 
 // Send email for request manually
@@ -780,6 +807,26 @@ router.get('/reports/range', authenticateToken, async (req: AuthRequest, res: Re
 
 // Helper function to generate Excel filename
 // Format: 工區＋叫料單＋時間＿(施工類別).xlsx
+
+// Helper function to get full request with items
+async function getFullRequest(requestId: number) {
+  try {
+    const requestResult = await query(
+      `SELECT 
+        mr.*,
+        cc.name as construction_category_name,
+        u.name as user_name,
+        u.email as user_email,
+        da.name as delivery_address_name,
+        da.address as delivery_address,
+        da.contact_person as delivery_contact_person,
+        da.contact_phone as delivery_contact_phone
+      FROM material_requests mr
+      LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
+      LEFT JOIN users u ON mr.user_id = u.id
+      LEFT JOIN delivery_addresses da ON mr.delivery_address_id = da.id
+      WHERE mr.id = $1`,
+      [requestId]
     );
 
     if (requestResult.rows.length === 0) {
