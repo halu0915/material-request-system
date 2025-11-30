@@ -497,7 +497,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
     let workbook: ExcelJS.Workbook;
     try {
       workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(Buffer.isBuffer(excelBuffer) ? excelBuffer : Buffer.from(excelBuffer as any));
+      await workbook.xlsx.load(Buffer.isBuffer(excelBuffer) ? excelBuffer as Buffer : Buffer.from(excelBuffer as any));
     } catch (loadError: any) {
       console.error('載入 Excel buffer 失敗:', loadError.message || loadError);
       // Return original buffer if load fails
@@ -619,7 +619,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
                   
                   // Add image to workbook
                   const imageId = workbook.addImage({
-                    buffer: Buffer.isBuffer(imageBuffer) ? imageBuffer : Buffer.from(imageBuffer as any),
+                    buffer: imageBuffer instanceof Buffer ? imageBuffer : Buffer.from(imageBuffer),
                     extension: imageExtension as 'png' | 'jpeg' | 'gif'
                   });
                   
