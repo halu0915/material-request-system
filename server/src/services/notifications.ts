@@ -1027,8 +1027,25 @@ async function generatePDFWithPDFKit(request: any, companyName?: string, taxId?:
            .text(`  材料規格：${item.material_specification || ''}`, { indent: 30 })
            .text(`  數量：${Math.floor(parseFloat(item.quantity) || 0)} ${item.unit || item.material_unit || ''}`, { indent: 30 });
         
+        // Clean notes before displaying (remove image/link references)
         if (item.notes) {
-          doc.text(`  備註：${item.notes}`, { indent: 30 });
+          let cleanNotes = item.notes;
+          // Remove image URL from notes if present
+          if (item.image_url && cleanNotes.includes(item.image_url)) {
+            cleanNotes = cleanNotes.replace(item.image_url, '').trim();
+          }
+          // Remove link URL from notes if present
+          if (item.link_url && cleanNotes.includes(item.link_url)) {
+            cleanNotes = cleanNotes.replace(item.link_url, '').trim();
+          }
+          // Remove common image/link text patterns
+          cleanNotes = cleanNotes.replace(/圖片[:：]?/gi, '').trim();
+          cleanNotes = cleanNotes.replace(/連結[:：]?/gi, '').trim();
+          cleanNotes = cleanNotes.replace(/圖片連結[:：]?/gi, '').trim();
+          
+          if (cleanNotes) {
+            doc.text(`  備註：${cleanNotes}`, { indent: 30 });
+          }
         }
         
         if (item.image_url) {
