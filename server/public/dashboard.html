@@ -4141,6 +4141,24 @@
         }
 
         function initializeApp() {
+            // Ensure all functions are exposed to window before initialization
+            // This is critical for onclick handlers to work
+            try {
+                window.showHome = typeof showHome === 'function' ? showHome : window.showHome;
+                window.openSection = typeof openSection === 'function' ? openSection : window.openSection;
+                window.navigateToSection = typeof navigateToSection === 'function' ? navigateToSection : window.navigateToSection;
+                window.manageCategories = typeof manageCategories === 'function' ? manageCategories : window.manageCategories;
+                window.manageAddresses = typeof manageAddresses === 'function' ? manageAddresses : window.manageAddresses;
+                window.manageCompanies = typeof manageCompanies === 'function' ? manageCompanies : window.manageCompanies;
+                window.showAddMaterialForm = typeof showAddMaterialForm === 'function' ? showAddMaterialForm : window.showAddMaterialForm;
+                window.showCreateRequestForm = typeof showCreateRequestForm === 'function' ? showCreateRequestForm : window.showCreateRequestForm;
+                window.saveRequest = typeof saveRequest === 'function' ? saveRequest : window.saveRequest;
+                window.closeModal = typeof closeModal === 'function' ? closeModal : window.closeModal;
+                console.log('✅ 關鍵函數已暴露到 window 對象');
+            } catch (exposeError) {
+                console.error('暴露函數時發生錯誤:', exposeError);
+            }
+            
             (async function() {
                 try {
             await init();
