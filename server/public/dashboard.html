@@ -2837,7 +2837,18 @@
                         const downloadUrl = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = downloadUrl;
-                        a.download = `叫料單_${id}.xlsx`;
+                        
+                        // Get filename from Content-Disposition header
+                        const contentDisposition = response.headers.get('Content-Disposition');
+                        let filename = `叫料單_${id}.xlsx`;
+                        if (contentDisposition) {
+                            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                            if (filenameMatch && filenameMatch[1]) {
+                                filename = decodeURIComponent(filenameMatch[1].replace(/['"]/g, ''));
+                            }
+                        }
+                        
+                        a.download = filename;
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
