@@ -1747,7 +1747,12 @@
                     filteredMaterials = [...allMaterials];
                     
                     // Load categories for filters
-                    await loadCategoriesForFilters();
+                    try {
+                        await loadCategoriesForFilters();
+                    } catch (filterError) {
+                        console.error('載入篩選類別失敗:', filterError);
+                        // Continue even if filter loading fails
+                    }
                     
                     displayMaterials(filteredMaterials);
                     updateMaterialStats();
