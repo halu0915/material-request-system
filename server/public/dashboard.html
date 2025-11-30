@@ -2086,11 +2086,19 @@
         // Edit Category by ID (get from current list)
         function editCategoryById(id, type) {
             // Get category from current list
-            const endpoint = type === 'construction' ? '/api/materials/construction-categories' : '/api/materials/material-categories';
-            
-            fetch(endpoint, { headers: getHeaders() })
-                .then(response => response.json())
-                .then(data => {
+            try {
+                const endpoint = type === 'construction' ? '/api/materials/construction-categories' : '/api/materials/material-categories';
+                let response = await fetch(endpoint, { headers: getHeaders() });
+                
+                // Handle 401/403 errors by refreshing token and retrying
+                if (response.status === 401 || response.status === 403) {
+                    console.warn('載入類別資料 Token 無效，嘗試刷新...');
+                    await refreshTokenIfNeeded();
+                    response = await fetch(endpoint, { headers: getHeaders() });
+                }
+                
+                if (response.ok) {
+                    const data = await response.json();
                     const cat = data.categories.find(c => c.id == id);
                     if (!cat) {
                         alert('找不到類別資料');
@@ -2105,10 +2113,22 @@
                     document.getElementById('category-name').value = cat.name;
                     document.getElementById('category-description').value = cat.description || '';
                     document.getElementById('category-modal').style.display = 'block';
-                })
-                .catch(error => {
-                    alert('載入類別資料失敗：' + error.message);
-                });
+                } else {
+                    let errorMessage = '載入類別資料失敗';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        const errorText = await response.text();
+                        errorMessage = errorText || errorMessage;
+                    }
+                    console.error('載入類別資料失敗:', response.status, errorMessage);
+                    alert('載入類別資料失敗：' + errorMessage);
+                }
+            } catch (error) {
+                console.error('載入類別資料錯誤:', error);
+                alert('載入類別資料失敗：' + (error.message || '未知錯誤'));
+            }
         }
 
         // Delete Category
@@ -2453,11 +2473,11 @@
                 return;
             }
             content.innerHTML = '<div class="loading">載入中...</div>';
+            console.log('開始載入叫料單資料...');
             
             try {
-                console.log('開始載入叫料單資料...');
                 const headers = getHeaders();
-                console.log('請求標頭:', headers);
+                console.log('叫料單API請求標頭:', headers);
                 const response = await fetch('/api/requests', {
                     headers: headers
                 });
@@ -2465,12 +2485,44 @@
                 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('叫料單API回應資料:', data);
                     displayRequests(data.requests || []);
+                } else if (response.status === 401 || response.status === 403) {
+                    console.warn('Token 無效或過期，嘗試刷新...');
+                    await refreshTokenIfNeeded();
+                    const retryResponse = await fetch('/api/requests', {
+                        headers: getHeaders()
+                    });
+                    if (retryResponse.ok) {
+                        const data = await retryResponse.json();
+                        displayRequests(data.requests || []);
+                    } else {
+                        const errorText = await retryResponse.text();
+                        let errorMessage = '無法載入叫料單資料';
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            errorMessage = errorData.error || errorMessage;
+                        } catch (e) {
+                            console.error('API 錯誤響應 (重試):', errorText);
+                        }
+                        content.innerHTML = '<div class="alert alert-error">' + escapeHtml(errorMessage) + '</div>';
+                        console.error('載入叫料單失敗 (重試):', retryResponse.status, errorMessage);
+                    }
                 } else {
-                    content.innerHTML = '<div class="alert alert-error">無法載入叫料單資料</div>';
+                    const errorText = await response.text();
+                    let errorMessage = '無法載入叫料單資料';
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        console.error('API 錯誤響應:', errorText);
+                    }
+                    content.innerHTML = '<div class="alert alert-error">' + escapeHtml(errorMessage) + '</div>';
+                    console.error('載入叫料單失敗:', response.status, errorMessage);
                 }
             } catch (error) {
-                content.innerHTML = '<div class="alert alert-error">載入失敗：' + error.message + '</div>';
+                console.error('載入叫料單錯誤:', error);
+                content.innerHTML = '<div class="alert alert-error">載入失敗：' + escapeHtml(error.message || '未知錯誤') + '</div>';
             }
         }
 
@@ -2816,7 +2868,7 @@
                 formData.append('image', file);
                 
                 const token = guestToken || localStorage.getItem('token');
-                const response = await fetch('/api/uploads/image', {
+                let response = await fetch('/api/uploads/image', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -2824,17 +2876,40 @@
                     body: formData
                 });
                 
+                // Handle 401/403 errors by refreshing token and retrying
+                if (response.status === 401 || response.status === 403) {
+                    console.warn('圖片上傳 Token 無效，嘗試刷新...');
+                    await refreshTokenIfNeeded();
+                    const newToken = guestToken || localStorage.getItem('token');
+                    response = await fetch('/api/uploads/image', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${newToken}`
+                        },
+                        body: formData
+                    });
+                }
+                
                 if (response.ok) {
                     const data = await response.json();
                     const imageUrlInput = input.closest('.image-upload-area').querySelector('.item-image-url');
                     imageUrlInput.value = data.url;
                 } else {
-                    const error = await response.json();
-                    alert('上傳失敗：' + (error.error || '未知錯誤'));
+                    let errorMessage = '上傳失敗';
+                    try {
+                        const error = await response.json();
+                        errorMessage = error.error || errorMessage;
+                    } catch (e) {
+                        const errorText = await response.text();
+                        errorMessage = errorText || errorMessage;
+                    }
+                    console.error('圖片上傳失敗:', response.status, errorMessage);
+                    alert('上傳失敗：' + errorMessage + ' (狀態碼: ' + response.status + ')');
                     removeImage(itemIndex);
                 }
             } catch (error) {
-                alert('上傳失敗：' + error.message);
+                console.error('圖片上傳錯誤:', error);
+                alert('上傳失敗：' + (error.message || '未知錯誤'));
                 removeImage(itemIndex);
             }
         }
@@ -3873,11 +3948,11 @@
                 return;
             }
             content.innerHTML = '<div class="loading">載入中...</div>';
+            console.log('開始載入報表資料...');
             
             try {
-                console.log('開始載入報表資料...');
                 const headers = getHeaders();
-                console.log('請求標頭:', headers);
+                console.log('報表API請求標頭:', headers);
                 const requestsRes = await fetch('/api/requests', {
                     headers: headers
                 });
