@@ -1494,6 +1494,19 @@
         let materialCategories = [];
 
         // Safari compatibility check
+
+        // Safari detection and error logging
+        var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        if (isSafari) {
+            console.log('Safari瀏覽器檢測到');
+            // Add error handler
+            window.addEventListener('error', function(e) {
+                console.error('Safari錯誤:', e.message, e.filename, e.lineno);
+            });
+            window.addEventListener('unhandledrejection', function(e) {
+                console.error('未處理的Promise拒絕:', e.reason);
+            });
+        }
         if (!window.Promise) {
             console.error('此瀏覽器不支援 Promise，請更新瀏覽器');
         }
