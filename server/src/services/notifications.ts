@@ -471,10 +471,10 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
       return excelBuffer;
     }
     
-    // Set column widths
+    // Set column widths - optimized for image display
     imagesSheet.getColumn(1).width = 20; // 材料名稱
     imagesSheet.getColumn(2).width = 15; // 材料規格
-    imagesSheet.getColumn(3).width = 50; // 圖片
+    imagesSheet.getColumn(3).width = 60; // 圖片 (wider for better image display)
     imagesSheet.getColumn(4).width = 50; // 連結
     
     // Add header row
@@ -518,7 +518,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
           row.getCell(2).font = { name: '微軟正黑體', size: 11 };
           row.getCell(2).alignment = { vertical: 'top', wrapText: true };
           
-          // Image - handle errors individually
+          // Image - handle errors individually with optimized sizing
           if (item.image_url) {
             try {
               const imageBuffer = await downloadImage(item.image_url);
@@ -533,20 +533,70 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
                 }
                 
                 try {
+                  // Calculate optimal image size based on column width
+                  // Column width 60 = approximately 450 pixels (Excel uses character units)
+                  // We'll use a maximum width of 400 pixels and maintain aspect ratio
+                  const maxWidth = 400; // pixels
+                  const maxHeight = 300; // pixels
+                  
+                  // Get image dimensions (basic check - we'll use a reasonable default)
+                  // Note: For more accurate sizing, we'd need to parse image headers
+                  // For now, we'll use a standard thumbnail size that fits well
+                  let imageWidth = maxWidth;
+                  let imageHeight = maxHeight;
+                  
+                  // Try to get actual image dimensions from buffer
+                  // This is a simplified approach - for production, use a proper image library
+                  try {
+                    // Basic PNG/JPEG header parsing for dimensions
+                    if (imageExtension === 'png' && imageBuffer.length >= 24) {
+                      const width = imageBuffer.readUInt32BE(16);
+                      const height = imageBuffer.readUInt32BE(20);
+                      if (width > 0 && height > 0) {
+                        const aspectRatio = width / height;
+                        if (aspectRatio > 1) {
+                          // Landscape
+                          imageWidth = Math.min(maxWidth, width);
+                          imageHeight = Math.round(imageWidth / aspectRatio);
+                        } else {
+                          // Portrait or square
+                          imageHeight = Math.min(maxHeight, height);
+                          imageWidth = Math.round(imageHeight * aspectRatio);
+                        }
+                      }
+                    } else if ((imageExtension === 'jpeg' || imageExtension === 'jpeg') && imageBuffer.length >= 20) {
+                      // JPEG dimensions are more complex, use default for now
+                      // In production, use a library like 'image-size' or 'sharp'
+                    }
+                  } catch (dimError) {
+                    // If dimension parsing fails, use defaults
+                    console.log('無法解析圖片尺寸，使用預設大小');
+                  }
+                  
                   // Add image to workbook
                   const imageId = workbook.addImage({
                     buffer: imageBuffer instanceof Buffer ? imageBuffer : Buffer.from(imageBuffer),
                     extension: imageExtension as 'png' | 'jpeg' | 'gif'
                   });
                   
-                  // Insert image in column C (index 2)
+                  // Insert image in column C (index 2) with optimized size
+                  // Excel uses EMU (English Metric Units) for positioning
+                  // 1 pixel ≈ 9525 EMU
+                  const emuWidth = imageWidth * 9525;
+                  const emuHeight = imageHeight * 9525;
+                  
                   imagesSheet.addImage(imageId, {
                     tl: { col: 2, row: currentRow - 1 },
-                    ext: { width: 300, height: 200 } // Adjust size as needed
+                    ext: { width: emuWidth, height: emuHeight }
                   });
                   
-                  // Set row height to accommodate image
-                  row.height = 150; // Adjust height as needed (in points)
+                  // Set row height to accommodate image (convert pixels to points)
+                  // 1 point ≈ 1.33 pixels, but we'll add some padding
+                  const rowHeightPoints = Math.max(120, Math.round(imageHeight / 1.33) + 20);
+                  row.height = Math.min(rowHeightPoints, 400); // Cap at 400 points
+                  
+                  // Center align the image cell
+                  row.getCell(3).alignment = { vertical: 'middle', horizontal: 'center' };
                 } catch (imageError: any) {
                   console.error('嵌入圖片失敗:', item.image_url, imageError.message || imageError);
                   // Fallback to hyperlink if image embedding fails
