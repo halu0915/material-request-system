@@ -42,7 +42,7 @@ const upload = multer({
 });
 
 // Upload image endpoint
-router.post('/image', authenticateToken, upload.single('image'), async (req: AuthRequest & { file?: Express.Multer.File }, res: Response) => {
+router.post('/image', authenticateToken, upload.single('image'), async (req: AuthRequest & { file?: any }, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: '請選擇要上傳的圖片' });

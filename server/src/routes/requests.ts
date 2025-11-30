@@ -782,13 +782,6 @@ router.get('/reports/range', authenticateToken, async (req: AuthRequest, res: Re
 
 // Helper function to generate Excel filename
 // Format: 工區＋叫料單＋時間＿(施工類別).xlsx
-function generateExcelFilename(request: any): string {
-  const workArea = request.work_area || '未指定工區';
-  const requestDate = new Date(request.created_at);
-  const dateStr = `${requestDate.getFullYear()}${String(requestDate.getMonth() + 1).padStart(2, '0')}${String(requestDate.getDate()).padStart(2, '0')}`;
-  const constructionCategoryName = request.construction_category_name || '未指定';
-  return `${workArea}叫料單${dateStr}＿(${constructionCategoryName}).xlsx`;
-}
 
 // Helper function to get full request with items
 async function getFullRequest(requestId: number) {
