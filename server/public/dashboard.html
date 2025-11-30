@@ -4196,11 +4196,40 @@
             // Fallback for very old browsers
             window.onload = initializeApp;
         }
-    
         } catch (error) {
-            console.error('JavaScript執行錯誤:', error);
-            alert('頁面載入發生錯誤，請重新整理頁面。錯誤: ' + error.message);
+            console.error('❌ JavaScript執行錯誤:', error);
+            console.error('錯誤堆疊:', error.stack);
+            alert('頁面載入發生錯誤，請檢查控制台。錯誤: ' + error.message);
         }
+        
+        // CRITICAL: Final safety check - ensure ALL critical functions are exposed
+        // This runs AFTER all code, regardless of any errors above
+        // This is a last resort to ensure onclick handlers work
+        (function finalFunctionExposure() {
+            try {
+                // Force exposure of critical functions
+                if (typeof showHome === 'function') window.showHome = showHome;
+                if (typeof openSection === 'function') window.openSection = openSection;
+                if (typeof navigateToSection === 'function') window.navigateToSection = navigateToSection;
+                if (typeof manageCategories === 'function') window.manageCategories = manageCategories;
+                if (typeof manageAddresses === 'function') window.manageAddresses = manageAddresses;
+                if (typeof manageCompanies === 'function') window.manageCompanies = manageCompanies;
+                if (typeof showAddMaterialForm === 'function') window.showAddMaterialForm = showAddMaterialForm;
+                if (typeof showCreateRequestForm === 'function') window.showCreateRequestForm = showCreateRequestForm;
+                
+                // Verify critical functions are exposed
+                const criticalFunctions = ['showHome', 'openSection', 'navigateToSection'];
+                const missing = criticalFunctions.filter(fn => typeof window[fn] !== 'function');
+                
+                if (missing.length > 0) {
+                    console.error('❌ 以下關鍵函數未暴露:', missing);
+                } else {
+                    console.log('✅ 所有關鍵函數已確認暴露');
+                }
+            } catch (finalError) {
+                console.error('❌ 最終函數暴露檢查失敗:', finalError);
+            }
+        })();
 </script>
     
     <!-- Bottom Navigation Bar for Mobile -->
