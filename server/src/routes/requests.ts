@@ -518,8 +518,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       });
     } catch (error) {
       await client.query('ROLLBACK');
-    console.error('建立叫料單錯誤:', {
-      message: error.message || error,
+      client.release();
+      throw error;
       stack: error.stack,
       code: error.code,
       detail: error.detail
