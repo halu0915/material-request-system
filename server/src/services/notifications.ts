@@ -179,7 +179,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   let currentRow = headerRow + 1;
   
   // Apply styles to all data rows (no image/link rows anymore)
-  for (let i = headerRowIndex + 1; i < mainData.length; i++) {
+  for (let i = headerRow + 1; i < mainData.length; i++) {
     // Regular data row
     headerCols.forEach((col) => {
       applyCellStyle(mainSheet, `${col}${currentRow}`, dataStyle);
@@ -515,8 +515,8 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
                 try {
                   // Add image to workbook
                   const imageId = workbook.addImage({
-                    buffer: imageBuffer,
-                    extension: imageExtension
+                    buffer: Buffer.from(imageBuffer),
+                    extension: imageExtension as 'png' | 'jpeg' | 'gif'
                   });
                   
                   // Insert image in column C (index 2)
