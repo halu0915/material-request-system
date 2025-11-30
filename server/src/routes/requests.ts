@@ -159,8 +159,10 @@ function getMaterialCategoryCode(categoryName: string): string {
     'pvc管': 'P',
     'PVC': 'P',
     'pvc': 'P',
-    '五金': 'G', // Hardware
-    '五金類': 'G',
+    'C型鋼': 'C',
+    'c型鋼': 'C',
+    'C型': 'C',
+    'c型': 'C',
   };
   
   // Check special mappings first (case-insensitive)
@@ -177,9 +179,10 @@ function getMaterialCategoryCode(categoryName: string): string {
     return specialMappings[lowerName];
   }
   
-  // Check if contains "五金" (Hardware)
-  if (normalizedName.includes('五金') || lowerName.includes('五金')) {
-    return 'G';
+  // Check if contains "C型鋼" (C-shaped steel)
+  if (normalizedName.includes('C型鋼') || normalizedName.includes('C型') || 
+      lowerName.includes('c型鋼') || lowerName.includes('c型')) {
+    return 'C';
   }
   
   // Try to find English letters in the category name (e.g., "PVC管" -> "P")
