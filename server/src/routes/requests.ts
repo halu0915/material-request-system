@@ -446,8 +446,12 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       throw error;
     }
   } catch (error: any) {
-    console.error('建立叫料單錯誤:', error);
-    res.status(500).json({ error: '建立叫料單失敗' });
+    console.error('建立叫料單錯誤:', error.message || error, error.stack);
+    const errorMessage = error.message || '建立叫料單失敗';
+    res.status(500).json({ 
+      error: '建立叫料單失敗',
+      details: errorMessage
+    });
   }
 });
 
