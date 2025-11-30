@@ -1484,6 +1484,8 @@
     </div>
 
     <script>
+        try {
+
         let guestToken = null;
         let currentSection = null;
         let allMaterials = [];
@@ -1502,7 +1504,7 @@
         // Initialize: Create guest account and get token
         async function init() {
 
-        function init() {
+        async function init() {
             try {
                 const response = await fetch('/api/auth/guest', {
                     method: 'POST',
@@ -3981,7 +3983,12 @@
             // Fallback for very old browsers
             window.onload = initializeApp;
         }
-    </script>
+    
+        } catch (error) {
+            console.error('JavaScript執行錯誤:', error);
+            alert('頁面載入發生錯誤，請重新整理頁面。錯誤: ' + error.message);
+        }
+</script>
     
     <!-- Bottom Navigation Bar for Mobile -->
     <nav class="bottom-nav" id="bottom-nav">
