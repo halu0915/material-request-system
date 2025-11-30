@@ -814,28 +814,5 @@ async function getFullRequest(requestId: number) {
   }
 }
 
-  const request = requestResult.rows[0];
-
-  const itemsResult = await query(
-    `SELECT 
-      mri.*,
-      m.name as material_name,
-      m.specification as material_specification,
-      m.unit as material_unit,
-      mc.name as material_category_name
-    FROM material_request_items mri
-    LEFT JOIN materials m ON mri.material_id = m.id
-    LEFT JOIN material_categories mc ON m.material_category_id = mc.id
-    WHERE mri.request_id = $1
-    ORDER BY mc.name, m.name`,
-    [requestId]
-  );
-
-  return {
-    ...request,
-    items: itemsResult.rows
-  };
-}
-
 export default router;
 
