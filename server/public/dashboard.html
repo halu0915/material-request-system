@@ -1110,7 +1110,7 @@
 <body>
     <div class="header">
         <div class="header-content">
-            <h1 onclick="showHome()">叫料系統</h1>
+            <h1 onclick="if(typeof window.showHome==='function'){window.showHome();}else if(typeof showHome==='function'){showHome();}">叫料系統</h1>
             <div class="user-info">
                 <span id="userName">使用者</span>
             </div>
@@ -4237,7 +4237,7 @@
     
     <!-- Bottom Navigation Bar for Mobile -->
     <nav class="bottom-nav" id="bottom-nav">
-        <a href="#" class="bottom-nav-item" id="nav-home" onclick="event.preventDefault(); showHome(); updateBottomNav('home');">
+        <a href="#" class="bottom-nav-item" id="nav-home" onclick="event.preventDefault(); if(typeof window.showHome==='function'){window.showHome();}else if(typeof showHome==='function'){showHome();} if(typeof updateBottomNav==='function'){updateBottomNav('home');}">
             <div class="bottom-nav-item-icon">🏠</div>
             <div class="bottom-nav-item-text">首頁</div>
         </a>
