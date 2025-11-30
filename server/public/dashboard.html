@@ -1153,7 +1153,7 @@
                     <button class="btn-secondary" onclick="manageCategories('material')" style="margin-right: 10px;">管理材料類別</button>
                     <button class="btn-secondary" onclick="manageAddresses()" style="margin-right: 10px;">管理地址</button>
                     <button class="btn-secondary" onclick="manageCompanies()" style="margin-right: 10px;">管理公司</button>
-                    <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
+                <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
                 </div>
             </div>
             <!-- Materials Filter and Search Bar -->
@@ -1844,7 +1844,7 @@
                 filteredCount.textContent = filteredMaterials.length;
             }
         }
-        
+
         function displayMaterials(materials) {
             const content = document.getElementById('materials-content');
             
@@ -3982,84 +3982,86 @@
                 materialFilter.addEventListener('change', filterMaterials);
             }
         }
-        
+
         // Initialize on page load
         
 
         // Debug: Log all click events
-        document.addEventListener('click', function(e) {
-            console.log('Click detected:', e.target, e.target.onclick, e.target.className);
-        }, true);
-
-        // Ensure all onclick handlers are available globally
-        window.showHome = showHome;
-        window.navigateToSection = navigateToSection;
-
-
-        // Debug: Test showCreateRequestForm
-        console.log('showCreateRequestForm function:', typeof showCreateRequestForm);
-        console.log('window.showCreateRequestForm:', typeof window.showCreateRequestForm);
-        
-        // Ensure showCreateRequestForm is callable
-        if (typeof showCreateRequestForm === 'function') {
-            console.log('showCreateRequestForm is a function');
-        } else {
-            console.error('showCreateRequestForm is not a function:', typeof showCreateRequestForm);
-        }
-        window.openSection = function(section) {
-            if (typeof navigateToSection === 'function') {
-                navigateToSection(section);
-            } else {
-                console.error('navigateToSection function not found');
-            }
-        };
-
-
         // Expose all functions to global scope for onclick handlers
-        window.showCreateRequestForm = showCreateRequestForm;
-        window.saveRequest = saveRequest;
+        // This must be done after all functions are defined
+        try {
+            // Core navigation functions
+            if (typeof showHome === 'function') window.showHome = showHome;
+            if (typeof navigateToSection === 'function') window.navigateToSection = navigateToSection;
+            if (typeof openSection === 'function') {
+                window.openSection = openSection;
+            } else {
+                // Fallback if openSection not defined yet
+                window.openSection = function(section) {
+                    if (typeof navigateToSection === 'function') {
+                        navigateToSection(section);
+                    } else {
+                        console.error('navigateToSection function not found');
+                    }
+                };
+            }
 
-        window.handleImageUpload = handleImageUpload;
-        window.filterMaterialsByCategory = filterMaterialsByCategory;
-        window.loadDeliveryAddresses = loadDeliveryAddresses;
-        window.setupUnitHistory = setupUnitHistory;
-        window.setupQuantityValidation = setupQuantityValidation;
-        window.downloadRequestExcel = downloadRequestExcel;
-        window.sendRequestEmail = sendRequestEmail;
-        window.deleteRequest = deleteRequest;
-        window.viewRequest = viewRequest;
-        window.showAddMaterialForm = showAddMaterialForm;
-        window.editMaterialById = editMaterialById;
-        window.deleteMaterial = deleteMaterial;
-        window.quickAddSpecification = quickAddSpecification;
-        window.manageCategories = manageCategories;
-        window.manageAddresses = manageAddresses;
-        window.manageCompanies = manageCompanies;
-        window.showAddCategoryForm = showAddCategoryForm;
-        window.editCategoryById = editCategoryById;
-        window.deleteCategory = deleteCategory;
-        window.showAddAddressForm = showAddAddressForm;
-        window.editAddressById = editAddressById;
-        window.deleteAddress = deleteAddress;
-        window.showAddCompanyForm = showAddCompanyForm;
-        window.editCompanyById = editCompanyById;
-        window.deleteCompany = deleteCompany;
-        window.confirmCompanySelection = confirmCompanySelection;
-        window.closeModal = closeModal;
-        window.removeRequestItem = removeRequestItem;
-        window.addRequestItem = addRequestItem;
-        window.removeImage = removeImage;
-        window.downloadMonthlyReport = downloadMonthlyReport;
-        window.downloadRangeReport = downloadRangeReport;
-        window.clearMaterialFilters = clearMaterialFilters;
-        window.showHome = showHome;
-        window.openSection = openSection;
-        window.navigateToSection = navigateToSection;
+            // Request functions
+            if (typeof showCreateRequestForm === 'function') window.showCreateRequestForm = showCreateRequestForm;
+            if (typeof saveRequest === 'function') window.saveRequest = saveRequest;
+            if (typeof downloadRequestExcel === 'function') window.downloadRequestExcel = downloadRequestExcel;
+            if (typeof sendRequestEmail === 'function') window.sendRequestEmail = sendRequestEmail;
+            if (typeof deleteRequest === 'function') window.deleteRequest = deleteRequest;
+            if (typeof viewRequest === 'function') window.viewRequest = viewRequest;
+            if (typeof removeRequestItem === 'function') window.removeRequestItem = removeRequestItem;
+            if (typeof addRequestItem === 'function') window.addRequestItem = addRequestItem;
+            if (typeof removeImage === 'function') window.removeImage = removeImage;
+
+            // Material functions
+            if (typeof showAddMaterialForm === 'function') window.showAddMaterialForm = showAddMaterialForm;
+            if (typeof editMaterialById === 'function') window.editMaterialById = editMaterialById;
+            if (typeof deleteMaterial === 'function') window.deleteMaterial = deleteMaterial;
+            if (typeof quickAddSpecification === 'function') window.quickAddSpecification = quickAddSpecification;
+            if (typeof clearMaterialFilters === 'function') window.clearMaterialFilters = clearMaterialFilters;
+
+            // Category functions
+            if (typeof manageCategories === 'function') window.manageCategories = manageCategories;
+            if (typeof showAddCategoryForm === 'function') window.showAddCategoryForm = showAddCategoryForm;
+            if (typeof editCategoryById === 'function') window.editCategoryById = editCategoryById;
+            if (typeof deleteCategory === 'function') window.deleteCategory = deleteCategory;
+
+            // Address functions
+            if (typeof manageAddresses === 'function') window.manageAddresses = manageAddresses;
+            if (typeof showAddAddressForm === 'function') window.showAddAddressForm = showAddAddressForm;
+            if (typeof editAddressById === 'function') window.editAddressById = editAddressById;
+            if (typeof deleteAddress === 'function') window.deleteAddress = deleteAddress;
+
+            // Company functions
+            if (typeof manageCompanies === 'function') window.manageCompanies = manageCompanies;
+            if (typeof showAddCompanyForm === 'function') window.showAddCompanyForm = showAddCompanyForm;
+            if (typeof editCompanyById === 'function') window.editCompanyById = editCompanyById;
+            if (typeof deleteCompany === 'function') window.deleteCompany = deleteCompany;
+            if (typeof confirmCompanySelection === 'function') window.confirmCompanySelection = confirmCompanySelection;
+
+            // Utility functions
+            if (typeof closeModal === 'function') window.closeModal = closeModal;
+            if (typeof handleImageUpload === 'function') window.handleImageUpload = handleImageUpload;
+            if (typeof filterMaterialsByCategory === 'function') window.filterMaterialsByCategory = filterMaterialsByCategory;
+            if (typeof loadDeliveryAddresses === 'function') window.loadDeliveryAddresses = loadDeliveryAddresses;
+            if (typeof setupUnitHistory === 'function') window.setupUnitHistory = setupUnitHistory;
+            if (typeof setupQuantityValidation === 'function') window.setupQuantityValidation = setupQuantityValidation;
+            if (typeof downloadMonthlyReport === 'function') window.downloadMonthlyReport = downloadMonthlyReport;
+            if (typeof downloadRangeReport === 'function') window.downloadRangeReport = downloadRangeReport;
+
+            console.log('所有函數已暴露到 window 對象');
+        } catch (error) {
+            console.error('暴露函數到 window 時發生錯誤:', error);
+        }
 
         function initializeApp() {
             (async function() {
                 try {
-                    await init();
+            await init();
                     const userNameEl = document.getElementById('userName');
                     const welcomeMessageEl = document.getElementById('welcomeMessage');
                     if (userNameEl) userNameEl.textContent = '使用者';
@@ -4231,8 +4233,15 @@
         
         // Function to open section (used by feature cards)
         function openSection(section) {
-            navigateToSection(section);
+            if (typeof navigateToSection === 'function') {
+                navigateToSection(section);
+            } else {
+                console.error('navigateToSection function not found');
+            }
         }
+        
+        // Ensure openSection is exposed
+        window.openSection = openSection;
         
         // Update nav on initial load
         setTimeout(() => {
