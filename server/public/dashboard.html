@@ -1831,8 +1831,8 @@
             if (wasMaterialDisabled) materialCategoryEl.disabled = false;
             if (wasNameDisabled) materialNameEl.disabled = false;
             
-            const construction_category_id = parseInt(constructionCategoryEl.value);
-            const material_category_id = parseInt(materialCategoryEl.value);
+            const construction_category_id = parseInt(constructionCategoryEl.value, 10);
+            const material_category_id = parseInt(materialCategoryEl.value, 10);
             const name = materialNameEl.value.trim();
             const specification = specificationEl.value.trim() || null;
             const unit = unitEl.value.trim() || null;
@@ -1843,9 +1843,29 @@
             if (wasMaterialDisabled) materialCategoryEl.disabled = true;
             if (wasNameDisabled) materialNameEl.disabled = true;
             
-            // Validate required fields
-            if (!construction_category_id || !material_category_id || !name) {
-                alert('請填寫所有必填欄位（施工類別、材料類別、材料名稱）');
+            // Validate required fields with detailed error messages
+            const errors = [];
+            if (isNaN(construction_category_id) || construction_category_id <= 0) {
+                errors.push('施工類別');
+            }
+            if (isNaN(material_category_id) || material_category_id <= 0) {
+                errors.push('材料類別');
+            }
+            if (!name || name.length === 0) {
+                errors.push('材料名稱');
+            }
+            
+            if (errors.length > 0) {
+                alert('請填寫所有必填欄位：' + errors.join('、'));
+                console.error('驗證失敗，缺少欄位：', errors);
+                console.error('當前值：', {
+                    construction_category_id,
+                    material_category_id,
+                    name,
+                    constructionCategoryValue: constructionCategoryEl.value,
+                    materialCategoryValue: materialCategoryEl.value,
+                    nameValue: materialNameEl.value
+                });
                 return;
             }
             
