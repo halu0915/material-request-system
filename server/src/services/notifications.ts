@@ -57,6 +57,24 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   // Add material items (images and links will be in separate worksheet)
   for (const item of request.items) {
     // Main item row - only include notes, no image/link references
+    // Clean notes: remove any image_url or link_url references to prevent format issues
+    let cleanNotes = item.notes || '';
+    // Remove any image_url or link_url if they were accidentally added to notes
+    if (cleanNotes && (item.image_url || item.link_url)) {
+      // Remove image URL from notes if present
+      if (item.image_url && cleanNotes.includes(item.image_url)) {
+        cleanNotes = cleanNotes.replace(item.image_url, '').trim();
+      }
+      // Remove link URL from notes if present
+      if (item.link_url && cleanNotes.includes(item.link_url)) {
+        cleanNotes = cleanNotes.replace(item.link_url, '').trim();
+      }
+      // Remove common image/link text patterns
+      cleanNotes = cleanNotes.replace(/圖片[:：]?/gi, '').trim();
+      cleanNotes = cleanNotes.replace(/連結[:：]?/gi, '').trim();
+      cleanNotes = cleanNotes.replace(/圖片連結[:：]?/gi, '').trim();
+    }
+    
     mainData.push([
       workArea,
       request.construction_category_name || '',
@@ -65,7 +83,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       item.material_specification || '',
       item.unit || item.material_unit || '',
       Math.floor(parseFloat(item.quantity) || 0),
-      item.notes || '' // Only show notes, no image/link text
+      cleanNotes // Only show clean notes, no image/link text
     ]);
   }
 
@@ -638,6 +656,25 @@ function generatePDFHTML(request: any, companyName?: string, taxId?: string): st
     materialStats[key].total += parseFloat(item.quantity) || 0;
   }
 
+  // Helper function to clean notes (remove image/link references)
+  const cleanNotes = (notes: string | null | undefined, item?: any): string => {
+    if (!notes) return '';
+    let cleaned = notes;
+    // Remove image URL from notes if present
+    if (item?.image_url && cleaned.includes(item.image_url)) {
+      cleaned = cleaned.replace(item.image_url, '').trim();
+    }
+    // Remove link URL from notes if present
+    if (item?.link_url && cleaned.includes(item.link_url)) {
+      cleaned = cleaned.replace(item.link_url, '').trim();
+    }
+    // Remove common image/link text patterns
+    cleaned = cleaned.replace(/圖片[:：]?/gi, '').trim();
+    cleaned = cleaned.replace(/連結[:：]?/gi, '').trim();
+    cleaned = cleaned.replace(/圖片連結[:：]?/gi, '').trim();
+    return cleaned;
+  };
+
   let itemsHTML = '';
   request.items.forEach((item: any, index: number) => {
     itemsHTML += `
@@ -650,7 +687,7 @@ function generatePDFHTML(request: any, companyName?: string, taxId?: string): st
         <td style="padding: 8px; border: 1px solid #ddd;">${item.material_specification || ''}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${item.unit || item.material_unit || ''}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${Math.floor(parseFloat(item.quantity) || 0)}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${item.notes || ''}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${cleanNotes(item.notes, item)}</td>
       </tr>
       ${(item.image_url || item.link_url) ? `
       <tr style="background-color: #f0f8ff;">
@@ -1093,6 +1130,25 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
     ['叫料單號', '建立日期', '工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註']
   ];
 
+  // Helper function to clean notes (remove image/link references)
+  const cleanNotes = (notes: string | null | undefined, item?: any): string => {
+    if (!notes) return '';
+    let cleaned = notes;
+    // Remove image URL from notes if present
+    if (item?.image_url && cleaned.includes(item.image_url)) {
+      cleaned = cleaned.replace(item.image_url, '').trim();
+    }
+    // Remove link URL from notes if present
+    if (item?.link_url && cleaned.includes(item.link_url)) {
+      cleaned = cleaned.replace(item.link_url, '').trim();
+    }
+    // Remove common image/link text patterns
+    cleaned = cleaned.replace(/圖片[:：]?/gi, '').trim();
+    cleaned = cleaned.replace(/連結[:：]?/gi, '').trim();
+    cleaned = cleaned.replace(/圖片連結[:：]?/gi, '').trim();
+    return cleaned;
+  };
+
   // Add all request items
   for (const request of requests) {
     const workArea = request.work_area || request.construction_category_name || '';
@@ -1109,7 +1165,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
           item.material_specification || '',
       item.unit || item.material_unit || '',
           Math.floor(parseFloat(item.quantity) || 0),
-      item.notes || ''
+      cleanNotes(item.notes, item) // Clean notes, no image/link text
     ]);
       }
     } else {
@@ -1124,7 +1180,7 @@ export async function generateReportExcel(requests: any[], startDate?: string, e
         '',
         '',
         '',
-        request.notes || ''
+        cleanNotes(request.notes) // Clean notes
       ]);
     }
   }
@@ -1509,6 +1565,25 @@ export async function sendEmail(options: {
           <tbody>
     `;
 
+    // Helper function to clean notes (remove image/link references)
+    const cleanNotes = (notes: string | null | undefined, item?: any): string => {
+      if (!notes) return '-';
+      let cleaned = notes;
+      // Remove image URL from notes if present
+      if (item?.image_url && cleaned.includes(item.image_url)) {
+        cleaned = cleaned.replace(item.image_url, '').trim();
+      }
+      // Remove link URL from notes if present
+      if (item?.link_url && cleaned.includes(item.link_url)) {
+        cleaned = cleaned.replace(item.link_url, '').trim();
+      }
+      // Remove common image/link text patterns
+      cleaned = cleaned.replace(/圖片[:：]?/gi, '').trim();
+      cleaned = cleaned.replace(/連結[:：]?/gi, '').trim();
+      cleaned = cleaned.replace(/圖片連結[:：]?/gi, '').trim();
+      return cleaned || '-';
+    };
+
     for (const item of options.request.items) {
       html += `
         <tr style="border-bottom: 1px solid #ddd;">
@@ -1517,7 +1592,7 @@ export async function sendEmail(options: {
           <td style="padding: 8px;">${item.material_specification || '-'}</td>
           <td style="padding: 8px; text-align: right;">${Math.floor(parseFloat(item.quantity) || 0)}</td>
           <td style="padding: 8px;">${item.unit || item.material_unit || '-'}</td>
-          <td style="padding: 8px;">${item.notes || '-'}</td>
+          <td style="padding: 8px;">${cleanNotes(item.notes, item)}</td>
         </tr>
       `;
     }
