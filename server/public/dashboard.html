@@ -1717,10 +1717,20 @@
                 // Clear description
                 document.getElementById('material-description').value = '';
                 
-                // Disable category and name fields (read-only) since they should be the same
-                document.getElementById('construction-category').disabled = true;
-                document.getElementById('material-category').disabled = true;
-                document.getElementById('material-name').disabled = true;
+                // Use readonly instead of disabled for select elements (disabled values are not submitted)
+                // For select elements, we'll keep them enabled but add visual indication
+                // For input elements, use readonly attribute
+                const nameInput = document.getElementById('material-name');
+                nameInput.readOnly = true;
+                nameInput.style.backgroundColor = '#f5f5f5';
+                nameInput.style.cursor = 'not-allowed';
+                
+                // For select elements, we can't use readonly, so we'll keep them enabled
+                // but add a visual style to indicate they're locked
+                const constructionSelect = document.getElementById('construction-category');
+                const materialSelect = document.getElementById('material-category');
+                constructionSelect.style.backgroundColor = '#f5f5f5';
+                materialSelect.style.backgroundColor = '#f5f5f5';
                 
                 // Focus on specification input
                 document.getElementById('material-modal').style.display = 'block';
@@ -1754,9 +1764,15 @@
                 if (!loaded) return;
                 
                 // Enable all fields for editing
-                document.getElementById('construction-category').disabled = false;
-                document.getElementById('material-category').disabled = false;
-                document.getElementById('material-name').disabled = false;
+                const nameInput = document.getElementById('material-name');
+                nameInput.readOnly = false;
+                nameInput.style.backgroundColor = '';
+                nameInput.style.cursor = '';
+                
+                const constructionSelect = document.getElementById('construction-category');
+                const materialSelect = document.getElementById('material-category');
+                constructionSelect.style.backgroundColor = '';
+                materialSelect.style.backgroundColor = '';
                 
                 // Set form values
                 document.getElementById('construction-category').value = material.construction_category_id;
@@ -1814,7 +1830,7 @@
             
             const materialId = document.getElementById('material-form').getAttribute('data-material-id');
             
-            // Get values even if fields are disabled
+            // Get values directly (fields are now readonly instead of disabled)
             const constructionCategoryEl = document.getElementById('construction-category');
             const materialCategoryEl = document.getElementById('material-category');
             const materialNameEl = document.getElementById('material-name');
@@ -1822,26 +1838,12 @@
             const unitEl = document.getElementById('material-unit');
             const descriptionEl = document.getElementById('material-description');
             
-            // Temporarily enable disabled fields to get their values
-            const wasConstructionDisabled = constructionCategoryEl.disabled;
-            const wasMaterialDisabled = materialCategoryEl.disabled;
-            const wasNameDisabled = materialNameEl.disabled;
-            
-            if (wasConstructionDisabled) constructionCategoryEl.disabled = false;
-            if (wasMaterialDisabled) materialCategoryEl.disabled = false;
-            if (wasNameDisabled) materialNameEl.disabled = false;
-            
             const construction_category_id = parseInt(constructionCategoryEl.value, 10);
             const material_category_id = parseInt(materialCategoryEl.value, 10);
             const name = materialNameEl.value.trim();
             const specification = specificationEl.value.trim() || null;
             const unit = unitEl.value.trim() || null;
             const description = descriptionEl.value.trim() || null;
-            
-            // Restore disabled state
-            if (wasConstructionDisabled) constructionCategoryEl.disabled = true;
-            if (wasMaterialDisabled) materialCategoryEl.disabled = true;
-            if (wasNameDisabled) materialNameEl.disabled = true;
             
             // Validate required fields with detailed error messages
             const errors = [];
