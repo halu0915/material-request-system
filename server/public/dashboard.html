@@ -1969,6 +1969,7 @@
 
         // Manage Categories
         async function manageCategories(type) {
+            window.manageCategories = manageCategories;
             currentManageType = type;
             const content = document.getElementById('category-list-content');
             const title = document.getElementById('category-manage-title');
@@ -2153,6 +2154,7 @@
 
         // Show add material form
         async function showAddMaterialForm() {
+            window.showAddMaterialForm = showAddMaterialForm;
             document.getElementById('material-modal-title').textContent = '新增物料';
             document.getElementById('material-form').reset();
             document.getElementById('material-form').setAttribute('data-material-id', ''); // Clear ID
@@ -3099,6 +3101,7 @@
         
         // Manage addresses
         async function manageAddresses() {
+            window.manageAddresses = manageAddresses;
             document.getElementById('address-manage-modal').style.display = 'block';
             await loadAddresses();
         }
@@ -3381,6 +3384,7 @@
         }
 
         async function manageCompanies() {
+            window.manageCompanies = manageCompanies;
             document.getElementById('company-manage-modal').style.display = 'block';
             await loadCompanies();
         }
