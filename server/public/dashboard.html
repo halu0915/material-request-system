@@ -1733,9 +1733,13 @@
             content.innerHTML = '<div class="loading">載入中...</div>';
             
             try {
+                console.log('開始載入物料資料...');
+                const headers = getHeaders();
+                console.log('請求標頭:', headers);
                 const response = await fetch('/api/materials', {
-                    headers: getHeaders()
+                    headers: headers
                 });
+                console.log('物料API回應狀態:', response.status);
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -2426,12 +2430,20 @@
         // Load requests
         async function loadRequests() {
             const content = document.getElementById('requests-content');
+            if (!content) {
+                console.error('無法找到 requests-content 元素');
+                return;
+            }
             content.innerHTML = '<div class="loading">載入中...</div>';
             
             try {
+                console.log('開始載入叫料單資料...');
+                const headers = getHeaders();
+                console.log('請求標頭:', headers);
                 const response = await fetch('/api/requests', {
-                    headers: getHeaders()
+                    headers: headers
                 });
+                console.log('叫料單API回應狀態:', response.status);
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -3838,11 +3850,20 @@
         // Load reports
         async function loadReports() {
             const content = document.getElementById('reports-content');
+            if (!content) {
+                console.error('無法找到 reports-content 元素');
+                return;
+            }
+            content.innerHTML = '<div class="loading">載入中...</div>';
             
             try {
+                console.log('開始載入報表資料...');
+                const headers = getHeaders();
+                console.log('請求標頭:', headers);
                 const requestsRes = await fetch('/api/requests', {
-                    headers: getHeaders()
+                    headers: headers
                 });
+                console.log('報表API回應狀態:', requestsRes.status);
                 
                 if (requestsRes.ok) {
                     const data = await requestsRes.json();
