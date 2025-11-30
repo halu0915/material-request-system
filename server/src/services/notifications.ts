@@ -455,9 +455,21 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   let buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   
   // Add images and links to a new worksheet using ExcelJS
-  buffer = await addImagesToExcel(buffer, request);
+  // Wrap in try-catch to handle image processing errors gracefully
+  try {
+    buffer = await addImagesToExcel(buffer, request);
+  } catch (imageError: any) {
+    console.error('添加圖片到Excel失敗，繼續使用不含圖片的版本:', imageError.message || imageError);
+    // Continue with buffer without images if image processing fails
+    // This ensures Excel generation doesn't fail completely due to image issues
+  }
   
   return buffer;
+  } catch (error: any) {
+    console.error('generateExcel錯誤:', error);
+    console.error('錯誤詳情:', error.message, error.stack);
+    throw new Error(`產生Excel失敗: ${error.message || '未知錯誤'}`);
+  }
 }
 
 // Helper function to download image from URL or local path

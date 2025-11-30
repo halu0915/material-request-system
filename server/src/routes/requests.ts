@@ -653,6 +653,12 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
       monthlyRequests
     );
 
+    // Validate buffer before sending
+    if (!excelBuffer || !Buffer.isBuffer(excelBuffer)) {
+      console.error('Excel buffer無效:', typeof excelBuffer, excelBuffer);
+      return res.status(500).json({ error: 'Excel生成失敗：無效的緩衝區' });
+    }
+
     // Generate filename using helper function
     const filename = generateExcelFilename(fullRequest);
 
