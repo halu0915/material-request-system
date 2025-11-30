@@ -1,9 +1,8 @@
 import XLSX from 'xlsx-js-style';
+import ExcelJS from 'exceljs';
 import nodemailer from 'nodemailer';
 import axios from 'axios';
 import { google } from 'googleapis';
-import PDFDocument from 'pdfkit';
-import puppeteer from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -485,8 +484,110 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   XLSX.utils.book_append_sheet(workbook, statsSheet, '月統計');
 
   // Generate buffer
-  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  let buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  
+  // Add images to Excel using ExcelJS
+  buffer = await addImagesToExcel(buffer, request);
+  
   return buffer;
+}
+
+// Helper function to download image from URL or local path
+async function downloadImage(imageUrl: string): Promise<Buffer | null> {
+  try {
+    // If it's a local path (starts with /api/uploads/)
+    if (imageUrl.startsWith('/api/uploads/')) {
+      const filename = imageUrl.replace('/api/uploads/', '');
+      const uploadsDir = path.join(__dirname, '../../uploads');
+      const filePath = path.join(uploadsDir, filename);
+      
+      if (fs.existsSync(filePath)) {
+        return fs.readFileSync(filePath);
+      }
+    }
+    
+    // If it's a full URL, download it
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      return Buffer.from(response.data);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('下載圖片失敗:', imageUrl, error);
+    return null;
+  }
+}
+
+// Add images to Excel file
+async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buffer> {
+  try {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(excelBuffer);
+    
+    // Get the first worksheet (main sheet)
+    const worksheet = workbook.getWorksheet(1) || workbook.worksheets[0];
+    if (!worksheet) {
+      return excelBuffer; // Return original if no worksheet found
+    }
+    
+    // Find the header row (row 10, 0-based index 9)
+    const headerRowIndex = 9; // Row 10 (0-based)
+    let dataRowIndex = headerRowIndex + 1; // Start from first data row (row 11)
+    
+    // Process each item
+    for (const item of request.items || []) {
+      if (item.image_url) {
+        // Download image
+        const imageBuffer = await downloadImage(item.image_url);
+        
+        if (imageBuffer) {
+          // Add image to the row below the item (in column I, which is index 8)
+          // The image row is the row after the main item row
+          const imageRowIndex = dataRowIndex; // Same row as item, or row below
+          
+          // Determine image extension
+          let imageExtension = 'png';
+          if (item.image_url.toLowerCase().endsWith('.jpg') || item.image_url.toLowerCase().endsWith('.jpeg')) {
+            imageExtension = 'jpeg';
+          } else if (item.image_url.toLowerCase().endsWith('.gif')) {
+            imageExtension = 'gif';
+          }
+          
+          // Add image to worksheet
+          const imageId = workbook.addImage({
+            buffer: imageBuffer,
+            extension: imageExtension
+          });
+          
+          // Insert image in column I (index 8), spanning to column L (index 11)
+          // Position it below the item row
+          worksheet.addImage(imageId, {
+            tl: { col: 8, row: imageRowIndex },
+            ext: { width: 200, height: 150 } // Adjust size as needed
+          });
+          
+          // Increase row height to accommodate image
+          const row = worksheet.getRow(imageRowIndex + 1);
+          row.height = 120; // Adjust height as needed (in points)
+        }
+      }
+      
+      // Move to next item row
+      dataRowIndex += 1;
+      if (item.image_url || item.link_url) {
+        dataRowIndex += 1; // Skip image/link row if exists
+      }
+    }
+    
+    // Generate buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  } catch (error) {
+    console.error('添加圖片到 Excel 失敗:', error);
+    // Return original buffer if image addition fails
+    return excelBuffer;
+  }
 }
 
 // Generate HTML template for PDF
