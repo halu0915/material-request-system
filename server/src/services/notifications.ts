@@ -190,6 +190,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
   });
 
   // Data rows - Normal style with borders (適中偏大)
+  // CRITICAL: wrapText MUST be false for ALL cells to prevent format issues
   const dataStyle = {
     font: { name: '微軟正黑體', sz: 11 },
     alignment: { vertical: 'center', horizontal: 'left', wrapText: false },
@@ -201,42 +202,62 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     }
   };
   
-  // Special style for notes column - ensure no wrapping and truncate if needed
+  // Special style for notes column - ensure no wrapping
   const notesStyle = {
-    ...dataStyle,
-    alignment: { vertical: 'center', horizontal: 'left', wrapText: false }
+    font: { name: '微軟正黑體', sz: 11 },
+    alignment: { vertical: 'center', horizontal: 'left', wrapText: false },
+    border: {
+      top: { style: 'thin', color: { rgb: '666666' } },
+      bottom: { style: 'thin', color: { rgb: '666666' } },
+      left: { style: 'thin', color: { rgb: '666666' } },
+      right: { style: 'thin', color: { rgb: '666666' } }
+    }
   };
   
   const numRows = mainData.length;
   let currentRow = headerRow + 1;
   
-  // Apply styles to all data rows (no image/link rows anymore)
+  // Apply styles to all data rows - ensure NO wrapping for ANY cell
   for (let i = headerRow + 1; i < mainData.length; i++) {
-    // Regular data row
+    // Regular data row - apply styles to each column
     headerCols.forEach((col, colIndex) => {
-      // Use notesStyle for the last column (備註), dataStyle for others
       if (colIndex === headerCols.length - 1) {
+        // Last column (備註) - use notesStyle
         applyCellStyle(mainSheet, `${col}${currentRow}`, notesStyle);
+      } else if (col === 'F' || col === 'G') {
+        // Unit and Quantity columns - center aligned
+        const centerStyle = {
+          ...dataStyle,
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
+        };
+        applyCellStyle(mainSheet, `${col}${currentRow}`, centerStyle);
       } else {
+        // Other columns - use dataStyle
         applyCellStyle(mainSheet, `${col}${currentRow}`, dataStyle);
       }
     });
     currentRow++;
   }
-
-  // Center align quantity and unit columns for all data rows
-  const centerStyle = {
-    ...dataStyle,
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
-  };
-  for (let r = headerRow + 1; r <= numRows; r++) {
-    applyCellStyle(mainSheet, `F${r}`, centerStyle); // 單位
-    applyCellStyle(mainSheet, `G${r}`, centerStyle); // 數量
-  }
   
-  // Ensure notes column (H) has no wrapping for all data rows
+  // Double-check: Ensure ALL cells in data rows have wrapText: false
+  // This is a critical step to prevent any format issues
   for (let r = headerRow + 1; r <= numRows; r++) {
-    applyCellStyle(mainSheet, `H${r}`, notesStyle); // 備註 - no wrapping
+    headerCols.forEach((col) => {
+      const cellAddress = `${col}${r}`;
+      const cell = mainSheet[cellAddress];
+      if (cell) {
+        // Force wrapText to false at the cell level
+        if (!cell.s) cell.s = {};
+        if (!cell.s.alignment) cell.s.alignment = {};
+        cell.s.alignment.wrapText = false;
+        cell.s.alignment.vertical = 'center';
+        if (col === 'F' || col === 'G') {
+          cell.s.alignment.horizontal = 'center';
+        } else {
+          cell.s.alignment.horizontal = 'left';
+        }
+      }
+    });
   }
 
   // Merge cells for company header
