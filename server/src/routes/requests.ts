@@ -533,7 +533,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       error: '建立叫料單失敗',
       details: errorMessage
     });
-  });
+  }
 });
 
 // Send email for request manually
