@@ -1502,7 +1502,16 @@
         let materialCategories = [];
 
         // Initialize: Create guest account and get token
-        async function init() {
+        async 
+        // Safari compatibility check
+        if (!window.Promise) {
+            console.error('此瀏覽器不支援 Promise，請更新瀏覽器');
+        }
+        if (!window.fetch) {
+            console.error('此瀏覽器不支援 fetch，請更新瀏覽器');
+        }
+
+        function init() {
             try {
                 const response = await fetch('/api/auth/guest', {
                     method: 'POST',
