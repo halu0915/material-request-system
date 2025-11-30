@@ -6,19 +6,46 @@ import { generateExcel, generateReportExcel, uploadToCloud, sendEmail, sendLineN
 
 const router = express.Router();
 
-// Get default company info from environment variables
+// Get companies from environment variables
+// Supports two formats:
+// 1. Single company: COMPANY_NAME and COMPANY_TAX_ID
+// 2. Multiple companies: COMPANIES (JSON array format)
+//    Example: COMPANIES=[{"name":"公司1","tax_id":"12345678"},{"name":"公司2","tax_id":"87654321"}]
 router.get('/default-company', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const companyName = process.env.COMPANY_NAME || '';
-    const taxId = process.env.COMPANY_TAX_ID || '';
+    const companiesEnv = process.env.COMPANIES;
+    let companies: Array<{ name: string; tax_id: string }> = [];
+    
+    if (companiesEnv) {
+      // Try to parse JSON array format
+      try {
+        const parsed = JSON.parse(companiesEnv);
+        if (Array.isArray(parsed)) {
+          companies = parsed.map((c: any) => ({
+            name: c.name || c.company_name || '',
+            tax_id: c.tax_id || c.taxId || ''
+          })).filter((c: any) => c.name && c.tax_id);
+        }
+      } catch (e) {
+        console.warn('無法解析 COMPANIES 環境變數，嘗試使用單一公司格式');
+      }
+    }
+    
+    // Fallback to single company format if COMPANIES is not set or empty
+    if (companies.length === 0) {
+      const companyName = process.env.COMPANY_NAME || '';
+      const taxId = process.env.COMPANY_TAX_ID || '';
+      if (companyName && taxId) {
+        companies = [{ name: companyName, tax_id: taxId }];
+      }
+    }
     
     res.json({
-      company_name: companyName,
-      tax_id: taxId
+      companies: companies
     });
   } catch (error) {
-    console.error('取得預設公司資訊錯誤:', error);
-    res.status(500).json({ error: '取得預設公司資訊失敗' });
+    console.error('取得環境變數公司資訊錯誤:', error);
+    res.status(500).json({ error: '取得環境變數公司資訊失敗' });
   }
 });
 

@@ -2484,7 +2484,7 @@
             return companies.find(c => c.is_default) || companies[0] || null;
         }
 
-        // Load default company from environment variables
+        // Load companies from environment variables
         async function loadDefaultCompanyFromEnv() {
             try {
                 const response = await fetch('/api/requests/default-company', {
@@ -2493,40 +2493,48 @@
                 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.company_name && data.tax_id) {
-                        // Check if env company already exists in localStorage
+                    const envCompanies = data.companies || [];
+                    
+                    if (envCompanies.length > 0) {
                         const companies = getCompanies();
-                        const envCompanyId = 'env_default_company';
-                        const existingEnvCompany = companies.find(c => c.id === envCompanyId);
+                        const envCompanyIds = envCompanies.map((_, index) => `env_company_${index}`);
                         
-                        if (!existingEnvCompany) {
-                            // Add env company as default if not exists
-                            companies.unshift({
-                                id: envCompanyId,
-                                name: data.company_name,
-                                tax_id: data.tax_id,
-                                is_default: true,
-                                from_env: true
-                            });
-                            // Remove default flag from other companies
-                            companies.forEach(c => {
-                                if (c.id !== envCompanyId) {
-                                    c.is_default = false;
-                                }
-                            });
-                            saveCompanies(companies);
-                        } else {
-                            // Update env company info if exists
-                            existingEnvCompany.name = data.company_name;
-                            existingEnvCompany.tax_id = data.tax_id;
-                            existingEnvCompany.from_env = true;
-                            // Ensure it's default
-                            if (!existingEnvCompany.is_default) {
-                                companies.forEach(c => c.is_default = false);
-                                existingEnvCompany.is_default = true;
+                        // Remove old env companies that are no longer in env
+                        const filteredCompanies = companies.filter(c => !c.from_env || envCompanyIds.includes(c.id));
+                        
+                        // Add or update env companies
+                        envCompanies.forEach((envCompany, index) => {
+                            const envCompanyId = `env_company_${index}`;
+                            const existingIndex = filteredCompanies.findIndex(c => c.id === envCompanyId);
+                            
+                            if (existingIndex === -1) {
+                                // Add new env company
+                                filteredCompanies.unshift({
+                                    id: envCompanyId,
+                                    name: envCompany.name,
+                                    tax_id: envCompany.tax_id,
+                                    is_default: index === 0, // First one is default
+                                    from_env: true
+                                });
+                            } else {
+                                // Update existing env company
+                                filteredCompanies[existingIndex].name = envCompany.name;
+                                filteredCompanies[existingIndex].tax_id = envCompany.tax_id;
+                                filteredCompanies[existingIndex].from_env = true;
                             }
-                            saveCompanies(companies);
+                        });
+                        
+                        // Set first env company as default if no default exists
+                        const hasDefault = filteredCompanies.some(c => c.is_default);
+                        if (!hasDefault && filteredCompanies.length > 0) {
+                            const firstEnvCompany = filteredCompanies.find(c => c.from_env);
+                            if (firstEnvCompany) {
+                                filteredCompanies.forEach(c => c.is_default = false);
+                                firstEnvCompany.is_default = true;
+                            }
                         }
+                        
+                        saveCompanies(filteredCompanies);
                     }
                 }
             } catch (error) {
