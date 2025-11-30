@@ -126,14 +126,13 @@
         }
         .section-header {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
-            padding-bottom: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
             border-bottom: 2px solid #f0f0f0;
             flex-wrap: wrap;
             gap: 10px;
-            position: relative;
         }
         .section-header h2 {
             color: #111827;
@@ -154,7 +153,6 @@
             font-size: 1.875rem;
             font-weight: 700;
             letter-spacing: -0.02em;
-            pointer-events: none;
         }
         .back-btn {
             background: linear-gradient(135deg, #347773 0%, #2d6561 100%);
@@ -176,8 +174,6 @@
             font-weight: 600;
             position: absolute;
             left: 0;
-            z-index: 100;
-            pointer-events: auto;
         }
         .back-btn:hover {
             background: linear-gradient(135deg, #2d6561 0%, #25605c 100%);
@@ -739,16 +735,14 @@
                 border-radius: 16px;
             }
             .section-header {
-                flex-direction: row;
-                align-items: center;
-                justify-content: center;
+                flex-direction: column;
+                align-items: stretch;
                 gap: 12px;
                 margin-bottom: 24px;
-                padding-bottom: 20px;
-                position: relative;
+                padding-bottom: 16px;
             }
             .section-header h2 {
-                font-size: 1.875rem;
+                font-size: 1.75rem;
                 font-weight: 700;
                 width: 100%;
                 color: #111827;
@@ -756,38 +750,29 @@
                 display: flex;
                 align-items: center;
                 flex-direction: row;
-                justify-content: center;
+                justify-content: flex-start;
                 gap: 12px;
-                position: relative;
             }
             .section-header h2 .back-btn {
-                padding: 4px 8px;
-                font-size: 0.65rem;
-                margin-right: 0;
-                min-height: 24px;
-                min-width: 28px;
-                border-radius: 6px;
-                background: linear-gradient(135deg, #347773 0%, #2d6561 100%);
-                box-shadow: 0 1px 4px rgba(52, 119, 115, 0.2);
+                padding: 8px 12px;
+                font-size: 0.875rem;
+                margin-right: 12px;
+                min-height: 36px;
+                min-width: 36px;
+                border-radius: 10px;
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
                 flex-shrink: 0;
                 order: -1;
-                position: absolute;
-                left: 0;
-                z-index: 100;
-                pointer-events: auto;
             }
             .section-header h2 .back-btn:active {
                 transform: scale(0.95);
-                box-shadow: 0 1px 3px rgba(52, 119, 115, 0.25);
+                box-shadow: 0 1px 4px rgba(79, 172, 254, 0.4);
             }
             .section-header h2 span {
                 flex: 1;
                 order: 1;
-                text-align: center;
-                font-size: 1.875rem;
-                font-weight: 700;
-                letter-spacing: -0.02em;
-                pointer-events: none;
+                text-align: left;
             }
             .section-header > div {
                 width: 100%;
@@ -1104,7 +1089,6 @@
     </style>
 
     <meta name="format-detection" content="telephone=no">
-    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default"></head>
 <body>
@@ -1154,7 +1138,7 @@
                     <button class="btn-secondary" onclick="manageCategories('material')" style="margin-right: 10px;">管理材料類別</button>
                     <button class="btn-secondary" onclick="manageAddresses()" style="margin-right: 10px;">管理地址</button>
                     <button class="btn-secondary" onclick="manageCompanies()" style="margin-right: 10px;">管理公司</button>
-                <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
+                    <button class="btn-primary" onclick="showAddMaterialForm()">新增物料</button>
                 </div>
             </div>
             <!-- Materials Filter and Search Bar -->
@@ -1608,17 +1592,8 @@
 
         // Show home view
         function showHome() {
-            if (typeof window.navigateToSection === 'function') {
-                window.navigateToSection(null);
-            } else if (typeof navigateToSection === 'function') {
-                navigateToSection(null);
-            } else {
-                console.error('navigateToSection not available');
-            }
+            navigateToSection(null);
         }
-        
-        // Immediately expose showHome to window
-        window.showHome = showHome;
 
         // Navigate to section with browser history support
         function navigateToSection(section) {
@@ -1665,47 +1640,11 @@
                 }
             }
         }
-        
-        // Immediately expose navigateToSection to window to ensure it's available
-        window.navigateToSection = navigateToSection;
 
         // Open section
         function openSection(section) {
-            console.log('openSection called with:', section);
-            if (typeof navigateToSection === 'function') {
-                navigateToSection(section);
-            } else {
-                console.error('navigateToSection is not a function');
-                // Fallback: directly show the section
-                if (section === null) {
-                    document.getElementById('home-view').style.display = 'block';
-                    ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.style.display = 'none';
-                    });
-                } else {
-                    document.getElementById('home-view').style.display = 'none';
-                    ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.style.display = 'none';
-                    });
-                    const sectionEl = document.getElementById(section + '-section');
-                    if (sectionEl) {
-                        sectionEl.style.display = 'block';
-                        if (section === 'materials') {
-                            if (typeof loadMaterials === 'function') loadMaterials();
-                        } else if (section === 'requests') {
-                            if (typeof loadRequests === 'function') loadRequests();
-                        } else if (section === 'reports') {
-                            if (typeof loadReports === 'function') loadReports();
-                        }
-                    }
-                }
-            }
+            navigateToSection(section);
         }
-        
-        // Immediately expose openSection to window
-        window.openSection = openSection;
 
         // Handle browser back/forward buttons
         function handlePopState(event) {
@@ -1733,13 +1672,9 @@
             content.innerHTML = '<div class="loading">載入中...</div>';
             
             try {
-                console.log('開始載入物料資料...');
-                const headers = getHeaders();
-                console.log('請求標頭:', headers);
                 const response = await fetch('/api/materials', {
-                    headers: headers
+                    headers: getHeaders()
                 });
-                console.log('物料API回應狀態:', response.status);
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -1747,17 +1682,10 @@
                     filteredMaterials = [...allMaterials];
                     
                     // Load categories for filters
-                    try {
-                        await loadCategoriesForFilters();
-                    } catch (filterError) {
-                        console.error('載入篩選類別失敗:', filterError);
-                        // Continue even if filter loading fails
-                    }
+                    await loadCategoriesForFilters();
                     
-                    console.log('準備顯示物料，數量:', filteredMaterials.length);
                     displayMaterials(filteredMaterials);
                     updateMaterialStats();
-                    console.log('物料顯示完成');
                 } else if (response.status === 401 || response.status === 403) {
                     // Token invalid, try to refresh
                     console.warn('Token 無效，嘗試刷新...');
@@ -1772,18 +1700,11 @@
                         filteredMaterials = [...allMaterials];
                         
                         // Load categories for filters
-                        try {
-                            await loadCategoriesForFilters();
-                        } catch (filterError) {
-                            console.error('載入篩選類別失敗:', filterError);
-                            // Continue even if filter loading fails
-                        }
+                        await loadCategoriesForFilters();
                         
-                        console.log('準備顯示物料（重試後），數量:', filteredMaterials.length);
                         displayMaterials(filteredMaterials);
                         updateMaterialStats();
-                        console.log('物料顯示完成（重試後）');
-                    } else {
+                } else {
                         const errorText = await retryResponse.text();
                         let errorMessage = '無法載入物料資料';
                         try {
@@ -1793,7 +1714,6 @@
                             console.error('API 錯誤響應:', errorText);
                         }
                         content.innerHTML = '<div class="alert alert-error">' + escapeHtml(errorMessage) + '</div>';
-                        console.error('載入物料失敗 (重試後):', retryResponse.status, errorMessage);
                     }
                 } else {
                     const errorText = await response.text();
@@ -1909,17 +1829,14 @@
                 filteredCount.textContent = filteredMaterials.length;
             }
         }
-
+        
         function displayMaterials(materials) {
-            console.log('displayMaterials 被調用，物料數量:', materials ? materials.length : 0);
             const content = document.getElementById('materials-content');
             
             if (!content) {
                 console.error('無法找到 materials-content 元素');
                 return;
             }
-            
-            console.log('找到 materials-content 元素，準備更新內容');
             
             if (materials.length === 0) {
                 if (allMaterials.length === 0) {
@@ -2086,19 +2003,11 @@
         // Edit Category by ID (get from current list)
         function editCategoryById(id, type) {
             // Get category from current list
-            try {
-                const endpoint = type === 'construction' ? '/api/materials/construction-categories' : '/api/materials/material-categories';
-                let response = await fetch(endpoint, { headers: getHeaders() });
-                
-                // Handle 401/403 errors by refreshing token and retrying
-                if (response.status === 401 || response.status === 403) {
-                    console.warn('載入類別資料 Token 無效，嘗試刷新...');
-                    await refreshTokenIfNeeded();
-                    response = await fetch(endpoint, { headers: getHeaders() });
-                }
-                
-                if (response.ok) {
-                    const data = await response.json();
+            const endpoint = type === 'construction' ? '/api/materials/construction-categories' : '/api/materials/material-categories';
+            
+            fetch(endpoint, { headers: getHeaders() })
+                .then(response => response.json())
+                .then(data => {
                     const cat = data.categories.find(c => c.id == id);
                     if (!cat) {
                         alert('找不到類別資料');
@@ -2113,22 +2022,10 @@
                     document.getElementById('category-name').value = cat.name;
                     document.getElementById('category-description').value = cat.description || '';
                     document.getElementById('category-modal').style.display = 'block';
-                } else {
-                    let errorMessage = '載入類別資料失敗';
-                    try {
-                        const errorData = await response.json();
-                        errorMessage = errorData.error || errorMessage;
-                    } catch (e) {
-                        const errorText = await response.text();
-                        errorMessage = errorText || errorMessage;
-                    }
-                    console.error('載入類別資料失敗:', response.status, errorMessage);
-                    alert('載入類別資料失敗：' + errorMessage);
-                }
-            } catch (error) {
-                console.error('載入類別資料錯誤:', error);
-                alert('載入類別資料失敗：' + (error.message || '未知錯誤'));
-            }
+                })
+                .catch(error => {
+                    alert('載入類別資料失敗：' + error.message);
+                });
         }
 
         // Delete Category
@@ -2468,61 +2365,21 @@
         // Load requests
         async function loadRequests() {
             const content = document.getElementById('requests-content');
-            if (!content) {
-                console.error('無法找到 requests-content 元素');
-                return;
-            }
             content.innerHTML = '<div class="loading">載入中...</div>';
-            console.log('開始載入叫料單資料...');
             
             try {
-                const headers = getHeaders();
-                console.log('叫料單API請求標頭:', headers);
                 const response = await fetch('/api/requests', {
-                    headers: headers
+                    headers: getHeaders()
                 });
-                console.log('叫料單API回應狀態:', response.status);
                 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('叫料單API回應資料:', data);
                     displayRequests(data.requests || []);
-                } else if (response.status === 401 || response.status === 403) {
-                    console.warn('Token 無效或過期，嘗試刷新...');
-                    await refreshTokenIfNeeded();
-                    const retryResponse = await fetch('/api/requests', {
-                        headers: getHeaders()
-                    });
-                    if (retryResponse.ok) {
-                        const data = await retryResponse.json();
-                        displayRequests(data.requests || []);
-                    } else {
-                        const errorText = await retryResponse.text();
-                        let errorMessage = '無法載入叫料單資料';
-                        try {
-                            const errorData = JSON.parse(errorText);
-                            errorMessage = errorData.error || errorMessage;
-                        } catch (e) {
-                            console.error('API 錯誤響應 (重試):', errorText);
-                        }
-                        content.innerHTML = '<div class="alert alert-error">' + escapeHtml(errorMessage) + '</div>';
-                        console.error('載入叫料單失敗 (重試):', retryResponse.status, errorMessage);
-                    }
                 } else {
-                    const errorText = await response.text();
-                    let errorMessage = '無法載入叫料單資料';
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.error || errorMessage;
-                    } catch (e) {
-                        console.error('API 錯誤響應:', errorText);
-                    }
-                    content.innerHTML = '<div class="alert alert-error">' + escapeHtml(errorMessage) + '</div>';
-                    console.error('載入叫料單失敗:', response.status, errorMessage);
+                    content.innerHTML = '<div class="alert alert-error">無法載入叫料單資料</div>';
                 }
             } catch (error) {
-                console.error('載入叫料單錯誤:', error);
-                content.innerHTML = '<div class="alert alert-error">載入失敗：' + escapeHtml(error.message || '未知錯誤') + '</div>';
+                content.innerHTML = '<div class="alert alert-error">載入失敗：' + error.message + '</div>';
             }
         }
 
@@ -2608,7 +2465,6 @@
 
         // Show create request form
         async function showCreateRequestForm() {
-                try {
             document.getElementById('request-form').reset();
             
             // Clear applicant name and contact phone fields
@@ -2713,10 +2569,6 @@
             }
             
             document.getElementById('request-modal').style.display = 'block';
-                } catch (error) {
-                    console.error('showCreateRequestForm error:', error);
-                    alert('無法開啟新增叫料單表單: ' + error.message);
-                }
         }
 
         // Filter materials by construction category
@@ -2868,7 +2720,7 @@
                 formData.append('image', file);
                 
                 const token = guestToken || localStorage.getItem('token');
-                let response = await fetch('/api/uploads/image', {
+                const response = await fetch('/api/uploads/image', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -2876,40 +2728,17 @@
                     body: formData
                 });
                 
-                // Handle 401/403 errors by refreshing token and retrying
-                if (response.status === 401 || response.status === 403) {
-                    console.warn('圖片上傳 Token 無效，嘗試刷新...');
-                    await refreshTokenIfNeeded();
-                    const newToken = guestToken || localStorage.getItem('token');
-                    response = await fetch('/api/uploads/image', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${newToken}`
-                        },
-                        body: formData
-                    });
-                }
-                
                 if (response.ok) {
                     const data = await response.json();
                     const imageUrlInput = input.closest('.image-upload-area').querySelector('.item-image-url');
                     imageUrlInput.value = data.url;
                 } else {
-                    let errorMessage = '上傳失敗';
-                    try {
-                        const error = await response.json();
-                        errorMessage = error.error || errorMessage;
-                    } catch (e) {
-                        const errorText = await response.text();
-                        errorMessage = errorText || errorMessage;
-                    }
-                    console.error('圖片上傳失敗:', response.status, errorMessage);
-                    alert('上傳失敗：' + errorMessage + ' (狀態碼: ' + response.status + ')');
+                    const error = await response.json();
+                    alert('上傳失敗：' + (error.error || '未知錯誤'));
                     removeImage(itemIndex);
                 }
             } catch (error) {
-                console.error('圖片上傳錯誤:', error);
-                alert('上傳失敗：' + (error.message || '未知錯誤'));
+                alert('上傳失敗：' + error.message);
                 removeImage(itemIndex);
             }
         }
@@ -3731,34 +3560,20 @@
             if (!confirm('確定要刪除此叫料單嗎？此操作無法復原。')) return;
             
             try {
-                console.log('準備刪除叫料單，ID:', id);
                 const response = await fetch(`/api/requests/${id}`, {
                     method: 'DELETE',
                     headers: getHeaders()
                 });
                 
-                console.log('刪除回應狀態:', response.status);
-                
                 if (response.ok) {
-                    const data = await response.json();
-                    console.log('刪除成功:', data);
                     loadRequests();
-                    alert('✅ 叫料單已刪除');
+                    alert('叫料單已刪除');
                 } else {
-                    const errorText = await response.text();
-                    let errorMessage = '刪除失敗';
-                    try {
-                        const errorJson = JSON.parse(errorText);
-                        errorMessage = errorJson.error || errorJson.message || errorMessage;
-                    } catch (e) {
-                        errorMessage = errorText || errorMessage;
-                    }
-                    console.error('刪除失敗:', response.status, errorMessage);
-                    alert('刪除失敗：' + errorMessage + ' (狀態碼: ' + response.status + ')');
+                    const error = await response.json();
+                    alert('刪除失敗：' + (error.error || '未知錯誤'));
                 }
-            } catch (error: any) {
-                console.error('刪除錯誤:', error);
-                alert('刪除失敗：' + (error.message || '未知錯誤'));
+            } catch (error) {
+                alert('刪除失敗：' + error.message);
             }
         }
         
@@ -3811,16 +3626,7 @@
                         window.URL.revokeObjectURL(downloadUrl);
                         alert('✅ Excel 檔案下載成功！');
                     } else {
-                        const errorText = await response.text();
-                        let errorMessage = '下載失敗';
-                        try {
-                            const errorJson = JSON.parse(errorText);
-                            errorMessage = errorJson.error || errorMessage;
-                        } catch (e) {
-                            errorMessage = errorText || errorMessage;
-                        }
-                        console.error('下載失敗:', response.status, errorMessage);
-                        alert('下載失敗：' + errorMessage + ' (狀態碼: ' + response.status + ')');
+                        alert('下載失敗');
                     }
                 } catch (error) {
                     alert('下載失敗：' + error.message);
@@ -3943,20 +3749,11 @@
         // Load reports
         async function loadReports() {
             const content = document.getElementById('reports-content');
-            if (!content) {
-                console.error('無法找到 reports-content 元素');
-                return;
-            }
-            content.innerHTML = '<div class="loading">載入中...</div>';
-            console.log('開始載入報表資料...');
             
             try {
-                const headers = getHeaders();
-                console.log('報表API請求標頭:', headers);
                 const requestsRes = await fetch('/api/requests', {
-                    headers: headers
+                    headers: getHeaders()
                 });
-                console.log('報表API回應狀態:', requestsRes.status);
                 
                 if (requestsRes.ok) {
                     const data = await requestsRes.json();
@@ -4142,95 +3939,12 @@
                 materialFilter.addEventListener('change', filterMaterials);
             }
         }
-
-        // Initialize on page load
         
-
-        // Debug: Log all click events
-        // Expose all functions to global scope for onclick handlers
-        // This must be done after all functions are defined
-        try {
-            // Core navigation functions - expose immediately
-            if (typeof showHome === 'function') {
-                window.showHome = showHome;
-                console.log('showHome exposed to window');
-            }
-            if (typeof navigateToSection === 'function') {
-                window.navigateToSection = navigateToSection;
-                console.log('navigateToSection exposed to window');
-            }
-            if (typeof openSection === 'function') {
-                window.openSection = openSection;
-                console.log('openSection exposed to window');
-            } else {
-                console.error('openSection is not a function, creating fallback');
-                // Fallback if openSection not defined yet
-                window.openSection = function(section) {
-                    console.log('Fallback openSection called with:', section);
-                    if (typeof navigateToSection === 'function') {
-                        navigateToSection(section);
-                    } else {
-                        console.error('navigateToSection function not found');
-                    }
-                };
-            }
-
-            // Request functions
-            if (typeof showCreateRequestForm === 'function') window.showCreateRequestForm = showCreateRequestForm;
-            if (typeof saveRequest === 'function') window.saveRequest = saveRequest;
-            if (typeof downloadRequestExcel === 'function') window.downloadRequestExcel = downloadRequestExcel;
-            if (typeof sendRequestEmail === 'function') window.sendRequestEmail = sendRequestEmail;
-            if (typeof deleteRequest === 'function') window.deleteRequest = deleteRequest;
-            if (typeof viewRequest === 'function') window.viewRequest = viewRequest;
-            if (typeof removeRequestItem === 'function') window.removeRequestItem = removeRequestItem;
-            if (typeof addRequestItem === 'function') window.addRequestItem = addRequestItem;
-            if (typeof removeImage === 'function') window.removeImage = removeImage;
-
-            // Material functions
-            if (typeof showAddMaterialForm === 'function') window.showAddMaterialForm = showAddMaterialForm;
-            if (typeof editMaterialById === 'function') window.editMaterialById = editMaterialById;
-            if (typeof deleteMaterial === 'function') window.deleteMaterial = deleteMaterial;
-            if (typeof quickAddSpecification === 'function') window.quickAddSpecification = quickAddSpecification;
-            if (typeof clearMaterialFilters === 'function') window.clearMaterialFilters = clearMaterialFilters;
-
-            // Category functions
-            if (typeof manageCategories === 'function') window.manageCategories = manageCategories;
-            if (typeof showAddCategoryForm === 'function') window.showAddCategoryForm = showAddCategoryForm;
-            if (typeof editCategoryById === 'function') window.editCategoryById = editCategoryById;
-            if (typeof deleteCategory === 'function') window.deleteCategory = deleteCategory;
-
-            // Address functions
-            if (typeof manageAddresses === 'function') window.manageAddresses = manageAddresses;
-            if (typeof showAddAddressForm === 'function') window.showAddAddressForm = showAddAddressForm;
-            if (typeof editAddressById === 'function') window.editAddressById = editAddressById;
-            if (typeof deleteAddress === 'function') window.deleteAddress = deleteAddress;
-
-            // Company functions
-            if (typeof manageCompanies === 'function') window.manageCompanies = manageCompanies;
-            if (typeof showAddCompanyForm === 'function') window.showAddCompanyForm = showAddCompanyForm;
-            if (typeof editCompanyById === 'function') window.editCompanyById = editCompanyById;
-            if (typeof deleteCompany === 'function') window.deleteCompany = deleteCompany;
-            if (typeof confirmCompanySelection === 'function') window.confirmCompanySelection = confirmCompanySelection;
-
-            // Utility functions
-            if (typeof closeModal === 'function') window.closeModal = closeModal;
-            if (typeof handleImageUpload === 'function') window.handleImageUpload = handleImageUpload;
-            if (typeof filterMaterialsByCategory === 'function') window.filterMaterialsByCategory = filterMaterialsByCategory;
-            if (typeof loadDeliveryAddresses === 'function') window.loadDeliveryAddresses = loadDeliveryAddresses;
-            if (typeof setupUnitHistory === 'function') window.setupUnitHistory = setupUnitHistory;
-            if (typeof setupQuantityValidation === 'function') window.setupQuantityValidation = setupQuantityValidation;
-            if (typeof downloadMonthlyReport === 'function') window.downloadMonthlyReport = downloadMonthlyReport;
-            if (typeof downloadRangeReport === 'function') window.downloadRangeReport = downloadRangeReport;
-
-            console.log('所有函數已暴露到 window 對象');
-        } catch (error) {
-            console.error('暴露函數到 window 時發生錯誤:', error);
-        }
-
+        // Initialize on page load
         function initializeApp() {
             (async function() {
                 try {
-            await init();
+                    await init();
                     const userNameEl = document.getElementById('userName');
                     const welcomeMessageEl = document.getElementById('welcomeMessage');
                     if (userNameEl) userNameEl.textContent = '使用者';
@@ -4400,48 +4114,10 @@
             };
         }
         
-        // Function to open section (used by feature cards) - override previous definition
+        // Function to open section (used by feature cards)
         function openSection(section) {
-            console.log('openSection called with:', section);
-            // Use window.navigateToSection to ensure we're using the exposed version
-            if (typeof window.navigateToSection === 'function') {
-                window.navigateToSection(section);
-            } else if (typeof navigateToSection === 'function') {
-                navigateToSection(section);
-            } else {
-                console.error('navigateToSection function not found');
-                // Fallback: directly show the section
-                if (section === null) {
-                    const homeView = document.getElementById('home-view');
-                    if (homeView) homeView.style.display = 'block';
-                    ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.style.display = 'none';
-                    });
-                } else {
-                    const homeView = document.getElementById('home-view');
-                    if (homeView) homeView.style.display = 'none';
-                    ['materials-section', 'requests-section', 'reports-section'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.style.display = 'none';
-                    });
-                    const sectionEl = document.getElementById(section + '-section');
-                    if (sectionEl) {
-                        sectionEl.style.display = 'block';
-                        if (section === 'materials' && typeof loadMaterials === 'function') {
-                            loadMaterials();
-                        } else if (section === 'requests' && typeof loadRequests === 'function') {
-                            loadRequests();
-                        } else if (section === 'reports' && typeof loadReports === 'function') {
-                            loadReports();
-                        }
-                    }
-                }
-            }
+            navigateToSection(section);
         }
-        
-        // Ensure openSection is exposed
-        window.openSection = openSection;
         
         // Update nav on initial load
         setTimeout(() => {
