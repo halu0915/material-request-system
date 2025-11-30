@@ -878,7 +878,7 @@
                             <select class="item-material" required>
                                 <option value="">選擇物料</option>
                             </select>
-                            <input type="number" class="item-quantity" placeholder="數量" step="10" required>
+                            <input type="number" class="item-quantity" placeholder="數量" step="10" min="1" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if (this.value < 1) this.value = '';" required>
                             <input type="text" class="item-unit" placeholder="單位" list="unit-history">
                             <input type="text" class="item-notes" placeholder="備註">
                             <input type="url" class="item-image-url" placeholder="圖片網址（可選）">
