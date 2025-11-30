@@ -1911,12 +1911,15 @@
         }
 
         function displayMaterials(materials) {
+            console.log('displayMaterials 被調用，物料數量:', materials ? materials.length : 0);
             const content = document.getElementById('materials-content');
             
             if (!content) {
                 console.error('無法找到 materials-content 元素');
                 return;
             }
+            
+            console.log('找到 materials-content 元素，準備更新內容');
             
             if (materials.length === 0) {
                 if (allMaterials.length === 0) {
