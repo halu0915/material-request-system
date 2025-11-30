@@ -1124,17 +1124,17 @@
                 <h2>叫料系統</h2>
             </div>
             <div class="features">
-                <div class="feature-card" onclick="openSection('materials')">
+                <div class="feature-card" onclick="if(typeof window.openSection==='function'){window.openSection('materials');}else if(typeof openSection==='function'){openSection('materials');}else{console.error('openSection not available');alert('功能載入中，請稍候再試');}">
                     <div class="feature-icon">📦</div>
                     <h3>物料管理</h3>
                     <p>管理物料資料庫</p>
                 </div>
-                <div class="feature-card" onclick="openSection('requests')">
+                <div class="feature-card" onclick="if(typeof window.openSection==='function'){window.openSection('requests');}else if(typeof openSection==='function'){openSection('requests');}else{console.error('openSection not available');alert('功能載入中，請稍候再試');}">
                     <div class="feature-icon">📋</div>
                     <h3>叫料單</h3>
                     <p>建立和管理叫料單</p>
                 </div>
-                <div class="feature-card" onclick="openSection('reports')">
+                <div class="feature-card" onclick="if(typeof window.openSection==='function'){window.openSection('reports');}else if(typeof openSection==='function'){openSection('reports');}else{console.error('openSection not available');alert('功能載入中，請稍候再試');}">
                     <div class="feature-icon">📊</div>
                     <h3>報表統計</h3>
                     <p>查看叫料統計</p>
@@ -4149,11 +4149,30 @@
         function initializeApp() {
             (async function() {
                 try {
-            await init();
+                    console.log('開始初始化應用...');
+                    await init();
                     const userNameEl = document.getElementById('userName');
                     const welcomeMessageEl = document.getElementById('welcomeMessage');
                     if (userNameEl) userNameEl.textContent = '使用者';
                     if (welcomeMessageEl) welcomeMessageEl.textContent = '叫料系統';
+                    
+                    // Re-expose functions after init to ensure they're available
+                    if (typeof showHome === 'function') {
+                        window.showHome = showHome;
+                        console.log('showHome re-exposed');
+                    }
+                    if (typeof navigateToSection === 'function') {
+                        window.navigateToSection = navigateToSection;
+                        console.log('navigateToSection re-exposed');
+                    }
+                    if (typeof openSection === 'function') {
+                        window.openSection = openSection;
+                        console.log('openSection re-exposed');
+                    }
+                    
+                    console.log('After init - openSection available:', typeof window.openSection);
+                    console.log('After init - navigateToSection available:', typeof window.navigateToSection);
+                    console.log('After init - showHome available:', typeof window.showHome);
                     
                     // Load default company from environment variables
                     if (typeof loadDefaultCompanyFromEnv === 'function') {
@@ -4173,16 +4192,19 @@
                     // Check URL hash on load
                     if (typeof getSectionFromHash === 'function') {
                         const section = getSectionFromHash();
-                        if (section && typeof navigateToSection === 'function') {
-                            navigateToSection(section);
+                        if (section && typeof window.navigateToSection === 'function') {
+                            window.navigateToSection(section);
                         } else {
                             if (window.history && window.history.replaceState) {
                                 history.replaceState({ section: null }, '', window.location.pathname);
                             }
                         }
                     }
+                    
+                    console.log('應用初始化完成');
                 } catch (error) {
                     console.error('應用初始化錯誤:', error);
+                    console.error('錯誤詳情:', error.stack);
                 }
             })();
         }
