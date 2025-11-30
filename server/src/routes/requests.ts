@@ -656,9 +656,14 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
     const encodedFilename = encodeURIComponent(filename);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`);
     res.send(excelBuffer);
-  } catch (error) {
+  } catch (error: any) {
     console.error('產生Excel錯誤:', error);
-    res.status(500).json({ error: '產生Excel失敗' });
+    console.error('錯誤詳情:', error.message, error.stack);
+    res.status(500).json({ 
+      error: '產生Excel失敗',
+      message: error.message || '未知錯誤',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

@@ -29,12 +29,21 @@ function applyCellStyle(sheet: any, cellAddress: string, style: any) {
 
 // Generate Excel file with company header and A4 formatting
 export async function generateExcel(request: any, companyName?: string, taxId?: string, monthlyRequests?: any[]): Promise<Buffer> {
-  const workbook = XLSX.utils.book_new();
+  try {
+    // Validate request data
+    if (!request) {
+      throw new Error('請求資料為空');
+    }
+    if (!request.items || !Array.isArray(request.items) || request.items.length === 0) {
+      throw new Error('請求項目為空或無效');
+    }
 
-  // Get company info from environment or use defaults
-  const company = companyName || process.env.COMPANY_NAME || '公司名稱';
-  const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || '統編：00000000';
-  const workArea = request.work_area || request.construction_category_name || '';
+    const workbook = XLSX.utils.book_new();
+
+    // Get company info from environment or use defaults
+    const company = companyName || process.env.COMPANY_NAME || '公司名稱';
+    const taxIdNumber = taxId || process.env.COMPANY_TAX_ID || '統編：00000000';
+    const workArea = request.work_area || request.construction_category_name || '';
 
   // Main data sheet with company header
   const mainData = [
@@ -497,7 +506,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
     let workbook: ExcelJS.Workbook;
     try {
       workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(Buffer.isBuffer(excelBuffer) ? excelBuffer as Buffer : Buffer.from(excelBuffer as any) as any);
+      await workbook.xlsx.load(Buffer.isBuffer(excelBuffer) ? excelBuffer as Buffer : Buffer.from(excelBuffer as any));
     } catch (loadError: any) {
       console.error('載入 Excel buffer 失敗:', loadError.message || loadError);
       // Return original buffer if load fails
@@ -619,7 +628,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
                   
                   // Add image to workbook
                   const imageId = workbook.addImage({
-                    buffer: Buffer.from(imageBuffer as any) as any,
+                    buffer: imageBuffer instanceof Buffer ? imageBuffer : Buffer.from(imageBuffer),
                     extension: imageExtension as 'png' | 'jpeg' | 'gif'
                   });
                   
