@@ -63,7 +63,7 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
       item.material_name || '',
       item.material_specification || '',
       item.unit || item.material_unit || '',
-      item.quantity,
+      Math.floor(parseFloat(item.quantity) || 0),
       item.notes || ''
     ]);
     
