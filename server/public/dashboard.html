@@ -2201,6 +2201,16 @@
             }
             
             try {
+                console.log('準備建立叫料單，資料：', {
+                    applicant_name,
+                    contact_phone,
+                    work_area,
+                    construction_category_id,
+                    delivery_address_id,
+                    items_count: items.length,
+                    items: items
+                });
+                
                 const response = await fetch('/api/requests', {
                     method: 'POST',
                     headers: getHeaders(),
@@ -2215,16 +2225,21 @@
                     })
                 });
                 
+                const responseData = await response.json();
+                console.log('伺服器回應：', response.status, responseData);
+                
                 if (response.ok) {
                     closeModal('request-modal');
                     loadRequests();
                     alert('叫料單建立成功！');
                 } else {
-                    const error = await response.json();
-                    alert('建立失敗：' + (error.error || '未知錯誤'));
+                    const errorMsg = responseData.error || responseData.details || '未知錯誤';
+                    console.error('建立失敗：', errorMsg, responseData);
+                    alert('建立失敗：' + errorMsg + (responseData.details ? '\n詳情：' + responseData.details : ''));
                 }
             } catch (error) {
-                alert('建立失敗：' + error.message);
+                console.error('建立叫料單發生錯誤：', error);
+                alert('建立失敗：' + (error.message || '網路錯誤，請檢查連線'));
             }
         }
         
