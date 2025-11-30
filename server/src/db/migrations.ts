@@ -107,7 +107,7 @@ export const createTables = async (): Promise<void> => {
       END $$;
     `);
     
-    // Drop ALL unique constraints and indexes on materials table
+    // Drop ALL unique constraints and indexes on materials table (except PRIMARY KEY)
     // This allows creating multiple materials with same category, name, and specification
     await query(`
       DO $$ 
@@ -115,24 +115,26 @@ export const createTables = async (): Promise<void> => {
         constraint_record RECORD;
         index_record RECORD;
       BEGIN
-        -- Drop all unique constraints on materials table
+        -- Drop all unique constraints on materials table (excluding PRIMARY KEY)
         FOR constraint_record IN 
           SELECT conname
           FROM pg_constraint c
           JOIN pg_class t ON c.conrelid = t.oid
           WHERE t.relname = 'materials'
           AND c.contype = 'u'
+          AND conname NOT LIKE '%_pkey'
         LOOP
           EXECUTE 'ALTER TABLE materials DROP CONSTRAINT IF EXISTS ' || constraint_record.conname;
           RAISE NOTICE 'Dropped constraint: %', constraint_record.conname;
         END LOOP;
         
-        -- Drop all unique indexes on materials table
+        -- Drop all unique indexes on materials table (excluding PRIMARY KEY indexes)
         FOR index_record IN 
           SELECT indexname
           FROM pg_indexes
           WHERE tablename = 'materials'
           AND indexdef LIKE '%UNIQUE%'
+          AND indexname NOT LIKE '%_pkey'
         LOOP
           EXECUTE 'DROP INDEX IF EXISTS ' || index_record.indexname;
           RAISE NOTICE 'Dropped index: %', index_record.indexname;
