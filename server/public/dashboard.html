@@ -17,11 +17,11 @@
             color: #2c3e50;
         }
         .header {
-            background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 100%);
-            color: #2c3e50;
+            background: linear-gradient(135deg, #347773 0%, #2d6561 100%);
+            color: #ffffff;
             padding: 24px 20px;
-            box-shadow: 0 2px 8px rgba(255, 200, 100, 0.15);
-            border-bottom: 1px solid rgba(255, 200, 100, 0.3);
+            box-shadow: 0 4px 12px rgba(52, 119, 115, 0.25);
+            border-bottom: 2px solid rgba(52, 119, 115, 0.3);
             position: relative;
             z-index: 100;
             -webkit-backdrop-filter: blur(10px);
@@ -37,19 +37,21 @@
         .header h1 {
             font-size: 1.5rem;
             cursor: pointer;
-            font-weight: 600;
-            color: #8b4513;
+            font-weight: 700;
+            color: #ffffff;
             letter-spacing: -0.02em;
-            transition: color 0.2s ease;
+            transition: all 0.3s ease;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
         .header h1:hover {
-            color: #d2691e;
+            color: #e8f5f4;
+            transform: translateY(-1px);
         }
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
-            color: #2c3e50;
+            color: #ffffff;
             font-size: 0.9375rem;
             font-weight: 600;
             background: rgba(255, 255, 255, 0.15);
@@ -658,15 +660,22 @@
             .header h1 {
                 font-size: 1.25rem;
                 flex: 1;
-                font-weight: 600;
-                color: #8b4513;
+                font-weight: 700;
+                color: #ffffff;
                 letter-spacing: -0.01em;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             }
             .user-info {
                 gap: 8px;
                 font-size: 0.875rem;
-                color: #2c3e50;
-                font-weight: 500;
+                color: #ffffff;
+                font-weight: 600;
+                background: rgba(255, 255, 255, 0.15);
+                padding: 6px 12px;
+                border-radius: 16px;
+                -webkit-backdrop-filter: blur(5px);
+                backdrop-filter: blur(5px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
             }
             .user-info button {
                 padding: 8px 12px;
@@ -2044,9 +2053,6 @@
             cardHtml += '</div>';
             content.innerHTML = tableHtml + cardHtml;
         }
-        
-        // Immediately expose manageCategories to window
-        if (typeof manageCategories === 'function') window.manageCategories = manageCategories;
 
         // Show add category form (also handles edit setup)
         function showAddCategoryForm(type) {
@@ -2168,9 +2174,6 @@
             await loadCategoriesForMaterialForm();
             document.getElementById('material-modal').style.display = 'block';
         }
-        
-        // Immediately expose showAddMaterialForm to window
-        if (typeof showAddMaterialForm === 'function') window.showAddMaterialForm = showAddMaterialForm;
 
         // Quick add specification - create new material with same category and name but different specification
         async function quickAddSpecification(id) {
@@ -2535,8 +2538,8 @@
 
         // Show create request form
         async function showCreateRequestForm() {
-            try {
-                document.getElementById('request-form').reset();
+                try {
+            document.getElementById('request-form').reset();
             
             // Clear applicant name and contact phone fields
             document.getElementById('request-applicant-name').value = '';
@@ -2645,9 +2648,6 @@
                     alert('無法開啟新增叫料單表單: ' + error.message);
                 }
         }
-        
-        // Immediately expose showCreateRequestForm to window
-        if (typeof showCreateRequestForm === 'function') window.showCreateRequestForm = showCreateRequestForm;
 
         // Filter materials by construction category
         function filterMaterialsByCategory(constructionCategoryId) {
@@ -3112,9 +3112,6 @@
             await loadAddresses();
         }
         
-        // Immediately expose manageAddresses to window
-        if (typeof manageAddresses === 'function') window.manageAddresses = manageAddresses;
-        
         // Load addresses for management
         async function loadAddresses() {
             const content = document.getElementById('address-list-content');
@@ -3396,9 +3393,6 @@
             document.getElementById('company-manage-modal').style.display = 'block';
             await loadCompanies();
         }
-        
-        // Immediately expose manageCompanies to window
-        if (typeof manageCompanies === 'function') window.manageCompanies = manageCompanies;
 
         async function loadCompanies() {
             // First, try to load default company from environment variables
@@ -4058,11 +4052,11 @@
 
         // Initialize on page load
         
-        // CRITICAL: Expose all functions to global scope for onclick handlers
-        // This must be done after all functions are defined but before DOM loads
-        // Also exposed again in initializeApp for safety
-        (function exposeAllFunctions() {
-            try {
+
+        // Debug: Log all click events
+        // Expose all functions to global scope for onclick handlers
+        // This must be done after all functions are defined
+        try {
             // Core navigation functions - expose immediately
             if (typeof showHome === 'function') {
                 window.showHome = showHome;
@@ -4141,24 +4135,6 @@
         }
 
         function initializeApp() {
-            // Ensure all functions are exposed to window before initialization
-            // This is critical for onclick handlers to work
-            try {
-                window.showHome = typeof showHome === 'function' ? showHome : window.showHome;
-                window.openSection = typeof openSection === 'function' ? openSection : window.openSection;
-                window.navigateToSection = typeof navigateToSection === 'function' ? navigateToSection : window.navigateToSection;
-                window.manageCategories = typeof manageCategories === 'function' ? manageCategories : window.manageCategories;
-                window.manageAddresses = typeof manageAddresses === 'function' ? manageAddresses : window.manageAddresses;
-                window.manageCompanies = typeof manageCompanies === 'function' ? manageCompanies : window.manageCompanies;
-                window.showAddMaterialForm = typeof showAddMaterialForm === 'function' ? showAddMaterialForm : window.showAddMaterialForm;
-                window.showCreateRequestForm = typeof showCreateRequestForm === 'function' ? showCreateRequestForm : window.showCreateRequestForm;
-                window.saveRequest = typeof saveRequest === 'function' ? saveRequest : window.saveRequest;
-                window.closeModal = typeof closeModal === 'function' ? closeModal : window.closeModal;
-                console.log('✅ 關鍵函數已暴露到 window 對象');
-            } catch (exposeError) {
-                console.error('暴露函數時發生錯誤:', exposeError);
-            }
-            
             (async function() {
                 try {
             await init();
