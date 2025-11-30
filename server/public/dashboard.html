@@ -4029,15 +4029,20 @@
         });
         
         // Wrap navigateToSection to update bottom nav
-        const originalNavigateToSection = navigateToSection;
-        navigateToSection = function(section) {
-            originalNavigateToSection(section);
-            if (section === null) {
-                updateBottomNav('home');
-            } else {
-                updateBottomNav(section);
-            }
-        };
+        // Check if navigateToSection exists before wrapping
+        if (typeof navigateToSection !== 'undefined') {
+            const originalNavigateToSection = navigateToSection;
+            navigateToSection = function(section) {
+                if (originalNavigateToSection) {
+                    originalNavigateToSection(section);
+                }
+                if (section === null) {
+                    updateBottomNav('home');
+                } else {
+                    updateBottomNav(section);
+                }
+            };
+        }
         
         // Function to open section (used by feature cards)
         function openSection(section) {
