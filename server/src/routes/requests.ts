@@ -534,10 +534,6 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       details: errorMessage
     });
   });
-    res.status(500).json({ 
-      error: '建立叫料單失敗',
-      details: errorMessage
-    });
   }
 });
 
