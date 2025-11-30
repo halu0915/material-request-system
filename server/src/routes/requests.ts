@@ -123,7 +123,8 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response)
 
     // Check if request exists and belongs to user
     const checkResult = await query(
-      'SELECT id FROM material_requests WHERE id = $1 AND user_id = $2',
+      'SELECT id ,
+      m.specification as material_specificationFROM material_requests WHERE id = $1 AND user_id = $2',
       [id, req.user?.id]
     );
 
