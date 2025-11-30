@@ -54,67 +54,49 @@ export async function generateExcel(request: any, companyName?: string, taxId?: 
     ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註']
   ];
 
-  // Add material items (images and links will be in separate worksheet)
+  // Add material items (images and links will be in separate worksheet ONLY)
+  // IMPORTANT: Main sheet should NEVER contain image_url or link_url data
   for (const item of request.items) {
-    // Main item row - only include notes, no image/link references
-    // Clean notes: remove any image_url or link_url references to prevent format issues
-    let cleanNotes = item.notes || '';
+    // Main item row - only include basic material info, NO image/link data at all
+    // Clean notes: completely remove ALL image/link references to prevent format issues
     
-    // Comprehensive cleaning: remove ALL image/link references
-    if (cleanNotes) {
-      // Remove image URL from notes if present (handle various URL formats)
-      if (item.image_url) {
-        // Remove full URL
-        cleanNotes = cleanNotes.replace(new RegExp(item.image_url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
-        // Remove partial URL matches
-        const urlParts = item.image_url.split('/');
-        if (urlParts.length > 0) {
-          const filename = urlParts[urlParts.length - 1];
-          cleanNotes = cleanNotes.replace(new RegExp(filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+    // Start with empty notes if item has image_url or link_url (to be safe)
+    // Only use notes if there's no image or link
+    let cleanNotes = '';
+    
+    // Only process notes if there are NO images or links
+    // This ensures main sheet is completely clean
+    if (!item.image_url && !item.link_url) {
+      cleanNotes = item.notes || '';
+      
+      // Still clean any URLs that might be in notes
+      if (cleanNotes) {
+        cleanNotes = cleanNotes.replace(/http[s]?:\/\/[^\s]+/gi, '').trim(); // Remove any URLs
+        cleanNotes = cleanNotes.replace(/www\.[^\s]+/gi, '').trim(); // Remove www URLs
+        cleanNotes = cleanNotes.replace(/\s+/g, ' ').trim(); // Remove multiple spaces
+        
+        // Limit notes length to prevent format issues (max 100 characters)
+        if (cleanNotes.length > 100) {
+          cleanNotes = cleanNotes.substring(0, 97) + '...';
         }
       }
-      
-      // Remove link URL from notes if present
-      if (item.link_url) {
-        // Remove full URL
-        cleanNotes = cleanNotes.replace(new RegExp(item.link_url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
-        // Remove partial URL matches
-        const urlParts = item.link_url.split('/');
-        if (urlParts.length > 0) {
-          const domain = urlParts[2] || urlParts[0];
-          if (domain) {
-            cleanNotes = cleanNotes.replace(new RegExp(domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
-          }
-        }
-      }
-      
-      // Remove common image/link text patterns (more comprehensive)
-      cleanNotes = cleanNotes.replace(/圖片[:：]?\s*/gi, '').trim();
-      cleanNotes = cleanNotes.replace(/連結[:：]?\s*/gi, '').trim();
-      cleanNotes = cleanNotes.replace(/圖片連結[:：]?\s*/gi, '').trim();
-      cleanNotes = cleanNotes.replace(/image[:：]?\s*/gi, '').trim();
-      cleanNotes = cleanNotes.replace(/link[:：]?\s*/gi, '').trim();
-      cleanNotes = cleanNotes.replace(/http[s]?:\/\/[^\s]+/gi, '').trim(); // Remove any remaining URLs
-      cleanNotes = cleanNotes.replace(/www\.[^\s]+/gi, '').trim(); // Remove www URLs
-      
-      // Remove multiple spaces and clean up
-      cleanNotes = cleanNotes.replace(/\s+/g, ' ').trim();
-      
-      // Limit notes length to prevent format issues (max 100 characters)
-      if (cleanNotes.length > 100) {
-        cleanNotes = cleanNotes.substring(0, 97) + '...';
-      }
+    } else {
+      // If item has image_url or link_url, completely ignore notes in main sheet
+      // All image/link info will be in separate "圖片與連結" worksheet only
+      cleanNotes = '';
     }
     
+    // Main sheet data - ONLY 8 columns: 工區, 施工類別, 材料類別, 材料名稱, 材料規格, 單位, 數量, 備註
+    // NO image_url, NO link_url columns - they are in separate worksheet
     mainData.push([
-      workArea,
+      workArea || '',
       request.construction_category_name || '',
       item.material_category_name || '',
       item.material_name || '',
       item.material_specification || '',
       item.unit || item.material_unit || '',
       Math.floor(parseFloat(item.quantity) || 0),
-      cleanNotes || '' // Only show clean notes, no image/link text, ensure it's always a string
+      cleanNotes // Clean notes only, no image/link references
     ]);
   }
 
