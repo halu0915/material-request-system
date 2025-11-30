@@ -518,12 +518,22 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       });
     } catch (error) {
       await client.query('ROLLBACK');
+      client.release();
+      throw error;
+    }
+  } catch (error: any) {
     console.error('建立叫料單錯誤:', {
       message: error.message || error,
       stack: error.stack,
       code: error.code,
       detail: error.detail
     });
+    const errorMessage = error.message || '建立叫料單失敗';
+    res.status(500).json({ 
+      error: '建立叫料單失敗',
+      details: errorMessage
+    });
+  });
     res.status(500).json({ 
       error: '建立叫料單失敗',
       details: errorMessage
