@@ -4058,11 +4058,11 @@
 
         // Initialize on page load
         
-
-        // Debug: Log all click events
-        // Expose all functions to global scope for onclick handlers
-        // This must be done after all functions are defined
-        try {
+        // CRITICAL: Expose all functions to global scope for onclick handlers
+        // This must be done after all functions are defined but before DOM loads
+        // Also exposed again in initializeApp for safety
+        (function exposeAllFunctions() {
+            try {
             // Core navigation functions - expose immediately
             if (typeof showHome === 'function') {
                 window.showHome = showHome;
