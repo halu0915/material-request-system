@@ -6,6 +6,22 @@ import { generateExcel, generateReportExcel, uploadToCloud, sendEmail, sendLineN
 
 const router = express.Router();
 
+// Get default company info from environment variables
+router.get('/default-company', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const companyName = process.env.COMPANY_NAME || '';
+    const taxId = process.env.COMPANY_TAX_ID || '';
+    
+    res.json({
+      company_name: companyName,
+      tax_id: taxId
+    });
+  } catch (error) {
+    console.error('取得預設公司資訊錯誤:', error);
+    res.status(500).json({ error: '取得預設公司資訊失敗' });
+  }
+});
+
 // Get all requests
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
