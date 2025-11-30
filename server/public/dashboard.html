@@ -2480,6 +2480,7 @@
 
         // Show create request form
         async function showCreateRequestForm() {
+                try {
             document.getElementById('request-form').reset();
             
             // Clear applicant name and contact phone fields
@@ -2584,6 +2585,10 @@
             }
             
             document.getElementById('request-modal').style.display = 'block';
+                } catch (error) {
+                    console.error('showCreateRequestForm error:', error);
+                    alert('無法開啟新增叫料單表單: ' + error.message);
+                }
         }
 
         // Filter materials by construction category
@@ -3975,6 +3980,18 @@
         // Ensure all onclick handlers are available globally
         window.showHome = showHome;
         window.navigateToSection = navigateToSection;
+
+
+        // Debug: Test showCreateRequestForm
+        console.log('showCreateRequestForm function:', typeof showCreateRequestForm);
+        console.log('window.showCreateRequestForm:', typeof window.showCreateRequestForm);
+        
+        // Ensure showCreateRequestForm is callable
+        if (typeof showCreateRequestForm === 'function') {
+            console.log('showCreateRequestForm is a function');
+        } else {
+            console.error('showCreateRequestForm is not a function:', typeof showCreateRequestForm);
+        }
         window.openSection = function(section) {
             if (typeof navigateToSection === 'function') {
                 navigateToSection(section);
@@ -3986,6 +4003,7 @@
 
         // Expose all functions to global scope for onclick handlers
         window.showCreateRequestForm = showCreateRequestForm;
+        window.saveRequest = saveRequest;
         window.downloadRequestExcel = downloadRequestExcel;
         window.sendRequestEmail = sendRequestEmail;
         window.deleteRequest = deleteRequest;
