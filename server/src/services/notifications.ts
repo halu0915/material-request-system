@@ -497,7 +497,7 @@ async function addImagesToExcel(excelBuffer: Buffer, request: any): Promise<Buff
     let workbook: ExcelJS.Workbook;
     try {
       workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(excelBuffer instanceof Buffer ? excelBuffer : Buffer.from(excelBuffer));
+      await workbook.xlsx.load(Buffer.isBuffer(excelBuffer) ? excelBuffer : Buffer.from(excelBuffer as any));
     } catch (loadError: any) {
       console.error('載入 Excel buffer 失敗:', loadError.message || loadError);
       // Return original buffer if load fails

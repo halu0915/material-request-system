@@ -6,6 +6,7 @@ import { query } from '../db/connection';
 import { generateToken, authenticateToken, AuthRequest } from '../middleware/auth';
 import { body, validationResult } from 'express-validator';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 

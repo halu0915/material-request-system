@@ -245,44 +245,18 @@ async function generateRequestNumber(categoryCode: string = 'M'): Promise<string
   
   return `${categoryCode}${sequence}${dateStr}${year}`;
 }
-
-// Helper function to generate request number
-async function generateRequestNumber(categoryCode: string = 'M'): Promise<string> {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const dateStr = month + day; // MMDD format
-  
-  // Get start and end of current month (序號會在每月結束時自動歸零，下個月第一天從001開始)
-  const startOfMonth = new Date(year, now.getMonth(), 1, 0, 0, 0, 0);
-  const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59, 999);
-  
-  // Count existing requests in current month with the same category code
-  const countResult = await query(
-    `SELECT COUNT(*) as count 
-     FROM material_requests 
-     WHERE created_at >= $1 AND created_at <= $2 
-       AND request_number LIKE $3`,
-    [startOfMonth, endOfMonth, `${categoryCode}%`]
-  );
-  
-  const currentCount = parseInt(countResult.rows[0].count || '0');
-  const sequence = String(currentCount + 1).padStart(3, '0'); // 001, 002, 003...
-  
-  return `${categoryCode}${sequence}${dateStr}${year}`;
 }
 
 // Helper function to generate Excel filename
+// Format: 工區＋叫料單＋時間＿(施工類別).xlsx
 function generateExcelFilename(request: any): string {
-  const workArea = request.work_area || '工區';
-  const constructionCategory = request.construction_category_name || '';
-  const date = new Date(request.created_at);
-  const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
-  const timeStr = `${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}`;
-  
-  return `${workArea}叫料單${dateStr}_${timeStr}${constructionCategory ? '_(' + constructionCategory + ')' : ''}.xlsx`;
+  const workArea = request.work_area || '未指定工區';
+  const requestDate = new Date(request.created_at);
+  const dateStr = `${requestDate.getFullYear()}${String(requestDate.getMonth() + 1).padStart(2, '0')}${String(requestDate.getDate()).padStart(2, '0')}`;
+  const constructionCategoryName = request.construction_category_name || '未指定';
+  return `${workArea}叫料單${dateStr}＿(${constructionCategoryName}).xlsx`;
 }
+
 
 // Create material request
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
