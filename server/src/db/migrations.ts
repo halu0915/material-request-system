@@ -54,6 +54,46 @@ export const createTables = async (): Promise<void> => {
       )
     `);
     
+    // Drop the old unique constraint that doesn't include specification
+    await query(`
+      DO $$ 
+      BEGIN
+        -- Drop the unique constraint on (construction_category_id, material_category_id, name)
+        IF EXISTS (
+          SELECT 1 FROM pg_constraint 
+          WHERE conname = 'materials_construction_category_id_material_category_id_name_key'
+        ) THEN
+          ALTER TABLE materials DROP CONSTRAINT materials_construction_category_id_material_category_id_name_key;
+        END IF;
+        
+        -- Also try to drop by checking the constraint definition
+        IF EXISTS (
+          SELECT 1 FROM pg_constraint c
+          JOIN pg_class t ON c.conrelid = t.oid
+          WHERE t.relname = 'materials'
+          AND c.contype = 'u'
+          AND array_length(c.conkey, 1) = 3
+        ) THEN
+          -- Find and drop the constraint
+          DECLARE
+            constraint_name TEXT;
+          BEGIN
+            SELECT conname INTO constraint_name
+            FROM pg_constraint c
+            JOIN pg_class t ON c.conrelid = t.oid
+            WHERE t.relname = 'materials'
+            AND c.contype = 'u'
+            AND array_length(c.conkey, 1) = 3
+            LIMIT 1;
+            
+            IF constraint_name IS NOT NULL THEN
+              EXECUTE 'ALTER TABLE materials DROP CONSTRAINT IF EXISTS ' || constraint_name;
+            END IF;
+          END;
+        END IF;
+      END $$;
+    `);
+    
     // Add specification column if it doesn't exist (for existing databases)
     await query(`
       DO $$ 
