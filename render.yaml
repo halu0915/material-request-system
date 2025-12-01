@@ -32,6 +32,10 @@ services:
         sync: false
       - key: VITE_API_URL
         value: https://material-request-system-uadw.onrender.com
+      - key: COMPANY_NAME
+        sync: false
+      - key: COMPANY_TAX_ID
+        sync: false
 
 
 
