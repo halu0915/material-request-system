@@ -8,16 +8,18 @@ import { query } from '../db/connection';
 export async function generateExcel(request: any): Promise<Buffer> {
   const workbook = XLSX.utils.book_new();
 
-  // Get company info from request or environment or use defaults
-  let companyName = process.env.COMPANY_NAME || '金鴻空調機電工程有限公司';
-  let companyTaxId = process.env.COMPANY_TAX_ID || '16272724';
+  // Get company info from request or environment
+  let companyName = '';
+  let companyTaxId = '';
   
-  // Use company from request if available
-  if (request.company_name) {
+  // 優先使用選擇的公司資訊
+  if (request.company_name && request.company_tax_id) {
     companyName = request.company_name;
-  }
-  if (request.company_tax_id) {
     companyTaxId = request.company_tax_id;
+  } else {
+    // 如果沒有選擇公司，使用環境變數 COMPANY_NAME
+    companyName = process.env.COMPANY_NAME || '金鴻空調機電工程有限公司';
+    companyTaxId = process.env.COMPANY_TAX_ID || '16272724';
   }
 
   // Get user's default address and contact info
@@ -46,59 +48,64 @@ export async function generateExcel(request: any): Promise<Buffer> {
     }
   }
 
-  // Format date
+  // Format date - 格式: YYYYMMDD HHMM
   const createdDate = new Date(request.created_at);
-  const formattedDate = `${createdDate.getFullYear()}/${String(createdDate.getMonth() + 1).padStart(2, '0')}/${String(createdDate.getDate()).padStart(2, '0')} ${String(createdDate.getHours()).padStart(2, '0')}:${String(createdDate.getMinutes()).padStart(2, '0')}`;
+  const dateTimeStr = `${createdDate.getFullYear()}${String(createdDate.getMonth() + 1).padStart(2, '0')}${String(createdDate.getDate()).padStart(2, '0')} ${String(createdDate.getHours()).padStart(2, '0')}${String(createdDate.getMinutes()).padStart(2, '0')}`;
 
-  // Sheet 1: 叫料單 (Request Sheet)
+  // Helper function to convert any value to string
+  const toString = (value: any): string => {
+    if (value === null || value === undefined) return '';
+    return String(value);
+  };
+
+  // Sheet 1: 叫料單 - 必須遵循12欄位順序
+  // 1. 編號, 2. 訂單代碼, 3. 日期時間, 4. 聯絡電話, 5. 備註, 6. 狀態, 
+  // 7. 數量, 8. 型號/規格, 9. 單位, 10. 單價, 11. 類別, 12. 其他資訊
   const requestData = [
-    [companyName, '', '', '', '', '', '', ''],
-    [`統編：${companyTaxId}`, '', '', '', '', '', '', ''],
-    ['', '', '', '', '', '', '', ''],
-    ['叫料單號', request.request_number, '', '', '', '', '', ''],
-    ['建立日期', formattedDate, '', '', '', '', '', ''],
-    ['申請人', request.user_name || '', '', '', '', '', '', ''],
-    ['聯繫電話', contactPhone, '', '', '', '', '', ''],
-    ['送貨地址', deliveryAddress || '', '', '', '', '', '', ''],
-    ['狀態', request.status, '', '', '', '', '', ''],
-    ['', '', '', '', '', '', '', ''],
-    ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註']
+    ['編號', '訂單代碼', '日期時間', '聯絡電話', '備註', '狀態', '數量', '型號/規格', '單位', '單價', '類別', '其他資訊']
   ];
 
-  // Add material items
+  // Add material items - 每個材料項目一行
   for (const item of request.items) {
     // Get material specification if available
     let materialSpec = '';
+    let materialPrice = ''; // 單價，目前數據庫中沒有此欄位，使用空字串
     try {
       const materialResult = await query(
         'SELECT specification FROM materials WHERE id = $1',
         [item.material_id]
       );
-      if (materialResult.rows.length > 0 && materialResult.rows[0].specification) {
-        materialSpec = materialResult.rows[0].specification;
+      if (materialResult.rows.length > 0) {
+        materialSpec = toString(materialResult.rows[0].specification || '');
       }
     } catch (error) {
-      // Ignore error, use empty spec
+      // Ignore error, use empty values
     }
 
+    // 按照12欄位順序排列，所有值轉換為字串
     requestData.push([
-      siteName || '', // 工區
-      request.construction_category_name || '', // 施工類別
-      item.material_category_name || '', // 材料類別
-      item.material_name || '', // 材料名稱
-      materialSpec, // 材料規格
-      item.unit || item.material_unit || '', // 單位
-      item.quantity, // 數量
-      item.notes || '' // 備註
+      toString(companyTaxId),                    // 1. 編號 (公司統編)
+      toString(request.request_number),          // 2. 訂單代碼 (叫料單號)
+      toString(dateTimeStr),                     // 3. 日期時間
+      toString(contactPhone),                    // 4. 聯絡電話
+      toString(request.notes || item.notes || ''), // 5. 備註
+      toString(request.status),                  // 6. 狀態
+      toString(item.quantity),                  // 7. 數量 (轉為字串)
+      toString(materialSpec),                   // 8. 型號/規格
+      toString(item.unit || item.material_unit || ''), // 9. 單位 (轉為字串)
+      toString(materialPrice),                  // 10. 單價 (轉為字串)
+      toString(item.material_category_name || ''), // 11. 類別 (材料類別)
+      toString(siteName || '')                  // 12. 其他資訊 (工區)
     ]);
   }
 
   const requestSheet = XLSX.utils.aoa_to_sheet(requestData);
   XLSX.utils.book_append_sheet(workbook, requestSheet, '叫料單');
 
-  // Sheet 2: 月統計 (Monthly Statistics)
+  // Sheet 2: 月份統計 - 格式: YYYYMM (如 202511)
   const currentMonth = createdDate.getMonth() + 1;
   const currentYear = createdDate.getFullYear();
+  const monthKey = `${currentYear}${String(currentMonth).padStart(2, '0')}`; // 如 "202511"
   const monthStart = new Date(currentYear, currentMonth - 1, 1);
   const monthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59);
 
@@ -111,7 +118,8 @@ export async function generateExcel(request: any): Promise<Buffer> {
         m.name as material_name,
         m.specification,
         SUM(mri.quantity) as total_quantity,
-        COALESCE(mri.unit, m.unit) as unit
+        COALESCE(mri.unit, m.unit) as unit,
+        mr.status
       FROM material_request_items mri
       INNER JOIN material_requests mr ON mri.request_id = mr.id
       INNER JOIN materials m ON mri.material_id = m.id
@@ -119,7 +127,7 @@ export async function generateExcel(request: any): Promise<Buffer> {
       WHERE mr.user_id = $1 
         AND mr.created_at >= $2 
         AND mr.created_at <= $3
-      GROUP BY mc.name, m.name, m.specification, COALESCE(mri.unit, m.unit)
+      GROUP BY mc.name, m.name, m.specification, COALESCE(mri.unit, m.unit), mr.status
       ORDER BY mc.name, m.name`,
       [request.user_id, monthStart, monthEnd]
     );
@@ -129,40 +137,25 @@ export async function generateExcel(request: any): Promise<Buffer> {
     console.warn('取得月統計失敗:', error);
   }
 
+  // 月份統計格式：日期, 分類, 數量, 狀態
   const monthlyData = [
-    ['月統計', '', '', '', ''],
-    ['統計月份', `${currentYear}年${currentMonth}月`, '', '', ''],
-    ['', '', '', '', ''],
-    ['材料類別', '材料名稱', '材料規格', '總數量', '單位']
+    ['日期', '分類', '數量', '狀態']
   ];
 
   for (const stat of monthlyStats) {
     monthlyData.push([
-      stat.material_category_name || '',
-      stat.material_name || '',
-      stat.specification || '',
-      stat.total_quantity || 0,
-      stat.unit || ''
+      toString(monthKey),                        // 日期 (YYYYMM)
+      toString(stat.material_category_name || stat.material_name || ''), // 分類
+      toString(stat.total_quantity || 0),       // 數量 (轉為字串)
+      toString(stat.status || '')                // 狀態
     ]);
   }
 
   const monthlySheet = XLSX.utils.aoa_to_sheet(monthlyData);
-  XLSX.utils.book_append_sheet(workbook, monthlySheet, '月統計');
+  XLSX.utils.book_append_sheet(workbook, monthlySheet, monthKey);
 
-  // Sheet 3: 圖片連結 (Images/Links) - Create empty sheet for now
-  const imagesData = [
-    ['圖片連結', '', '', ''],
-    ['', '', '', ''],
-    ['說明', '如果有上傳圖片或連結，將顯示在此處', '', ''],
-    ['', '', '', ''],
-    ['類型', '名稱', '連結', '備註']
-  ];
-
-  // TODO: Add image/link data when feature is implemented
-  // For now, just create empty structure
-
-  const imagesSheet = XLSX.utils.aoa_to_sheet(imagesData);
-  XLSX.utils.book_append_sheet(workbook, imagesSheet, '圖片連結');
+  // 根據新格式規範，只需要兩個分頁：叫料單和月份統計
+  // 不再需要圖片連結分頁
 
   // Generate buffer
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
