@@ -9,6 +9,7 @@ import { initializeDatabase } from './db/connection';
 import authRoutes from './routes/auth';
 import materialRoutes from './routes/materials';
 import requestRoutes from './routes/requests';
+import addressRoutes from './routes/addresses';
 import { errorHandler } from './middleware/errorHandler';
 import { findClientBuild } from './utils/findClientBuild';
 
@@ -36,6 +37,7 @@ initializeDatabase();
 app.use('/api/auth', authRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/addresses', addressRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -44,76 +46,100 @@ app.get('/health', (req, res) => {
 
 // Serve static files from client build in production
 if (process.env.NODE_ENV === 'production') {
+  console.log('🔍 開始尋找前端構建文件...');
+  console.log('📁 NODE_ENV:', process.env.NODE_ENV);
+  console.log('📁 當前工作目錄:', process.cwd());
+  console.log('📁 __dirname:', __dirname);
+  
   const clientBuildPath = findClientBuild();
   const publicPath = path.join(__dirname, '../public');
-  const publicHtmlExists = fs.existsSync(path.join(publicPath, 'dashboard.html'));
+  const publicHtmlExists = fs.existsSync(path.join(publicPath, 'index.html'));
   
-  if (clientBuildPath && fs.existsSync(path.join(clientBuildPath, 'index.html'))) {
-    console.log('✅ 找到前端構建文件，路徑:', clientBuildPath);
+  console.log('📁 備用 HTML 路徑:', publicPath);
+  console.log('📁 備用 HTML 存在:', publicHtmlExists);
+  
+  if (clientBuildPath) {
+    console.log('✅ 找到前端構建文件，開始設置靜態文件服務...');
+    console.log('📍 前端構建文件路徑:', clientBuildPath);
     
-    // Serve static files (CSS, JS, images, etc.)
-    // Only set up static middleware if directory exists
-    if (fs.existsSync(clientBuildPath)) {
-      app.use(express.static(clientBuildPath, {
-        maxAge: '1y',
-        etag: true,
-        fallthrough: true
-      }));
-    }
+    // Serve static files (CSS, JS, images, etc.) - but don't handle 404s
+    app.use(express.static(clientBuildPath, {
+      maxAge: '1y', // Cache static assets
+      etag: true,
+      fallthrough: true // Continue to next middleware if file not found
+    }));
     
     // Serve index.html for all non-API routes (SPA routing)
+    // This catches all routes that don't match static files
     app.get('*', (req, res, next) => {
+      // Don't serve client files for API routes or health check
       if (req.path.startsWith('/api') || req.path === '/health') {
         return next();
       }
       
+      // Serve index.html for all other routes (SPA routing)
       const indexPath = path.join(clientBuildPath, 'index.html');
-      // Double check file exists before sending
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath, (err) => {
-          if (err && (err as any).code !== 'ENOENT') {
-            console.error('發送 index.html 錯誤:', err.message);
-            next(err);
-          }
-        });
-      } else {
-        // File doesn't exist, fall through to backup handler
-        next();
-      }
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error('發送 index.html 錯誤:', err);
+          next(err);
+        }
+      });
     });
     
-    console.log('✅ 前端靜態文件服務已啟動');
+    console.log('✅ ✅ ✅ 前端靜態文件服務已啟動！');
   } else {
-    console.log('ℹ️  前端構建文件未找到，使用備用 HTML 頁面');
+    console.warn('⚠️ ⚠️ ⚠️  前端構建文件未找到！');
     
-    // Serve backup HTML from public directory
+    // Always try to serve backup HTML
     if (publicHtmlExists) {
-      console.log('✅ 使用備用 HTML 頁面:', publicPath);
+      console.warn('📋 將使用備用 HTML 頁面');
+      console.log('✅ 備用 HTML 頁面已設置:', publicPath);
       
-      // Serve dashboard as main page
+      // Serve dashboard.html as main page if it exists, otherwise use index.html
       app.get('/', (req, res) => {
         const dashboardPath = path.join(publicPath, 'dashboard.html');
-        res.sendFile(dashboardPath);
+        if (fs.existsSync(dashboardPath)) {
+          return res.sendFile(dashboardPath);
+        }
+        // Fallback to index.html if dashboard doesn't exist
+        const backupHtml = path.join(publicPath, 'index.html');
+        res.sendFile(backupHtml);
       });
 
+      // Serve dashboard.html route
       app.get('/dashboard.html', (req, res) => {
         const dashboardPath = path.join(publicPath, 'dashboard.html');
-        res.sendFile(dashboardPath);
+        if (fs.existsSync(dashboardPath)) {
+          return res.sendFile(dashboardPath);
+        }
+        res.status(404).send('Dashboard not found');
       });
 
-      // Fallback for all other routes (serve dashboard)
+      // Fallback for all other routes
       app.get('*', (req, res, next) => {
         if (req.path.startsWith('/api') || req.path === '/health') {
           return next();
         }
+        // Try dashboard first, then index.html
         const dashboardPath = path.join(publicPath, 'dashboard.html');
-        res.sendFile(dashboardPath);
+        if (fs.existsSync(dashboardPath)) {
+          return res.sendFile(dashboardPath);
+        }
+        // Fallback to index.html
+        const backupHtml = path.join(publicPath, 'index.html');
+        res.sendFile(backupHtml, (err) => {
+          if (err) {
+            console.error('發送備用 HTML 錯誤:', err);
+            next(err);
+          }
+        });
       });
       
-      // Serve static files from public directory
+      // Serve static files from public directory (for CSS, JS, images, etc.)
       app.use(express.static(publicPath));
     } else {
-      console.warn('⚠️  備用 HTML 頁面也不存在');
+      console.warn('⚠️ 備用 HTML 頁面也不存在！');
       // Fallback: simple JSON response for root
       app.get('/', (req, res) => {
         res.json({
@@ -133,13 +159,13 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   // In development, serve backup HTML if it exists
   const publicPath = path.join(__dirname, '../public');
-  if (fs.existsSync(path.join(publicPath, 'dashboard.html'))) {
+  if (fs.existsSync(path.join(publicPath, 'index.html'))) {
     app.use(express.static(publicPath));
     app.get('/', (req, res) => {
       if (req.path.startsWith('/api')) {
         return;
       }
-      res.sendFile(path.join(publicPath, 'dashboard.html'));
+      res.sendFile(path.join(publicPath, 'index.html'));
     });
   }
 }
@@ -149,6 +175,27 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`伺服器運行於端口 ${PORT}`);
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('🔍 檢查前端構建文件狀態...');
+  console.log('═══════════════════════════════════════════════════════');
+  
+  if (process.env.NODE_ENV === 'production') {
+    const clientPath = path.join(__dirname, '../../client/dist');
+    const publicPath = path.join(__dirname, '../public');
+    
+    console.log('檢查 client/dist:', clientPath);
+    console.log('  存在:', fs.existsSync(clientPath));
+    if (fs.existsSync(clientPath)) {
+      console.log('  index.html:', fs.existsSync(path.join(clientPath, 'index.html')));
+    }
+    
+    console.log('檢查 server/public:', publicPath);
+    console.log('  存在:', fs.existsSync(publicPath));
+    if (fs.existsSync(publicPath)) {
+      console.log('  index.html:', fs.existsSync(path.join(publicPath, 'index.html')));
+    }
+  }
+  console.log('═══════════════════════════════════════════════════════');
 });
 
 export default app;

@@ -96,6 +96,21 @@ export const createTables = async (): Promise<void> => {
       )
     `);
 
+    // Addresses table
+    await query(`
+      CREATE TABLE IF NOT EXISTS addresses (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        address TEXT NOT NULL,
+        contact_person VARCHAR(255),
+        contact_phone VARCHAR(50),
+        is_default BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Create indexes
     await query(`
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -103,6 +118,7 @@ export const createTables = async (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_material_requests_number ON material_requests(request_number);
       CREATE INDEX IF NOT EXISTS idx_material_request_items_request_id ON material_request_items(request_id);
       CREATE INDEX IF NOT EXISTS idx_materials_categories ON materials(construction_category_id, material_category_id);
+      CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id);
     `);
 
     console.log('資料表建立完成');

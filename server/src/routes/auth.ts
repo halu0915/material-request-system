@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import jwt from 'jsonwebtoken';
 import { query } from '../db/connection';
 import { generateToken, authenticateToken, AuthRequest } from '../middleware/auth';
 import { body, validationResult } from 'express-validator';
