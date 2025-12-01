@@ -1769,7 +1769,7 @@
                         
                         displayMaterials(filteredMaterials);
                         updateMaterialStats();
-                } else {
+                    } else {
                         const errorText = await retryResponse.text();
                         let errorMessage = '無法載入物料資料';
                         try {
@@ -1779,6 +1779,7 @@
                             console.error('API 錯誤響應:', errorText);
                         }
                         content.innerHTML = '<div class="alert alert-error">' + escapeHtml(errorMessage) + '</div>';
+                        console.error('重試載入物料失敗:', retryResponse.status, errorMessage);
                     }
                 } else {
                     const errorText = await response.text();
@@ -2448,8 +2449,40 @@
                 if (response.ok) {
                     const data = await response.json();
                     displayRequests(data.requests || []);
+                } else if (response.status === 401 || response.status === 403) {
+                    // Token invalid, try to refresh
+                    console.warn('Token 無效，嘗試刷新...');
+                    await refreshTokenIfNeeded();
+                    // Retry the request
+                    const retryResponse = await fetch('/api/requests', {
+                        headers: getHeaders()
+                    });
+                    if (retryResponse.ok) {
+                        const data = await retryResponse.json();
+                        displayRequests(data.requests || []);
+                    } else {
+                        const errorText = await retryResponse.text();
+                        let errorMessage = '無法載入叫料單資料';
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            errorMessage = errorData.error || errorMessage;
+                        } catch (e) {
+                            console.error('API 錯誤響應:', errorText);
+                        }
+                        content.innerHTML = '<div class="alert alert-error">' + escapeHtml(errorMessage) + '</div>';
+                        console.error('重試載入叫料單失敗:', retryResponse.status, errorMessage);
+                    }
                 } else {
-                    content.innerHTML = '<div class="alert alert-error">無法載入叫料單資料</div>';
+                    const errorText = await response.text();
+                    let errorMessage = '無法載入叫料單資料';
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        console.error('API 錯誤響應:', errorText);
+                    }
+                    content.innerHTML = '<div class="alert alert-error">' + escapeHtml(errorMessage) + '</div>';
+                    console.error('載入叫料單失敗:', response.status, errorMessage);
                 }
             } catch (error) {
                 content.innerHTML = '<div class="alert alert-error">載入失敗：' + error.message + '</div>';
