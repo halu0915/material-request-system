@@ -6,7 +6,10 @@ dotenv.config();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  // 如果 DATABASE_URL 包含 render.com，則需要 SSL
+  ssl: process.env.DATABASE_URL?.includes('render.com') 
+    ? { rejectUnauthorized: false } 
+    : (process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false)
 });
 
 export const getDB = (): Pool => pool;
@@ -18,7 +21,11 @@ export const initializeDatabase = async (): Promise<void> => {
     await createTables();
   } catch (error) {
     console.error('資料庫連接失敗:', error);
-    throw error;
+    console.warn('⚠️ 服務器將繼續運行，但數據庫功能可能無法使用');
+    // Don't throw error in development to allow server to start without DB
+    if (process.env.NODE_ENV === 'production') {
+      throw error;
+    }
   }
 };
 
