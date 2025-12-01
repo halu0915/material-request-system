@@ -276,3 +276,2488 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
 
 export default router;
 
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+
+
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTrial: user.is_trial
+      }
+    });
+  } catch (error: any) {
+    console.error('創建訪客帳號錯誤:', error);
+    res.status(500).json({ error: '創建訪客帳號失敗' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT id, email, name, provider, avatar_url, is_trial FROM users WHERE id = $1',
+      [req.user?.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '找不到使用者' });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: '取得使用者資訊失敗' });
+  }
+});
+
+export default router;
+

@@ -94,33 +94,37 @@ if (process.env.NODE_ENV === 'production') {
       console.warn('📋 將使用備用 HTML 頁面');
       console.log('✅ 備用 HTML 頁面已設置:', publicPath);
       
-      // Serve dashboard as main page (no login required)
+      // Serve dashboard.html as main page if it exists, otherwise use index.html
       app.get('/', (req, res) => {
         const dashboardPath = path.join(publicPath, 'dashboard.html');
         if (fs.existsSync(dashboardPath)) {
           return res.sendFile(dashboardPath);
         }
-        // Fallback to index if dashboard doesn't exist
+        // Fallback to index.html if dashboard doesn't exist
         const backupHtml = path.join(publicPath, 'index.html');
         res.sendFile(backupHtml);
       });
 
+      // Serve dashboard.html route
       app.get('/dashboard.html', (req, res) => {
-        const dashboardPath = path.join(publicPath, 'dashboard.html');
-        res.sendFile(dashboardPath);
-      });
-
-      // Fallback for all other routes (serve dashboard)
-      app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/api') || req.path === '/health') {
-          return next();
-        }
-        // Default to dashboard (no login required)
         const dashboardPath = path.join(publicPath, 'dashboard.html');
         if (fs.existsSync(dashboardPath)) {
           return res.sendFile(dashboardPath);
         }
-        // Fallback to index
+        res.status(404).send('Dashboard not found');
+      });
+
+      // Fallback for all other routes
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api') || req.path === '/health') {
+          return next();
+        }
+        // Try dashboard first, then index.html
+        const dashboardPath = path.join(publicPath, 'dashboard.html');
+        if (fs.existsSync(dashboardPath)) {
+          return res.sendFile(dashboardPath);
+        }
+        // Fallback to index.html
         const backupHtml = path.join(publicPath, 'index.html');
         res.sendFile(backupHtml, (err) => {
           if (err) {

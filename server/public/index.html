@@ -38,28 +38,6 @@
             margin-bottom: 30px;
             line-height: 1.6;
         }
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s;
-            margin: 10px;
-        }
-        .btn:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        .btn-secondary {
-            background: #48bb78;
-        }
-        .btn-secondary:hover {
-            background: #38a169;
-        }
         .loading {
             display: inline-block;
             width: 20px;
@@ -80,17 +58,17 @@
     <div class="container">
         <h1>叫料系統</h1>
         <p>Material Request System</p>
-        <p style="font-size: 0.9rem; color: #999;">正在跳轉到主頁面...</p>
+        <p style="font-size: 0.9rem; color: #999;">正在跳轉到應用程式<span class="loading"></span></p>
     </div>
 
     <script>
-        // Automatically redirect to dashboard (no login required)
+        // Automatically redirect to React application
         window.addEventListener('DOMContentLoaded', () => {
+            // Try to redirect immediately, but with a small delay for better UX
             setTimeout(() => {
-                window.location.href = '/dashboard.html';
+                window.location.href = '/';
             }, 500);
         });
     </script>
 </body>
 </html>
-
