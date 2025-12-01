@@ -14,6 +14,7 @@ export default function RequestForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [constructionCategoryId, setConstructionCategoryId] = useState<number | ''>('');
+  const [companyId, setCompanyId] = useState<number | ''>('');
   const [items, setItems] = useState<RequestItem[]>([]);
   const [notes, setNotes] = useState('');
   const [selectedMaterial, setSelectedMaterial] = useState<number | ''>('');
@@ -24,6 +25,15 @@ export default function RequestForm() {
     queryFn: async () => {
       const response = await api.get('/api/materials/construction-categories');
       return response.data.categories;
+    }
+  });
+
+  // Fetch companies
+  const { data: companies } = useQuery({
+    queryKey: ['companies'],
+    queryFn: async () => {
+      const response = await api.get('/api/companies');
+      return response.data.companies;
     }
   });
 
@@ -92,6 +102,7 @@ export default function RequestForm() {
 
     createRequest.mutate({
       construction_category_id: constructionCategoryId,
+      company_id: companyId || null,
       items,
       notes
     });
@@ -102,6 +113,27 @@ export default function RequestForm() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">新增叫料單</h1>
 
       <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6 space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            公司 <span className="text-gray-400 text-xs">(選填)</span>
+          </label>
+          <select
+            value={companyId}
+            onChange={(e) => setCompanyId(e.target.value ? parseInt(e.target.value) : '')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">請選擇公司（選填）</option>
+            {companies?.map((company: any) => (
+              <option key={company.id} value={company.id}>
+                {company.name} {company.tax_id ? `(${company.tax_id})` : ''}
+              </option>
+            ))}
+          </select>
+          {companies?.length === 0 && (
+            <p className="mt-1 text-sm text-gray-500">尚未建立公司，Excel 將使用預設公司資訊</p>
+          )}
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             施工類別 <span className="text-red-500">*</span>

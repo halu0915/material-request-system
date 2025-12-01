@@ -82,7 +82,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
 // Create material request
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { construction_category_id, items, notes } = req.body;
+    const { construction_category_id, items, notes, company_id } = req.body;
 
     if (!construction_category_id || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: '施工類別和材料項目必填' });
@@ -101,9 +101,9 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       // Create request
       const requestResult = await client.query(
         `INSERT INTO material_requests 
-         (user_id, request_number, construction_category_id, notes, status)
-         VALUES ($1, $2, $3, $4, 'pending') RETURNING *`,
-        [req.user?.id, requestNumber, construction_category_id, notes || null]
+         (user_id, company_id, request_number, construction_category_id, notes, status)
+         VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING *`,
+        [req.user?.id, company_id || null, requestNumber, construction_category_id, notes || null]
       );
 
       const request = requestResult.rows[0];
@@ -240,10 +240,13 @@ async function getFullRequest(requestId: number) {
       mr.*,
       cc.name as construction_category_name,
       u.name as user_name,
-      u.email as user_email
+      u.email as user_email,
+      c.name as company_name,
+      c.tax_id as company_tax_id
     FROM material_requests mr
     LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
     LEFT JOIN users u ON mr.user_id = u.id
+    LEFT JOIN companies c ON mr.company_id = c.id
     WHERE mr.id = $1`,
     [requestId]
   );

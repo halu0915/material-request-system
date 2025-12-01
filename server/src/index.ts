@@ -10,6 +10,7 @@ import authRoutes from './routes/auth';
 import materialRoutes from './routes/materials';
 import requestRoutes from './routes/requests';
 import addressRoutes from './routes/addresses';
+import companyRoutes from './routes/companies';
 import { errorHandler } from './middleware/errorHandler';
 import { findClientBuild } from './utils/findClientBuild';
 
@@ -38,6 +39,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/addresses', addressRoutes);
+app.use('/api/companies', companyRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

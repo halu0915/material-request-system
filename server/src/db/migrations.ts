@@ -39,6 +39,20 @@ export const createTables = async (): Promise<void> => {
       )
     `);
 
+    // Companies table
+    await query(`
+      CREATE TABLE IF NOT EXISTS companies (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        tax_id VARCHAR(50),
+        is_default BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, name)
+      )
+    `);
+
     // Materials table
     await query(`
       CREATE TABLE IF NOT EXISTS materials (
@@ -46,6 +60,7 @@ export const createTables = async (): Promise<void> => {
         construction_category_id INTEGER REFERENCES construction_categories(id),
         material_category_id INTEGER REFERENCES material_categories(id),
         name VARCHAR(255) NOT NULL,
+        specification VARCHAR(255),
         unit VARCHAR(50),
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -53,12 +68,26 @@ export const createTables = async (): Promise<void> => {
         UNIQUE(construction_category_id, material_category_id, name)
       )
     `);
+    
+    // Add specification column if it doesn't exist (for existing databases)
+    await query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'materials' AND column_name = 'specification'
+        ) THEN
+          ALTER TABLE materials ADD COLUMN specification VARCHAR(255);
+        END IF;
+      END $$;
+    `);
 
     // Material requests table
     await query(`
       CREATE TABLE IF NOT EXISTS material_requests (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
+        company_id INTEGER REFERENCES companies(id),
         request_number VARCHAR(100) UNIQUE NOT NULL,
         construction_category_id INTEGER REFERENCES construction_categories(id),
         status VARCHAR(50) DEFAULT 'pending',
@@ -70,6 +99,19 @@ export const createTables = async (): Promise<void> => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+    
+    // Add company_id column if it doesn't exist (for existing databases)
+    await query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'material_requests' AND column_name = 'company_id'
+        ) THEN
+          ALTER TABLE material_requests ADD COLUMN company_id INTEGER REFERENCES companies(id);
+        END IF;
+      END $$;
     `);
 
     // Material request items table
@@ -116,8 +158,10 @@ export const createTables = async (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
       CREATE INDEX IF NOT EXISTS idx_material_requests_user_id ON material_requests(user_id);
       CREATE INDEX IF NOT EXISTS idx_material_requests_number ON material_requests(request_number);
+      CREATE INDEX IF NOT EXISTS idx_material_requests_company_id ON material_requests(company_id);
       CREATE INDEX IF NOT EXISTS idx_material_request_items_request_id ON material_request_items(request_id);
       CREATE INDEX IF NOT EXISTS idx_materials_categories ON materials(construction_category_id, material_category_id);
+      CREATE INDEX IF NOT EXISTS idx_companies_user_id ON companies(user_id);
       CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id);
     `);
 
