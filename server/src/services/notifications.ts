@@ -142,12 +142,12 @@ export async function generateExcel(request: any): Promise<Buffer> {
 
   // 添加公司資訊行（置中）
   const companyRow = requestSheet.addRow([companyName]);
-  requestSheet.mergeCells(1, 1, 1, 12); // 合併第1行的第1欄到第12欄
+  requestSheet.mergeCells(1, 1, 1, 8); // 合併第1行的第1欄到第8欄（8欄位格式）
   companyRow.getCell(1).style = companyStyle;
   companyRow.height = 30;
 
   const taxIdRow = requestSheet.addRow([`統編：${companyTaxId}`]);
-  requestSheet.mergeCells(2, 1, 2, 12); // 合併第2行的第1欄到第12欄
+  requestSheet.mergeCells(2, 1, 2, 8); // 合併第2行的第1欄到第8欄
   taxIdRow.getCell(1).style = companyStyle;
   taxIdRow.height = 25;
 
@@ -159,8 +159,8 @@ export async function generateExcel(request: any): Promise<Buffer> {
     const row = requestSheet.addRow([label, value]);
     // 標籤欄（第1欄）
     row.getCell(1).style = infoLabelStyle;
-    // 值欄（第2-12欄合併）
-    requestSheet.mergeCells(startRow, 2, startRow, 12);
+    // 值欄（第2-8欄合併，因為現在是8欄位格式）
+    requestSheet.mergeCells(startRow, 2, startRow, 8);
     row.getCell(2).style = infoValueStyle;
     row.height = 22;
   };
@@ -183,28 +183,24 @@ export async function generateExcel(request: any): Promise<Buffer> {
   requestSheet.addRow([]);
   currentRow++;
 
-  // 添加材料明細表頭
-  const headers = ['編號', '訂單代碼', '日期時間', '聯絡電話', '備註', '狀態', '數量', '型號/規格', '單位', '單價', '類別', '其他資訊'];
+  // 添加材料明細表頭（8欄位格式，符合圖片）
+  const headers = ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註'];
   const headerRow = requestSheet.addRow(headers);
   headerRow.eachCell((cell, colNumber) => {
     cell.style = headerStyle;
   });
   headerRow.height = 25;
 
-  // 設置欄位寬度
+  // 設置欄位寬度（8欄位）
   requestSheet.columns = [
-    { width: 12 }, // 編號
-    { width: 20 }, // 訂單代碼
-    { width: 15 }, // 日期時間
-    { width: 15 }, // 聯絡電話
-    { width: 20 }, // 備註
-    { width: 12 }, // 狀態
-    { width: 10 }, // 數量
-    { width: 15 }, // 型號/規格
+    { width: 15 }, // 工區
+    { width: 15 }, // 施工類別
+    { width: 15 }, // 材料類別
+    { width: 20 }, // 材料名稱
+    { width: 15 }, // 材料規格
     { width: 10 }, // 單位
-    { width: 12 }, // 單價
-    { width: 15 }, // 類別
-    { width: 15 }  // 其他資訊
+    { width: 10 }, // 數量
+    { width: 25 }  // 備註
   ];
 
   // Add material items - 每個材料項目一行
@@ -213,7 +209,6 @@ export async function generateExcel(request: any): Promise<Buffer> {
     
     // Get material specification if available
     let materialSpec = '';
-    let materialPrice = '';
     try {
       const materialResult = await query(
         'SELECT specification FROM materials WHERE id = $1',
@@ -226,20 +221,16 @@ export async function generateExcel(request: any): Promise<Buffer> {
       // Ignore error, use empty values
     }
 
-    // 按照12欄位順序排列，所有值轉換為字串
+    // 按照圖片格式的8欄位順序排列
     const rowData = [
-      toString(companyTaxId),                    // 1. 編號
-      toString(request.request_number),          // 2. 訂單代碼
-      toString(dateTimeStr),                     // 3. 日期時間
-      toString(contactPhone),                    // 4. 聯絡電話
-      toString(request.notes || item.notes || ''), // 5. 備註
-      toString(request.status),                  // 6. 狀態
-      toString(item.quantity),                  // 7. 數量
-      toString(materialSpec),                   // 8. 型號/規格
-      toString(item.unit || item.material_unit || ''), // 9. 單位
-      toString(materialPrice),                  // 10. 單價
-      toString(item.material_category_name || ''), // 11. 類別
-      toString(siteName || '')                  // 12. 其他資訊
+      toString(siteName || ''),                     // 1. 工區
+      toString(request.construction_category_name || ''), // 2. 施工類別
+      toString(item.material_category_name || ''),  // 3. 材料類別
+      toString(item.material_name || ''),           // 4. 材料名稱
+      toString(materialSpec),                       // 5. 材料規格
+      toString(item.unit || item.material_unit || ''), // 6. 單位
+      toString(item.quantity),                      // 7. 數量
+      toString(item.notes || '')                    // 8. 備註
     ];
 
     const dataRow = requestSheet.addRow(rowData);
