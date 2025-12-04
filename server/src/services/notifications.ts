@@ -115,6 +115,31 @@ export async function generateExcel(request: any): Promise<Buffer> {
     }
   };
 
+  // 定義資訊區塊樣式
+  const infoLabelStyle: Partial<ExcelJS.Style> = {
+    font: { name: '微軟正黑體', size: 11, bold: true },
+    alignment: { vertical: 'middle', horizontal: 'left' },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } }, // 淺灰色背景
+    border: {
+      top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+    }
+  };
+
+  const infoValueStyle: Partial<ExcelJS.Style> = {
+    font: { name: '微軟正黑體', size: 11 },
+    alignment: { vertical: 'middle', horizontal: 'left' },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } }, // 白色背景
+    border: {
+      top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+    }
+  };
+
   // 添加公司資訊行（置中）
   const companyRow = requestSheet.addRow([companyName]);
   requestSheet.mergeCells(1, 1, 1, 12); // 合併第1行的第1欄到第12欄
@@ -129,7 +154,36 @@ export async function generateExcel(request: any): Promise<Buffer> {
   // 空行
   requestSheet.addRow([]);
 
-  // 添加表頭
+  // 添加叫料單基本資訊（兩欄格式：標籤 | 值）
+  const addInfoRow = (label: string, value: string, startRow: number) => {
+    const row = requestSheet.addRow([label, value]);
+    // 標籤欄（第1欄）
+    row.getCell(1).style = infoLabelStyle;
+    // 值欄（第2-12欄合併）
+    requestSheet.mergeCells(startRow, 2, startRow, 12);
+    row.getCell(2).style = infoValueStyle;
+    row.height = 22;
+  };
+
+  let currentRow = 4; // 從第4行開始（前3行是公司資訊和空行）
+  addInfoRow('叫料單號', request.request_number, currentRow++);
+  addInfoRow('建立日期', new Date(request.created_at).toLocaleString('zh-TW', { 
+    year: 'numeric', 
+    month: '2-digit', 
+    day: '2-digit', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  }), currentRow++);
+  addInfoRow('申請人', request.user_name || '', currentRow++);
+  addInfoRow('聯繫電話', contactPhone, currentRow++);
+  addInfoRow('送貨地址', deliveryAddress || '', currentRow++);
+  addInfoRow('狀態', request.status, currentRow++);
+
+  // 空行
+  requestSheet.addRow([]);
+  currentRow++;
+
+  // 添加材料明細表頭
   const headers = ['編號', '訂單代碼', '日期時間', '聯絡電話', '備註', '狀態', '數量', '型號/規格', '單位', '單價', '類別', '其他資訊'];
   const headerRow = requestSheet.addRow(headers);
   headerRow.eachCell((cell, colNumber) => {
