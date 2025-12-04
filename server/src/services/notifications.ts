@@ -363,6 +363,7 @@ export async function sendEmail(options: {
   subject: string;
   request: any;
   excelBuffer?: Buffer;
+  filename?: string;
 }): Promise<void> {
   try {
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
@@ -418,8 +419,10 @@ export async function sendEmail(options: {
     };
 
     if (options.excelBuffer) {
+      // 使用提供的檔名，或使用預設檔名
+      const attachmentFilename = options.filename || `${options.request.request_number}.xlsx`;
       mailOptions.attachments = [{
-        filename: `${options.request.request_number}.xlsx`,
+        filename: attachmentFilename,
         content: options.excelBuffer
       }];
     }

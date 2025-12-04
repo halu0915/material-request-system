@@ -133,11 +133,35 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       // Generate Excel
       const excelBuffer = await generateExcel(fullRequest);
 
+      // Generate filename: 工區＋叫料單＋時間＿（工程類別）
+      // 例如：三總-叫料單-20251201_(消防電).xlsx
+      const generateFilename = (request: any): string => {
+        const createdDate = new Date(request.created_at);
+        const dateStr = `${createdDate.getFullYear()}${String(createdDate.getMonth() + 1).padStart(2, '0')}${String(createdDate.getDate()).padStart(2, '0')}`;
+        
+        // 從送貨地址提取工區名稱
+        let siteName = '叫料單';
+        if (fullRequest.delivery_address) {
+          const parts = fullRequest.delivery_address.split(' - ');
+          if (parts.length > 0) {
+            siteName = parts[0].trim();
+          }
+        }
+        
+        // 使用施工類別
+        const category = request.construction_category_name || '工程';
+        
+        // 格式：工區-叫料單-日期_(類別).xlsx
+        return `${siteName}-叫料單-${dateStr}_(${category}).xlsx`;
+      };
+      
+      const filename = generateFilename(fullRequest);
+
       // Upload to cloud
       let cloudFileId = null;
       let excelFileUrl = null;
       try {
-        const cloudResult = await uploadToCloud(excelBuffer, `${requestNumber}.xlsx`);
+        const cloudResult = await uploadToCloud(excelBuffer, filename);
         cloudFileId = cloudResult.fileId;
         excelFileUrl = cloudResult.url;
 
@@ -162,7 +186,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
           to: user.email,
           subject: `叫料單已建立 - ${requestNumber}`,
           request: fullRequest,
-          excelBuffer
+          excelBuffer,
+          filename
         });
 
         await query(
@@ -224,8 +249,32 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
 
     const excelBuffer = await generateExcel(fullRequest);
 
+    // Generate filename: 工區＋叫料單＋時間＿（工程類別）
+    const createdDate = new Date(fullRequest.created_at);
+    const dateStr = `${createdDate.getFullYear()}${String(createdDate.getMonth() + 1).padStart(2, '0')}${String(createdDate.getDate()).padStart(2, '0')}`;
+    
+    // 從送貨地址提取工區名稱
+    let siteName = '叫料單';
+    try {
+      const addressResult = await query(
+        'SELECT address FROM addresses WHERE user_id = $1 AND is_default = true LIMIT 1',
+        [fullRequest.user_id]
+      );
+      if (addressResult.rows.length > 0 && addressResult.rows[0].address) {
+        const parts = addressResult.rows[0].address.split(' - ');
+        if (parts.length > 0) {
+          siteName = parts[0].trim();
+        }
+      }
+    } catch (error) {
+      console.warn('取得工區名稱失敗:', error);
+    }
+    
+    const category = fullRequest.construction_category_name || '工程';
+    const filename = `${siteName}-叫料單-${dateStr}_(${category}).xlsx`;
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${fullRequest.request_number}.xlsx"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
     res.send(excelBuffer);
   } catch (error) {
     console.error('產生Excel錯誤:', error);
