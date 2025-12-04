@@ -1,4 +1,4 @@
-import XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import nodemailer from 'nodemailer';
 import axios from 'axios';
 import { google } from 'googleapis';
@@ -6,7 +6,11 @@ import { query } from '../db/connection';
 
 // Generate Excel file
 export async function generateExcel(request: any): Promise<Buffer> {
-  const workbook = XLSX.utils.book_new();
+  const workbook = new ExcelJS.Workbook();
+  
+  // 設置 A4 紙張大小
+  workbook.creator = '叫料系統';
+  workbook.created = new Date();
 
   // Get company info from request or environment
   let companyName = '';
@@ -58,18 +62,104 @@ export async function generateExcel(request: any): Promise<Buffer> {
     return String(value);
   };
 
-  // Sheet 1: 叫料單 - 必須遵循12欄位順序
-  // 1. 編號, 2. 訂單代碼, 3. 日期時間, 4. 聯絡電話, 5. 備註, 6. 狀態, 
-  // 7. 數量, 8. 型號/規格, 9. 單位, 10. 單價, 11. 類別, 12. 其他資訊
-  const requestData = [
-    ['編號', '訂單代碼', '日期時間', '聯絡電話', '備註', '狀態', '數量', '型號/規格', '單位', '單價', '類別', '其他資訊']
+  // Sheet 1: 叫料單
+  const requestSheet = workbook.addWorksheet('叫料單', {
+    pageSetup: {
+      paperSize: 9, // A4
+      orientation: 'landscape', // 橫向
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0
+    }
+  });
+
+  // 定義樣式
+  const headerStyle: Partial<ExcelJS.Style> = {
+    font: { name: '微軟正黑體', size: 12, bold: true, color: { argb: 'FFFFFFFF' } },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } }, // 藍色背景
+    alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+    border: {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
+    }
+  };
+
+  const companyStyle: Partial<ExcelJS.Style> = {
+    font: { name: '微軟正黑體', size: 16, bold: true },
+    alignment: { vertical: 'middle', horizontal: 'center' },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } } // 淺灰色背景
+  };
+
+  const dataRowStyle: Partial<ExcelJS.Style> = {
+    font: { name: '微軟正黑體', size: 11 },
+    alignment: { vertical: 'middle', horizontal: 'left', wrapText: true },
+    border: {
+      top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+    }
+  };
+
+  const alternateRowStyle: Partial<ExcelJS.Style> = {
+    font: { name: '微軟正黑體', size: 11 },
+    alignment: { vertical: 'middle', horizontal: 'left', wrapText: true },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }, // 淺灰色背景
+    border: {
+      top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+      right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+    }
+  };
+
+  // 添加公司資訊行（置中）
+  const companyRow = requestSheet.addRow([companyName]);
+  requestSheet.mergeCells(1, 1, 1, 12); // 合併第1行的第1欄到第12欄
+  companyRow.getCell(1).style = companyStyle;
+  companyRow.height = 30;
+
+  const taxIdRow = requestSheet.addRow([`統編：${companyTaxId}`]);
+  requestSheet.mergeCells(2, 1, 2, 12); // 合併第2行的第1欄到第12欄
+  taxIdRow.getCell(1).style = companyStyle;
+  taxIdRow.height = 25;
+
+  // 空行
+  requestSheet.addRow([]);
+
+  // 添加表頭
+  const headers = ['編號', '訂單代碼', '日期時間', '聯絡電話', '備註', '狀態', '數量', '型號/規格', '單位', '單價', '類別', '其他資訊'];
+  const headerRow = requestSheet.addRow(headers);
+  headerRow.eachCell((cell, colNumber) => {
+    cell.style = headerStyle;
+  });
+  headerRow.height = 25;
+
+  // 設置欄位寬度
+  requestSheet.columns = [
+    { width: 12 }, // 編號
+    { width: 20 }, // 訂單代碼
+    { width: 15 }, // 日期時間
+    { width: 15 }, // 聯絡電話
+    { width: 20 }, // 備註
+    { width: 12 }, // 狀態
+    { width: 10 }, // 數量
+    { width: 15 }, // 型號/規格
+    { width: 10 }, // 單位
+    { width: 12 }, // 單價
+    { width: 15 }, // 類別
+    { width: 15 }  // 其他資訊
   ];
 
   // Add material items - 每個材料項目一行
-  for (const item of request.items) {
+  for (let i = 0; i < request.items.length; i++) {
+    const item = request.items[i];
+    
     // Get material specification if available
     let materialSpec = '';
-    let materialPrice = ''; // 單價，目前數據庫中沒有此欄位，使用空字串
+    let materialPrice = '';
     try {
       const materialResult = await query(
         'SELECT specification FROM materials WHERE id = $1',
@@ -83,24 +173,30 @@ export async function generateExcel(request: any): Promise<Buffer> {
     }
 
     // 按照12欄位順序排列，所有值轉換為字串
-    requestData.push([
-      toString(companyTaxId),                    // 1. 編號 (公司統編)
-      toString(request.request_number),          // 2. 訂單代碼 (叫料單號)
+    const rowData = [
+      toString(companyTaxId),                    // 1. 編號
+      toString(request.request_number),          // 2. 訂單代碼
       toString(dateTimeStr),                     // 3. 日期時間
       toString(contactPhone),                    // 4. 聯絡電話
       toString(request.notes || item.notes || ''), // 5. 備註
       toString(request.status),                  // 6. 狀態
-      toString(item.quantity),                  // 7. 數量 (轉為字串)
+      toString(item.quantity),                  // 7. 數量
       toString(materialSpec),                   // 8. 型號/規格
-      toString(item.unit || item.material_unit || ''), // 9. 單位 (轉為字串)
-      toString(materialPrice),                  // 10. 單價 (轉為字串)
-      toString(item.material_category_name || ''), // 11. 類別 (材料類別)
-      toString(siteName || '')                  // 12. 其他資訊 (工區)
-    ]);
-  }
+      toString(item.unit || item.material_unit || ''), // 9. 單位
+      toString(materialPrice),                  // 10. 單價
+      toString(item.material_category_name || ''), // 11. 類別
+      toString(siteName || '')                  // 12. 其他資訊
+    ];
 
-  const requestSheet = XLSX.utils.aoa_to_sheet(requestData);
-  XLSX.utils.book_append_sheet(workbook, requestSheet, '叫料單');
+    const dataRow = requestSheet.addRow(rowData);
+    
+    // 使用交替顏色區隔資料行
+    const rowStyle = i % 2 === 0 ? dataRowStyle : alternateRowStyle;
+    dataRow.eachCell((cell) => {
+      cell.style = rowStyle;
+    });
+    dataRow.height = 20;
+  }
 
   // Sheet 2: 月份統計 - 格式: YYYYMM (如 202511)
   const currentMonth = createdDate.getMonth() + 1;
@@ -151,15 +247,54 @@ export async function generateExcel(request: any): Promise<Buffer> {
     ]);
   }
 
-  const monthlySheet = XLSX.utils.aoa_to_sheet(monthlyData);
-  XLSX.utils.book_append_sheet(workbook, monthlySheet, monthKey);
+  // Sheet 2: 月份統計
+  const monthlySheet = workbook.addWorksheet(monthKey, {
+    pageSetup: {
+      paperSize: 9, // A4
+      orientation: 'landscape',
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0
+    }
+  });
 
-  // 根據新格式規範，只需要兩個分頁：叫料單和月份統計
-  // 不再需要圖片連結分頁
+  // 添加表頭
+  const monthlyHeaders = ['日期', '分類', '數量', '狀態'];
+  const monthlyHeaderRow = monthlySheet.addRow(monthlyHeaders);
+  monthlyHeaderRow.eachCell((cell) => {
+    cell.style = headerStyle;
+  });
+  monthlyHeaderRow.height = 25;
+
+  // 設置欄位寬度
+  monthlySheet.columns = [
+    { width: 15 },
+    { width: 25 },
+    { width: 15 },
+    { width: 15 }
+  ];
+
+  // 添加數據行
+  for (let i = 0; i < monthlyStats.length; i++) {
+    const stat = monthlyStats[i];
+    const rowData = [
+      toString(monthKey),
+      toString(stat.material_category_name || stat.material_name || ''),
+      toString(stat.total_quantity || 0),
+      toString(stat.status || '')
+    ];
+
+    const dataRow = monthlySheet.addRow(rowData);
+    const rowStyle = i % 2 === 0 ? dataRowStyle : alternateRowStyle;
+    dataRow.eachCell((cell) => {
+      cell.style = rowStyle;
+    });
+    dataRow.height = 20;
+  }
 
   // Generate buffer
-  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-  return buffer;
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }
 
 // Upload to Google Drive
