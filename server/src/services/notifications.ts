@@ -466,43 +466,45 @@ export async function generateExcel(request: any): Promise<Buffer> {
         cellStyle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
       }
       
-      // 確保值存在（特別是第 1、6、7、8 欄）
-      if (colNumber === 1) {
-        // 第 1 欄：工區（A13 等）
-        if (cell.value === null || cell.value === undefined || String(cell.value).trim() === '') {
+      // 明確設置每個儲存格的值（從 rowData 中獲取，確保所有欄位都有值）
+      const cellValue = rowData[colNumber - 1]; // colNumber 是 1-based，rowData 是 0-based
+      if (cellValue !== undefined && cellValue !== null) {
+        cell.value = cellValue;
+      } else {
+        // 如果 rowData 中沒有值，根據欄位設置預設值
+        if (colNumber === 1) {
           cell.value = siteName || '';
-          console.log('第 1 欄（工區）重新設置為:', cell.value, 'siteName:', siteName);
-        }
-      } else if (colNumber === 6) {
-        // 第 6 欄：數量
-        if (cell.value === null || cell.value === undefined || cell.value === '') {
-          const qty = item.quantity !== null && item.quantity !== undefined ? item.quantity : 0;
-          cell.value = String(qty);
-          console.log('第 6 欄（數量）重新設置為:', cell.value);
-        }
-      } else if (colNumber === 7) {
-        // 第 7 欄：單位
-        if (cell.value === null || cell.value === undefined || cell.value === '') {
-          const unit = item.unit || item.material_unit || '';
-          cell.value = String(unit);
-          console.log('第 7 欄（單位）重新設置為:', cell.value);
-        }
-      } else if (colNumber === 8) {
-        // 第 8 欄：備註
-        if (cell.value === null || cell.value === undefined) {
-          const notes = item.notes !== null && item.notes !== undefined ? String(item.notes) : '';
-          cell.value = notes;
-          console.log('第 8 欄（備註）重新設置為:', cell.value);
+        } else if (colNumber === 2) {
+          cell.value = request.construction_category_name || '';
+        } else if (colNumber === 3) {
+          cell.value = item.material_category_name || '';
+        } else if (colNumber === 4) {
+          cell.value = item.material_name || '';
+        } else if (colNumber === 5) {
+          cell.value = materialSpec || '';
+        } else if (colNumber === 6) {
+          cell.value = quantityValue;
+        } else if (colNumber === 7) {
+          cell.value = item.unit || item.material_unit || '';
+        } else if (colNumber === 8) {
+          cell.value = notesValue;
+        } else {
+          cell.value = '';
         }
       }
       
-      // 確保儲存格值不是 null 或 undefined
+      // 確保儲存格值不是 null 或 undefined（轉換為空字串）
       if (cell.value === null || cell.value === undefined) {
         cell.value = '';
       }
       
       // 先設置值，再設置樣式，確保值不會被樣式覆蓋
       cell.style = cellStyle;
+      
+      // 調試日誌（僅第一行）
+      if (i === 0 && colNumber <= 8) {
+        console.log(`第 ${colNumber} 欄值:`, cell.value, '類型:', typeof cell.value, 'rowData值:', rowData[colNumber - 1]);
+      }
       
       // 添加調試日誌（僅第一行）
       if (i === 0) {
