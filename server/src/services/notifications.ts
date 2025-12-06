@@ -310,10 +310,34 @@ export async function generateExcel(request: any): Promise<Buffer> {
     
     // 使用交替顏色區隔資料行
     const rowStyle = i % 2 === 0 ? dataRowStyle : alternateRowStyle;
-    dataRow.eachCell((cell) => {
-      cell.style = rowStyle;
+    dataRow.eachCell((cell, colNumber) => {
+      // 確保所有儲存格都有正確的樣式
+      cell.style = {
+        ...rowStyle,
+        // 確保文字顏色可見
+        font: {
+          ...rowStyle.font,
+          color: { argb: 'FF000000' } // 黑色文字
+        },
+        // 確保對齊方式
+        alignment: {
+          vertical: 'middle',
+          horizontal: colNumber === 1 ? 'center' : 'left', // 第一欄（工區）置中，其他靠左
+          wrapText: true
+        }
+      };
     });
     dataRow.height = 20;
+    
+    // 特別確保 A13（第一筆資料的第一欄）有值
+    if (i === 0) {
+      const firstCell = dataRow.getCell(1);
+      if (!firstCell.value || firstCell.value === '') {
+        console.warn('A13 儲存格為空，siteName:', siteName);
+        firstCell.value = siteName || '';
+      }
+      console.log('A13 儲存格值:', firstCell.value, 'siteName:', siteName);
+    }
   }
 
   // Sheet 2: 月份統計 - 分頁名稱格式: 月份＋月統計 (如 "2025年11月統計")
