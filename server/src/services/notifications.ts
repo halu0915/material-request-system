@@ -257,18 +257,29 @@ export async function generateExcel(request: any): Promise<Buffer> {
 
   // 添加叫料單基本資訊（兩欄格式：標籤 | 值）
   const addInfoRow = (label: string, value: string, startRow: number) => {
-    const row = requestSheet.addRow([label, value]);
+    // 確保值不是 null 或 undefined
+    const displayValue = value !== null && value !== undefined ? String(value) : '';
+    
+    const row = requestSheet.addRow([label, displayValue]);
     // 標籤欄（第1欄）
     row.getCell(1).style = infoLabelStyle;
+    row.getCell(1).value = label; // 確保標籤值被設置
+    
     // 值欄（第2-8欄合併，因為現在是8欄位格式）
     requestSheet.mergeCells(startRow, 2, startRow, 8);
-    row.getCell(2).style = infoValueStyle;
+    const valueCell = row.getCell(2);
+    valueCell.style = infoValueStyle;
+    valueCell.value = displayValue; // 確保值被設置到合併儲存格的主儲存格
     row.height = 22;
     
     // 確保合併儲存格的所有邊框都顯示（第2-8欄）
     for (let col = 2; col <= 8; col++) {
       const cell = row.getCell(col);
       if (cell) {
+        // 只有主儲存格（第2欄）設置值，其他合併儲存格只設置樣式
+        if (col === 2) {
+          cell.value = displayValue; // 確保值被設置
+        }
         cell.style = {
           ...infoValueStyle,
           border: {
@@ -279,6 +290,11 @@ export async function generateExcel(request: any): Promise<Buffer> {
           }
         };
       }
+    }
+    
+    // 調試日誌（僅前幾行）
+    if (startRow <= 9) {
+      console.log(`第 ${startRow} 行 - ${label}:`, displayValue, '原始值:', value);
     }
   };
 
