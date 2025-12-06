@@ -54,13 +54,49 @@ export async function generateExcel(request: any): Promise<Buffer> {
   
   try {
     // 優先使用已經 JOIN 的地址資訊（如果有的話）
-    if (request.delivery_address || request.contact_person || request.contact_phone) {
-      deliveryAddress = request.delivery_address || '';
-      contactPhone = request.contact_phone || '';
-      contactPerson = request.contact_person || '';
-      console.log('使用 JOIN 的地址資訊:', { deliveryAddress, contactPhone, contactPerson });
+    // 注意：即使只有一個欄位有值，也要使用 JOIN 的資料
+    if (request.delivery_address !== undefined || request.contact_person !== undefined || request.contact_phone !== undefined || request.address_id) {
+      // 優先使用 JOIN 的資料
+      if (request.delivery_address !== undefined) {
+        deliveryAddress = request.delivery_address || '';
+      }
+      if (request.contact_phone !== undefined) {
+        contactPhone = request.contact_phone || '';
+      }
+      if (request.contact_person !== undefined) {
+        contactPerson = request.contact_person || '';
+      }
+      console.log('使用 JOIN 的地址資訊:', { deliveryAddress, contactPhone, contactPerson, address_id: request.address_id });
+      
+      // 如果 JOIN 的資料不完整，但有 address_id，則查詢資料庫補充
+      if (request.address_id && (!deliveryAddress || !contactPhone || !contactPerson)) {
+        // 查詢資料庫補充缺失的地址資訊
+        const addressResult = await query(
+          'SELECT address, site_name, contact_person, contact_phone FROM addresses WHERE id = $1',
+          [request.address_id]
+        );
+        if (addressResult.rows.length > 0) {
+          // 只補充缺失的欄位
+          if (!deliveryAddress) {
+            deliveryAddress = addressResult.rows[0].address || '';
+          }
+          if (!contactPhone) {
+            contactPhone = addressResult.rows[0].contact_phone || '';
+          }
+          if (!contactPerson) {
+            contactPerson = addressResult.rows[0].contact_person || '';
+          }
+          // 確保 site_name 被設置到 request 對象中，這樣後續可以優先使用
+          if (addressResult.rows[0].site_name) {
+            request.site_name = addressResult.rows[0].site_name;
+          }
+          console.log('從資料庫補充地址資訊:', { deliveryAddress, contactPhone, contactPerson, site_name: addressResult.rows[0].site_name });
+        } else {
+          console.warn('找不到地址資訊，address_id:', request.address_id);
+        }
+      }
     } else if (request.address_id) {
-      // 如果沒有 JOIN 的資料，但有 address_id，則查詢地址（包含 site_name）
+      // 如果完全沒有 JOIN 的資料，但有 address_id，則查詢資料庫
       const addressResult = await query(
         'SELECT address, site_name, contact_person, contact_phone FROM addresses WHERE id = $1',
         [request.address_id]
