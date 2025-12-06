@@ -328,9 +328,11 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
       let selectedCompanyName = '';
       let selectedCompanyTaxId = '';
 
-      if (typeof company_id === 'string' && company_id.startsWith('env_')) {
+      const companyIdStr = String(company_id);
+      
+      if (companyIdStr.startsWith('env_')) {
         // 環境變數公司
-        const envIndex = parseInt(company_id.replace('env_', ''));
+        const envIndex = parseInt(companyIdStr.replace('env_', ''));
         if (process.env.COMPANIES) {
           try {
             const companiesData = JSON.parse(process.env.COMPANIES);
@@ -338,6 +340,7 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
             if (companiesArray[envIndex]) {
               selectedCompanyName = companiesArray[envIndex].name || companiesArray[envIndex].company_name || '';
               selectedCompanyTaxId = companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || '';
+              console.log('從環境變數獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, envIndex });
             }
           } catch (error) {
             console.warn('無法解析環境變數公司資訊:', error);
@@ -345,17 +348,25 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
         }
       } else {
         // 數據庫公司
-        try {
-          const companyResult = await query(
-            'SELECT name, tax_id FROM companies WHERE id = $1 AND user_id = $2',
-            [company_id, req.user?.id]
-          );
-          if (companyResult.rows.length > 0) {
-            selectedCompanyName = companyResult.rows[0].name || '';
-            selectedCompanyTaxId = companyResult.rows[0].tax_id || '';
+        const companyIdNum = parseInt(companyIdStr);
+        if (!isNaN(companyIdNum)) {
+          try {
+            const companyResult = await query(
+              'SELECT name, tax_id FROM companies WHERE id = $1 AND user_id = $2',
+              [companyIdNum, req.user?.id]
+            );
+            if (companyResult.rows.length > 0) {
+              selectedCompanyName = companyResult.rows[0].name || '';
+              selectedCompanyTaxId = companyResult.rows[0].tax_id || '';
+              console.log('從數據庫獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, companyIdNum });
+            } else {
+              console.warn('找不到公司，ID:', companyIdNum, '用戶ID:', req.user?.id);
+            }
+          } catch (error) {
+            console.error('查詢公司資訊失敗:', error);
           }
-        } catch (error) {
-          console.warn('查詢公司資訊失敗:', error);
+        } else {
+          console.warn('無效的公司 ID:', companyIdStr);
         }
       }
 
@@ -365,6 +376,9 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
         fullRequest.company_tax_id = selectedCompanyTaxId || '';
         // 清除 company_id，確保 generateExcel 使用覆蓋的資訊
         fullRequest.company_id = null;
+        console.log('已覆蓋公司資訊:', { company_name: fullRequest.company_name, company_tax_id: fullRequest.company_tax_id });
+      } else {
+        console.warn('無法獲取公司資訊，company_id:', company_id);
       }
     }
 
