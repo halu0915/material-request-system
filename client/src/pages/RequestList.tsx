@@ -215,14 +215,32 @@ export default function RequestList() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {requests.map((request: any) => {
-                  const siteName = extractSiteName(request.delivery_address);
+                  // 優先使用 request.site_name，如果沒有則從地址中提取
+                  const siteName = request.site_name || extractSiteName(request.delivery_address) || '-';
+                  
                   // 處理材料名稱：如果有多個，顯示前幾個，超過的用"等"
                   const materialNames = request.material_names || '';
                   const materialNamesDisplay = materialNames 
-                    ? (materialNames.length > 30 ? materialNames.substring(0, 30) + '...' : materialNames)
+                    ? (materialNames.length > 50 ? materialNames.substring(0, 50) + '...' : materialNames)
                     : '-';
-                  // 處理數量：顯示總數量
-                  const totalQuantity = request.total_quantity || 0;
+                  
+                  // 處理數量：顯示總數量（確保是數字）
+                  const totalQuantity = request.total_quantity !== null && request.total_quantity !== undefined 
+                    ? Number(request.total_quantity) 
+                    : 0;
+                  
+                  // 調試日誌（僅第一筆）
+                  if (requests.indexOf(request) === 0) {
+                    console.log('叫料單資料:', {
+                      id: request.id,
+                      site_name: request.site_name,
+                      delivery_address: request.delivery_address,
+                      siteName,
+                      material_names: request.material_names,
+                      total_quantity: request.total_quantity,
+                      totalQuantity
+                    });
+                  }
                   
                   return (
                     <tr key={request.id} className="hover:bg-gray-50">
