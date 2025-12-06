@@ -295,16 +295,27 @@ export async function generateExcel(request: any): Promise<Buffer> {
     }
 
     // 按照圖片格式的8欄位順序排列
+    // 確保所有值都正確轉換，特別是數量（可能是數字）
+    const quantityValue = item.quantity !== null && item.quantity !== undefined ? String(item.quantity) : '0';
+    const notesValue = item.notes !== null && item.notes !== undefined ? String(item.notes) : '';
+    
     const rowData = [
       toString(siteName || ''),                     // 1. 工區
       toString(request.construction_category_name || ''), // 2. 施工類別
       toString(item.material_category_name || ''),  // 3. 材料類別
       toString(item.material_name || ''),           // 4. 材料名稱
-      toString(materialSpec),                       // 5. 材料規格
+      toString(materialSpec || ''),                 // 5. 材料規格
       toString(item.unit || item.material_unit || ''), // 6. 單位
-      toString(item.quantity),                      // 7. 數量
-      toString(item.notes || '')                    // 8. 備註
+      quantityValue,                                // 7. 數量（確保是字符串）
+      notesValue                                    // 8. 備註（確保是字符串）
     ];
+    
+    // 調試日誌：檢查第 7、8 欄的值
+    if (i === 0) {
+      console.log('第 7 欄（數量）值:', quantityValue, '原始值:', item.quantity, '類型:', typeof item.quantity);
+      console.log('第 8 欄（備註）值:', notesValue, '原始值:', item.notes, '類型:', typeof item.notes);
+      console.log('rowData:', rowData);
+    }
 
     const dataRow = requestSheet.addRow(rowData);
     
@@ -336,24 +347,33 @@ export async function generateExcel(request: any): Promise<Buffer> {
         cellStyle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
       }
       
-      // 確保值存在（特別是第 7、8 列）
+      // 確保值存在（特別是第 7、8 欄）
       if (colNumber === 7) {
-        // 第 7 列：數量
-        if (cell.value === null || cell.value === undefined) {
-          cell.value = item.quantity || 0;
+        // 第 7 欄：數量
+        if (cell.value === null || cell.value === undefined || cell.value === '') {
+          const qty = item.quantity !== null && item.quantity !== undefined ? item.quantity : 0;
+          cell.value = String(qty);
+          console.log('第 7 欄（數量）重新設置為:', cell.value);
         }
       } else if (colNumber === 8) {
-        // 第 8 列：備註
+        // 第 8 欄：備註
         if (cell.value === null || cell.value === undefined) {
-          cell.value = item.notes || '';
+          const notes = item.notes !== null && item.notes !== undefined ? String(item.notes) : '';
+          cell.value = notes;
+          console.log('第 8 欄（備註）重新設置為:', cell.value);
         }
+      }
+      
+      // 確保儲存格值不是 null 或 undefined
+      if (cell.value === null || cell.value === undefined) {
+        cell.value = '';
       }
       
       cell.style = cellStyle;
       
       // 添加調試日誌（僅第一行）
       if (i === 0) {
-        console.log(`第 ${colNumber} 列值:`, cell.value, '類型:', typeof cell.value);
+        console.log(`第 ${colNumber} 欄值:`, cell.value, '類型:', typeof cell.value, '是否為空:', cell.value === null || cell.value === undefined || cell.value === '');
       }
     });
     dataRow.height = 20;
