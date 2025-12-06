@@ -37,6 +37,9 @@ export default function Layout({ children }: LayoutProps) {
                 <Link to="/materials" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                   材料管理
                 </Link>
+                <Link to="/addresses" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                  地址管理
+                </Link>
               </nav>
             </div>
             <div className="flex items-center space-x-4">
@@ -64,6 +67,9 @@ export default function Layout({ children }: LayoutProps) {
             </Link>
             <Link to="/materials" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md">
               材料管理
+            </Link>
+            <Link to="/addresses" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md">
+              地址管理
             </Link>
           </div>
         </div>
