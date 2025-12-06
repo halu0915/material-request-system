@@ -320,7 +320,7 @@ export async function generateExcel(request: any): Promise<Buffer> {
         },
         alignment: {
           vertical: 'middle',
-          horizontal: colNumber === 1 ? 'center' : 'left', // 第一欄（工區）置中，其他靠左
+          horizontal: colNumber === 1 ? 'center' : (colNumber === 7 ? 'right' : 'left'), // 第一欄（工區）置中，第7欄（數量）靠右，其他靠左
           wrapText: true
         },
         border: {
@@ -336,7 +336,25 @@ export async function generateExcel(request: any): Promise<Buffer> {
         cellStyle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
       }
       
+      // 確保值存在（特別是第 7、8 列）
+      if (colNumber === 7) {
+        // 第 7 列：數量
+        if (cell.value === null || cell.value === undefined) {
+          cell.value = item.quantity || 0;
+        }
+      } else if (colNumber === 8) {
+        // 第 8 列：備註
+        if (cell.value === null || cell.value === undefined) {
+          cell.value = item.notes || '';
+        }
+      }
+      
       cell.style = cellStyle;
+      
+      // 添加調試日誌（僅第一行）
+      if (i === 0) {
+        console.log(`第 ${colNumber} 列值:`, cell.value, '類型:', typeof cell.value);
+      }
     });
     dataRow.height = 20;
     
