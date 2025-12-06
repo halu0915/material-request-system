@@ -87,7 +87,8 @@ export const createTables = async (): Promise<void> => {
       CREATE TABLE IF NOT EXISTS material_requests (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
-        company_id INTEGER REFERENCES companies(id),
+        company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+        address_id INTEGER REFERENCES addresses(id) ON DELETE SET NULL,
         request_number VARCHAR(100) UNIQUE NOT NULL,
         construction_category_id INTEGER REFERENCES construction_categories(id),
         status VARCHAR(50) DEFAULT 'pending',
@@ -99,6 +100,19 @@ export const createTables = async (): Promise<void> => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+    
+    // Add address_id column if it doesn't exist (for existing databases)
+    await query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'material_requests' AND column_name = 'address_id'
+        ) THEN
+          ALTER TABLE material_requests ADD COLUMN address_id INTEGER REFERENCES addresses(id) ON DELETE SET NULL;
+        END IF;
+      END $$;
     `);
     
     // Add company_id column if it doesn't exist (for existing databases)

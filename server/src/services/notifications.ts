@@ -26,17 +26,39 @@ export async function generateExcel(request: any): Promise<Buffer> {
     companyTaxId = process.env.COMPANY_TAX_ID || '16272724';
   }
 
-  // Get user's default address and contact info
+  // Get address and contact info from request (if address_id is set) or default address
   let deliveryAddress = '';
   let contactPhone = '';
+  let contactPerson = '';
+  
   try {
-    const addressResult = await query(
-      'SELECT address, contact_phone FROM addresses WHERE user_id = $1 AND is_default = true LIMIT 1',
-      [request.user_id]
-    );
-    if (addressResult.rows.length > 0) {
-      deliveryAddress = addressResult.rows[0].address || '';
-      contactPhone = addressResult.rows[0].contact_phone || '';
+    if (request.address_id) {
+      // Use the address from the request
+      const addressResult = await query(
+        'SELECT address, contact_person, contact_phone FROM addresses WHERE id = $1',
+        [request.address_id]
+      );
+      if (addressResult.rows.length > 0) {
+        deliveryAddress = addressResult.rows[0].address || '';
+        contactPhone = addressResult.rows[0].contact_phone || '';
+        contactPerson = addressResult.rows[0].contact_person || '';
+      }
+    } else if (request.delivery_address) {
+      // Use address from request object (if already joined)
+      deliveryAddress = request.delivery_address || '';
+      contactPhone = request.contact_phone || '';
+      contactPerson = request.contact_person || '';
+    } else {
+      // Fallback to default address
+      const addressResult = await query(
+        'SELECT address, contact_person, contact_phone FROM addresses WHERE user_id = $1 AND is_default = true LIMIT 1',
+        [request.user_id]
+      );
+      if (addressResult.rows.length > 0) {
+        deliveryAddress = addressResult.rows[0].address || '';
+        contactPhone = addressResult.rows[0].contact_phone || '';
+        contactPerson = addressResult.rows[0].contact_person || '';
+      }
     }
   } catch (error) {
     console.warn('取得地址資訊失敗:', error);
@@ -199,6 +221,9 @@ export async function generateExcel(request: any): Promise<Buffer> {
     minute: '2-digit' 
   }), currentRow++);
   addInfoRow('申請人', request.user_name || '', currentRow++);
+  if (contactPerson) {
+    addInfoRow('聯絡人', contactPerson, currentRow++);
+  }
   addInfoRow('聯繫電話', contactPhone, currentRow++);
   addInfoRow('送貨地址', deliveryAddress || '', currentRow++);
   addInfoRow('狀態', request.status, currentRow++);

@@ -37,6 +37,15 @@ export default function RequestForm() {
     }
   });
 
+  // Fetch addresses
+  const { data: addresses } = useQuery({
+    queryKey: ['addresses'],
+    queryFn: async () => {
+      const response = await api.get('/api/addresses');
+      return response.data.addresses;
+    }
+  });
+
   // Fetch materials based on construction category
   const { data: materials } = useQuery({
     queryKey: ['materials', constructionCategoryId],
@@ -103,10 +112,14 @@ export default function RequestForm() {
     createRequest.mutate({
       construction_category_id: constructionCategoryId,
       company_id: companyId || null,
+      address_id: addressId || null,
       items,
       notes
     });
   };
+
+  // Get selected address details
+  const selectedAddress = addresses?.find((addr: any) => addr.id === addressId);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -139,6 +152,50 @@ export default function RequestForm() {
           )}
           {companies && companies.some((c: any) => c.is_from_env) && (
             <p className="mt-1 text-sm text-gray-500">標記 [系統預設] 的公司來自環境變數，不可修改或刪除</p>
+          )}
+        </div>
+
+        {/* Address Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            送貨地址 <span className="text-gray-400 text-xs">(選填)</span>
+          </label>
+          <select
+            value={addressId}
+            onChange={(e) => setAddressId(e.target.value ? parseInt(e.target.value) : '')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">請選擇地址（選填）</option>
+            {addresses?.map((address: any) => (
+              <option key={address.id} value={address.id}>
+                {address.name} {address.is_default && '(預設)'}
+              </option>
+            ))}
+          </select>
+          {selectedAddress && (
+            <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="font-medium text-gray-700">送貨地址：</span>
+                  <span className="text-gray-600">{selectedAddress.address}</span>
+                </div>
+                {selectedAddress.contact_person && (
+                  <div>
+                    <span className="font-medium text-gray-700">聯絡人：</span>
+                    <span className="text-gray-600">{selectedAddress.contact_person}</span>
+                  </div>
+                )}
+                {selectedAddress.contact_phone && (
+                  <div>
+                    <span className="font-medium text-gray-700">聯絡電話：</span>
+                    <span className="text-gray-600">{selectedAddress.contact_phone}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {addresses?.length === 0 && (
+            <p className="mt-1 text-sm text-gray-500">尚未建立地址，請先到地址管理建立地址</p>
           )}
         </div>
 
