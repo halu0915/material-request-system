@@ -384,14 +384,15 @@ export async function generateExcel(request: any): Promise<Buffer> {
       toString(item.material_category_name || ''),  // 3. 材料類別
       toString(item.material_name || ''),           // 4. 材料名稱
       toString(materialSpec || ''),                 // 5. 材料規格
-      toString(item.unit || item.material_unit || ''), // 6. 單位
-      quantityValue,                                // 7. 數量（確保是字符串）
+      quantityValue,                                // 6. 數量（確保是字符串）
+      toString(item.unit || item.material_unit || ''), // 7. 單位
       notesValue                                    // 8. 備註（確保是字符串）
     ];
     
-    // 調試日誌：檢查第 7、8 欄的值
+    // 調試日誌：檢查第 6、7、8 欄的值
     if (i === 0) {
-      console.log('第 7 欄（數量）值:', quantityValue, '原始值:', item.quantity, '類型:', typeof item.quantity);
+      console.log('第 6 欄（數量）值:', quantityValue, '原始值:', item.quantity, '類型:', typeof item.quantity);
+      console.log('第 7 欄（單位）值:', item.unit || item.material_unit || '', '原始值:', item.unit, 'material_unit:', item.material_unit);
       console.log('第 8 欄（備註）值:', notesValue, '原始值:', item.notes, '類型:', typeof item.notes);
       console.log('rowData:', rowData);
     }
@@ -410,7 +411,7 @@ export async function generateExcel(request: any): Promise<Buffer> {
         },
         alignment: {
           vertical: 'middle',
-          horizontal: colNumber === 1 ? 'center' : (colNumber === 7 ? 'right' : 'left'), // 第一欄（工區）置中，第7欄（數量）靠右，其他靠左
+          horizontal: colNumber === 1 ? 'center' : (colNumber === 6 ? 'right' : 'left'), // 第一欄（工區）置中，第6欄（數量）靠右，其他靠左
           wrapText: true
         },
         border: {
@@ -426,13 +427,20 @@ export async function generateExcel(request: any): Promise<Buffer> {
         cellStyle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
       }
       
-      // 確保值存在（特別是第 7、8 欄）
-      if (colNumber === 7) {
-        // 第 7 欄：數量
+      // 確保值存在（特別是第 6、7、8 欄）
+      if (colNumber === 6) {
+        // 第 6 欄：數量
         if (cell.value === null || cell.value === undefined || cell.value === '') {
           const qty = item.quantity !== null && item.quantity !== undefined ? item.quantity : 0;
           cell.value = String(qty);
-          console.log('第 7 欄（數量）重新設置為:', cell.value);
+          console.log('第 6 欄（數量）重新設置為:', cell.value);
+        }
+      } else if (colNumber === 7) {
+        // 第 7 欄：單位
+        if (cell.value === null || cell.value === undefined || cell.value === '') {
+          const unit = item.unit || item.material_unit || '';
+          cell.value = String(unit);
+          console.log('第 7 欄（單位）重新設置為:', cell.value);
         }
       } else if (colNumber === 8) {
         // 第 8 欄：備註
