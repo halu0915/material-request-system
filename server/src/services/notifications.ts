@@ -17,10 +17,11 @@ export async function generateExcel(request: any): Promise<Buffer> {
   let companyTaxId = '';
   
   // 優先使用 request 中已設置的公司資訊（可能是從下載時選擇的公司覆蓋的）
+  // 注意：如果 company_id 為 null，表示已經被覆蓋，應該使用 company_name
   if (request.company_name) {
     companyName = request.company_name;
     companyTaxId = request.company_tax_id || '';
-    console.log('使用覆蓋的公司資訊:', { companyName, companyTaxId });
+    console.log('使用覆蓋的公司資訊:', { companyName, companyTaxId, company_id: request.company_id });
   } else if (request.company_id) {
     // 如果有 company_id 但沒有 JOIN 的資料，查詢公司資訊
     try {
