@@ -82,3 +82,33 @@ export default function Layout({ children }: LayoutProps) {
   );
 }
 
+
+      </main>
+    </div>
+  );
+}
+
+
+      </main>
+    </div>
+  );
+}
+
+
+      </main>
+    </div>
+  );
+}
+
+
+      </main>
+    </div>
+  );
+}
+
+
+      </main>
+    </div>
+  );
+}
+

@@ -227,18 +227,14 @@ export default function RequestDetail() {
                  request.status}
               </span>
             </div>
-            {request.company_name && (
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">公司名稱</label>
-                <p className="text-gray-900">{request.company_name}</p>
-              </div>
-            )}
-            {request.company_tax_id && (
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">統一編號</label>
-                <p className="text-gray-900">{request.company_tax_id}</p>
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">公司名稱</label>
+              <p className="text-gray-900">{request.company_name || '-'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">統一編號</label>
+              <p className="text-gray-900">{request.company_tax_id || '-'}</p>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-500 mb-1">工區</label>
               <p className="text-gray-900">{siteName || '-'}</p>
@@ -358,4 +354,3 @@ export default function RequestDetail() {
     </div>
   );
 }
-

@@ -336,3 +336,1108 @@ export default function RequestList() {
   );
 }
 
+
+      }
+    }
+  };
+
+  const handleDownloadClick = (requestId: number, requestNumber: string) => {
+    setPendingDownload({ requestId, requestNumber });
+    setShowCompanyDialog(true);
+    setSelectedCompanyId('');
+  };
+
+  const handleConfirmDownload = () => {
+    if (pendingDownload) {
+      setShowCompanyDialog(false);
+      handleDownloadExcel(pendingDownload.requestId, pendingDownload.requestNumber, selectedCompanyId || undefined);
+      setPendingDownload(null);
+      setSelectedCompanyId('');
+    }
+  };
+
+  const handleCancelDownload = () => {
+    setShowCompanyDialog(false);
+    setPendingDownload(null);
+    setSelectedCompanyId('');
+  };
+
+  const requests = data?.requests || [];
+
+  // 提取工區名稱（從地址中）
+  const extractSiteName = (address?: string): string => {
+    if (!address) return '';
+    const parts = address.split(' - ');
+    if (parts.length > 1 && parts[0].trim()) {
+      return parts[0].trim();
+    }
+    const parts2 = address.split('-');
+    if (parts2.length > 1 && parts2[0].trim()) {
+      return parts2[0].trim();
+    }
+    return '';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-lg">載入中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">叫料單列表</h1>
+        <Link
+          to="/requests/new"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          新增叫料單
+        </Link>
+      </div>
+
+      {requests.length === 0 ? (
+        <div className="bg-white shadow rounded-lg p-12 text-center">
+          <p className="text-gray-500 mb-4">尚無叫料單</p>
+          <Link
+            to="/requests/new"
+            className="text-blue-600 hover:text-blue-800"
+          >
+            建立第一張叫料單 →
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    單號
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    工區
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    施工類別
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    材料名稱
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    數量
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.map((request: any) => {
+                  // 優先使用 request.site_name，如果沒有則從地址中提取
+                  const siteName = request.site_name || extractSiteName(request.delivery_address) || '-';
+                  
+                  // 處理材料名稱：如果有多個，顯示前幾個，超過的用"等"
+                  const materialNames = request.material_names || '';
+                  const materialNamesDisplay = materialNames 
+                    ? (materialNames.length > 50 ? materialNames.substring(0, 50) + '...' : materialNames)
+                    : '-';
+                  
+                  // 處理數量：顯示總數量（確保是數字）
+                  const totalQuantity = request.total_quantity !== null && request.total_quantity !== undefined 
+                    ? Number(request.total_quantity) 
+                    : 0;
+                  
+                  // 調試日誌（僅第一筆）
+                  if (requests.indexOf(request) === 0) {
+                    console.log('叫料單資料:', {
+                      id: request.id,
+                      site_name: request.site_name,
+                      delivery_address: request.delivery_address,
+                      siteName,
+                      material_names: request.material_names,
+                      total_quantity: request.total_quantity,
+                      totalQuantity
+                    });
+                  }
+                  
+                  return (
+                    <tr key={request.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {request.request_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {siteName || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {request.construction_category_name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {materialNamesDisplay}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {totalQuantity}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <Link
+                          to={`/requests/${request.id}`}
+                          className="text-blue-600 hover:text-blue-900 mr-4"
+                        >
+                          查看
+                        </Link>
+                      <button
+                        onClick={() => handleDownloadClick(request.id, request.request_number)}
+                        className="text-green-600 hover:text-green-900 mr-4"
+                      >
+                        下載 Excel
+                      </button>
+                        <button
+                          onClick={() => handleDelete(request.id, request.request_number)}
+                          disabled={deleteRequest.isPending}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                        >
+                          {deleteRequest.isPending ? '刪除中...' : '刪除'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Company Selection Dialog */}
+      {showCompanyDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">選擇公司</h2>
+            <p className="text-sm text-gray-600 mb-4">請選擇要顯示在 Excel 中的公司名稱與統編</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                公司 <span className="text-gray-400 text-xs">(選填，不選擇則使用原叫料單的公司)</span>
+              </label>
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value ? (isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value)) : '')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">使用原叫料單的公司</option>
+                {companies.map((company: any) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name} {company.tax_id ? `(${company.tax_id})` : ''}
+                    {company.is_from_env && ' [系統預設]'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCancelDownload}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmDownload}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                下載
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+      }
+    }
+  };
+
+  const handleDownloadClick = (requestId: number, requestNumber: string) => {
+    setPendingDownload({ requestId, requestNumber });
+    setShowCompanyDialog(true);
+    setSelectedCompanyId('');
+  };
+
+  const handleConfirmDownload = () => {
+    if (pendingDownload) {
+      setShowCompanyDialog(false);
+      handleDownloadExcel(pendingDownload.requestId, pendingDownload.requestNumber, selectedCompanyId || undefined);
+      setPendingDownload(null);
+      setSelectedCompanyId('');
+    }
+  };
+
+  const handleCancelDownload = () => {
+    setShowCompanyDialog(false);
+    setPendingDownload(null);
+    setSelectedCompanyId('');
+  };
+
+  const requests = data?.requests || [];
+
+  // 提取工區名稱（從地址中）
+  const extractSiteName = (address?: string): string => {
+    if (!address) return '';
+    const parts = address.split(' - ');
+    if (parts.length > 1 && parts[0].trim()) {
+      return parts[0].trim();
+    }
+    const parts2 = address.split('-');
+    if (parts2.length > 1 && parts2[0].trim()) {
+      return parts2[0].trim();
+    }
+    return '';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-lg">載入中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">叫料單列表</h1>
+        <Link
+          to="/requests/new"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          新增叫料單
+        </Link>
+      </div>
+
+      {requests.length === 0 ? (
+        <div className="bg-white shadow rounded-lg p-12 text-center">
+          <p className="text-gray-500 mb-4">尚無叫料單</p>
+          <Link
+            to="/requests/new"
+            className="text-blue-600 hover:text-blue-800"
+          >
+            建立第一張叫料單 →
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    單號
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    工區
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    施工類別
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    材料名稱
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    數量
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.map((request: any) => {
+                  // 優先使用 request.site_name，如果沒有則從地址中提取
+                  const siteName = request.site_name || extractSiteName(request.delivery_address) || '-';
+                  
+                  // 處理材料名稱：如果有多個，顯示前幾個，超過的用"等"
+                  const materialNames = request.material_names || '';
+                  const materialNamesDisplay = materialNames 
+                    ? (materialNames.length > 50 ? materialNames.substring(0, 50) + '...' : materialNames)
+                    : '-';
+                  
+                  // 處理數量：顯示總數量（確保是數字）
+                  const totalQuantity = request.total_quantity !== null && request.total_quantity !== undefined 
+                    ? Number(request.total_quantity) 
+                    : 0;
+                  
+                  // 調試日誌（僅第一筆）
+                  if (requests.indexOf(request) === 0) {
+                    console.log('叫料單資料:', {
+                      id: request.id,
+                      site_name: request.site_name,
+                      delivery_address: request.delivery_address,
+                      siteName,
+                      material_names: request.material_names,
+                      total_quantity: request.total_quantity,
+                      totalQuantity
+                    });
+                  }
+                  
+                  return (
+                    <tr key={request.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {request.request_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {siteName || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {request.construction_category_name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {materialNamesDisplay}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {totalQuantity}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <Link
+                          to={`/requests/${request.id}`}
+                          className="text-blue-600 hover:text-blue-900 mr-4"
+                        >
+                          查看
+                        </Link>
+                      <button
+                        onClick={() => handleDownloadClick(request.id, request.request_number)}
+                        className="text-green-600 hover:text-green-900 mr-4"
+                      >
+                        下載 Excel
+                      </button>
+                        <button
+                          onClick={() => handleDelete(request.id, request.request_number)}
+                          disabled={deleteRequest.isPending}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                        >
+                          {deleteRequest.isPending ? '刪除中...' : '刪除'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Company Selection Dialog */}
+      {showCompanyDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">選擇公司</h2>
+            <p className="text-sm text-gray-600 mb-4">請選擇要顯示在 Excel 中的公司名稱與統編</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                公司 <span className="text-gray-400 text-xs">(選填，不選擇則使用原叫料單的公司)</span>
+              </label>
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value ? (isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value)) : '')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">使用原叫料單的公司</option>
+                {companies.map((company: any) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name} {company.tax_id ? `(${company.tax_id})` : ''}
+                    {company.is_from_env && ' [系統預設]'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCancelDownload}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmDownload}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                下載
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+      }
+    }
+  };
+
+  const handleDownloadClick = (requestId: number, requestNumber: string) => {
+    setPendingDownload({ requestId, requestNumber });
+    setShowCompanyDialog(true);
+    setSelectedCompanyId('');
+  };
+
+  const handleConfirmDownload = () => {
+    if (pendingDownload) {
+      setShowCompanyDialog(false);
+      handleDownloadExcel(pendingDownload.requestId, pendingDownload.requestNumber, selectedCompanyId || undefined);
+      setPendingDownload(null);
+      setSelectedCompanyId('');
+    }
+  };
+
+  const handleCancelDownload = () => {
+    setShowCompanyDialog(false);
+    setPendingDownload(null);
+    setSelectedCompanyId('');
+  };
+
+  const requests = data?.requests || [];
+
+  // 提取工區名稱（從地址中）
+  const extractSiteName = (address?: string): string => {
+    if (!address) return '';
+    const parts = address.split(' - ');
+    if (parts.length > 1 && parts[0].trim()) {
+      return parts[0].trim();
+    }
+    const parts2 = address.split('-');
+    if (parts2.length > 1 && parts2[0].trim()) {
+      return parts2[0].trim();
+    }
+    return '';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-lg">載入中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">叫料單列表</h1>
+        <Link
+          to="/requests/new"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          新增叫料單
+        </Link>
+      </div>
+
+      {requests.length === 0 ? (
+        <div className="bg-white shadow rounded-lg p-12 text-center">
+          <p className="text-gray-500 mb-4">尚無叫料單</p>
+          <Link
+            to="/requests/new"
+            className="text-blue-600 hover:text-blue-800"
+          >
+            建立第一張叫料單 →
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    單號
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    工區
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    施工類別
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    材料名稱
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    數量
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.map((request: any) => {
+                  // 優先使用 request.site_name，如果沒有則從地址中提取
+                  const siteName = request.site_name || extractSiteName(request.delivery_address) || '-';
+                  
+                  // 處理材料名稱：如果有多個，顯示前幾個，超過的用"等"
+                  const materialNames = request.material_names || '';
+                  const materialNamesDisplay = materialNames 
+                    ? (materialNames.length > 50 ? materialNames.substring(0, 50) + '...' : materialNames)
+                    : '-';
+                  
+                  // 處理數量：顯示總數量（確保是數字）
+                  const totalQuantity = request.total_quantity !== null && request.total_quantity !== undefined 
+                    ? Number(request.total_quantity) 
+                    : 0;
+                  
+                  // 調試日誌（僅第一筆）
+                  if (requests.indexOf(request) === 0) {
+                    console.log('叫料單資料:', {
+                      id: request.id,
+                      site_name: request.site_name,
+                      delivery_address: request.delivery_address,
+                      siteName,
+                      material_names: request.material_names,
+                      total_quantity: request.total_quantity,
+                      totalQuantity
+                    });
+                  }
+                  
+                  return (
+                    <tr key={request.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {request.request_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {siteName || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {request.construction_category_name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {materialNamesDisplay}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {totalQuantity}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <Link
+                          to={`/requests/${request.id}`}
+                          className="text-blue-600 hover:text-blue-900 mr-4"
+                        >
+                          查看
+                        </Link>
+                      <button
+                        onClick={() => handleDownloadClick(request.id, request.request_number)}
+                        className="text-green-600 hover:text-green-900 mr-4"
+                      >
+                        下載 Excel
+                      </button>
+                        <button
+                          onClick={() => handleDelete(request.id, request.request_number)}
+                          disabled={deleteRequest.isPending}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                        >
+                          {deleteRequest.isPending ? '刪除中...' : '刪除'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Company Selection Dialog */}
+      {showCompanyDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">選擇公司</h2>
+            <p className="text-sm text-gray-600 mb-4">請選擇要顯示在 Excel 中的公司名稱與統編</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                公司 <span className="text-gray-400 text-xs">(選填，不選擇則使用原叫料單的公司)</span>
+              </label>
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value ? (isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value)) : '')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">使用原叫料單的公司</option>
+                {companies.map((company: any) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name} {company.tax_id ? `(${company.tax_id})` : ''}
+                    {company.is_from_env && ' [系統預設]'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCancelDownload}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmDownload}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                下載
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+      }
+    }
+  };
+
+  const handleDownloadClick = (requestId: number, requestNumber: string) => {
+    setPendingDownload({ requestId, requestNumber });
+    setShowCompanyDialog(true);
+    setSelectedCompanyId('');
+  };
+
+  const handleConfirmDownload = () => {
+    if (pendingDownload) {
+      setShowCompanyDialog(false);
+      handleDownloadExcel(pendingDownload.requestId, pendingDownload.requestNumber, selectedCompanyId || undefined);
+      setPendingDownload(null);
+      setSelectedCompanyId('');
+    }
+  };
+
+  const handleCancelDownload = () => {
+    setShowCompanyDialog(false);
+    setPendingDownload(null);
+    setSelectedCompanyId('');
+  };
+
+  const requests = data?.requests || [];
+
+  // 提取工區名稱（從地址中）
+  const extractSiteName = (address?: string): string => {
+    if (!address) return '';
+    const parts = address.split(' - ');
+    if (parts.length > 1 && parts[0].trim()) {
+      return parts[0].trim();
+    }
+    const parts2 = address.split('-');
+    if (parts2.length > 1 && parts2[0].trim()) {
+      return parts2[0].trim();
+    }
+    return '';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-lg">載入中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">叫料單列表</h1>
+        <Link
+          to="/requests/new"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          新增叫料單
+        </Link>
+      </div>
+
+      {requests.length === 0 ? (
+        <div className="bg-white shadow rounded-lg p-12 text-center">
+          <p className="text-gray-500 mb-4">尚無叫料單</p>
+          <Link
+            to="/requests/new"
+            className="text-blue-600 hover:text-blue-800"
+          >
+            建立第一張叫料單 →
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    單號
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    工區
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    施工類別
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    材料名稱
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    數量
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.map((request: any) => {
+                  // 優先使用 request.site_name，如果沒有則從地址中提取
+                  const siteName = request.site_name || extractSiteName(request.delivery_address) || '-';
+                  
+                  // 處理材料名稱：如果有多個，顯示前幾個，超過的用"等"
+                  const materialNames = request.material_names || '';
+                  const materialNamesDisplay = materialNames 
+                    ? (materialNames.length > 50 ? materialNames.substring(0, 50) + '...' : materialNames)
+                    : '-';
+                  
+                  // 處理數量：顯示總數量（確保是數字）
+                  const totalQuantity = request.total_quantity !== null && request.total_quantity !== undefined 
+                    ? Number(request.total_quantity) 
+                    : 0;
+                  
+                  // 調試日誌（僅第一筆）
+                  if (requests.indexOf(request) === 0) {
+                    console.log('叫料單資料:', {
+                      id: request.id,
+                      site_name: request.site_name,
+                      delivery_address: request.delivery_address,
+                      siteName,
+                      material_names: request.material_names,
+                      total_quantity: request.total_quantity,
+                      totalQuantity
+                    });
+                  }
+                  
+                  return (
+                    <tr key={request.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {request.request_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {siteName || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {request.construction_category_name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {materialNamesDisplay}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {totalQuantity}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <Link
+                          to={`/requests/${request.id}`}
+                          className="text-blue-600 hover:text-blue-900 mr-4"
+                        >
+                          查看
+                        </Link>
+                      <button
+                        onClick={() => handleDownloadClick(request.id, request.request_number)}
+                        className="text-green-600 hover:text-green-900 mr-4"
+                      >
+                        下載 Excel
+                      </button>
+                        <button
+                          onClick={() => handleDelete(request.id, request.request_number)}
+                          disabled={deleteRequest.isPending}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                        >
+                          {deleteRequest.isPending ? '刪除中...' : '刪除'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Company Selection Dialog */}
+      {showCompanyDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">選擇公司</h2>
+            <p className="text-sm text-gray-600 mb-4">請選擇要顯示在 Excel 中的公司名稱與統編</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                公司 <span className="text-gray-400 text-xs">(選填，不選擇則使用原叫料單的公司)</span>
+              </label>
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value ? (isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value)) : '')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">使用原叫料單的公司</option>
+                {companies.map((company: any) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name} {company.tax_id ? `(${company.tax_id})` : ''}
+                    {company.is_from_env && ' [系統預設]'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCancelDownload}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmDownload}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                下載
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+      }
+    }
+  };
+
+  const handleDownloadClick = (requestId: number, requestNumber: string) => {
+    setPendingDownload({ requestId, requestNumber });
+    setShowCompanyDialog(true);
+    setSelectedCompanyId('');
+  };
+
+  const handleConfirmDownload = () => {
+    if (pendingDownload) {
+      setShowCompanyDialog(false);
+      handleDownloadExcel(pendingDownload.requestId, pendingDownload.requestNumber, selectedCompanyId || undefined);
+      setPendingDownload(null);
+      setSelectedCompanyId('');
+    }
+  };
+
+  const handleCancelDownload = () => {
+    setShowCompanyDialog(false);
+    setPendingDownload(null);
+    setSelectedCompanyId('');
+  };
+
+  const requests = data?.requests || [];
+
+  // 提取工區名稱（從地址中）
+  const extractSiteName = (address?: string): string => {
+    if (!address) return '';
+    const parts = address.split(' - ');
+    if (parts.length > 1 && parts[0].trim()) {
+      return parts[0].trim();
+    }
+    const parts2 = address.split('-');
+    if (parts2.length > 1 && parts2[0].trim()) {
+      return parts2[0].trim();
+    }
+    return '';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-lg">載入中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">叫料單列表</h1>
+        <Link
+          to="/requests/new"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          新增叫料單
+        </Link>
+      </div>
+
+      {requests.length === 0 ? (
+        <div className="bg-white shadow rounded-lg p-12 text-center">
+          <p className="text-gray-500 mb-4">尚無叫料單</p>
+          <Link
+            to="/requests/new"
+            className="text-blue-600 hover:text-blue-800"
+          >
+            建立第一張叫料單 →
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    單號
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    工區
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    施工類別
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    材料名稱
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    數量
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.map((request: any) => {
+                  // 優先使用 request.site_name，如果沒有則從地址中提取
+                  const siteName = request.site_name || extractSiteName(request.delivery_address) || '-';
+                  
+                  // 處理材料名稱：如果有多個，顯示前幾個，超過的用"等"
+                  const materialNames = request.material_names || '';
+                  const materialNamesDisplay = materialNames 
+                    ? (materialNames.length > 50 ? materialNames.substring(0, 50) + '...' : materialNames)
+                    : '-';
+                  
+                  // 處理數量：顯示總數量（確保是數字）
+                  const totalQuantity = request.total_quantity !== null && request.total_quantity !== undefined 
+                    ? Number(request.total_quantity) 
+                    : 0;
+                  
+                  // 調試日誌（僅第一筆）
+                  if (requests.indexOf(request) === 0) {
+                    console.log('叫料單資料:', {
+                      id: request.id,
+                      site_name: request.site_name,
+                      delivery_address: request.delivery_address,
+                      siteName,
+                      material_names: request.material_names,
+                      total_quantity: request.total_quantity,
+                      totalQuantity
+                    });
+                  }
+                  
+                  return (
+                    <tr key={request.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {request.request_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {siteName || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {request.construction_category_name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {materialNamesDisplay}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {totalQuantity}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <Link
+                          to={`/requests/${request.id}`}
+                          className="text-blue-600 hover:text-blue-900 mr-4"
+                        >
+                          查看
+                        </Link>
+                      <button
+                        onClick={() => handleDownloadClick(request.id, request.request_number)}
+                        className="text-green-600 hover:text-green-900 mr-4"
+                      >
+                        下載 Excel
+                      </button>
+                        <button
+                          onClick={() => handleDelete(request.id, request.request_number)}
+                          disabled={deleteRequest.isPending}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                        >
+                          {deleteRequest.isPending ? '刪除中...' : '刪除'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Company Selection Dialog */}
+      {showCompanyDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">選擇公司</h2>
+            <p className="text-sm text-gray-600 mb-4">請選擇要顯示在 Excel 中的公司名稱與統編</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                公司 <span className="text-gray-400 text-xs">(選填，不選擇則使用原叫料單的公司)</span>
+              </label>
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value ? (isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value)) : '')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">使用原叫料單的公司</option>
+                {companies.map((company: any) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name} {company.tax_id ? `(${company.tax_id})` : ''}
+                    {company.is_from_env && ' [系統預設]'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCancelDownload}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmDownload}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                下載
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

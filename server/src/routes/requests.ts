@@ -147,14 +147,6 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { construction_category_id, items, notes, company_id, address_id } = req.body;
 
-    console.log('建立叫料單 - 接收到的資料:', { 
-      construction_category_id, 
-      items_count: items?.length, 
-      company_id, 
-      address_id,
-      notes 
-    });
-
     if (!construction_category_id || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: '施工類別和材料項目必填' });
     }
@@ -165,11 +157,9 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     let envCompanyInfo = null;
     
     if (company_id) {
-      console.log('處理 company_id:', company_id, '類型:', typeof company_id);
       if (typeof company_id === 'string' && company_id.startsWith('env_')) {
         // This is an environment variable company, extract info from COMPANIES
         const envIndex = parseInt(company_id.replace('env_', ''));
-        console.log('環境變數公司索引:', envIndex);
         if (process.env.COMPANIES) {
           try {
             const companiesData = JSON.parse(process.env.COMPANIES);
@@ -179,7 +169,6 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
                 name: companiesArray[envIndex].name || companiesArray[envIndex].company_name || '',
                 tax_id: companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || ''
               };
-              console.log('從環境變數獲取公司資訊:', envCompanyInfo);
             }
           } catch (error) {
             console.warn('無法解析環境變數公司資訊:', error);
@@ -192,30 +181,23 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         const companyIdNum = typeof company_id === 'string' ? parseInt(company_id) : company_id;
         if (!isNaN(companyIdNum) && Number.isInteger(companyIdNum) && companyIdNum > 0) {
           dbCompanyId = companyIdNum;
-          console.log('數據庫公司 ID:', dbCompanyId);
         } else {
           console.warn('無效的 company_id:', company_id, '將設為 null');
           dbCompanyId = null;
         }
       }
-    } else {
-      console.log('未提供 company_id');
     }
     
     // Handle address_id - validate it's a valid integer
     let dbAddressId = null;
     if (address_id) {
-      console.log('處理 address_id:', address_id, '類型:', typeof address_id);
       const addressIdNum = typeof address_id === 'string' ? parseInt(address_id) : address_id;
       if (!isNaN(addressIdNum) && Number.isInteger(addressIdNum) && addressIdNum > 0) {
         dbAddressId = addressIdNum;
-        console.log('地址 ID:', dbAddressId);
       } else {
         console.warn('無效的 address_id:', address_id, '將設為 null');
         dbAddressId = null;
       }
-    } else {
-      console.log('未提供 address_id');
     }
 
     // Generate request number
@@ -229,13 +211,6 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       await client.query('BEGIN');
 
       // Create request
-      console.log('準備插入資料庫:', { 
-        user_id: req.user?.id, 
-        company_id: dbCompanyId, 
-        address_id: dbAddressId, 
-        request_number: requestNumber 
-      });
-      
       const requestResult = await client.query(
         `INSERT INTO material_requests 
          (user_id, company_id, address_id, request_number, construction_category_id, notes, status, created_at)
@@ -244,7 +219,6 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       );
 
       const request = requestResult.rows[0];
-      console.log('叫料單建立成功，ID:', request.id, 'company_id:', request.company_id, 'address_id:', request.address_id);
 
       // Create request items
       for (const item of items) {
@@ -267,36 +241,11 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
       // Get full request data
       const fullRequest = await getFullRequest(request.id);
-      console.log('完整叫料單資料（JOIN 後）:', {
-        id: fullRequest?.id,
-        company_id: fullRequest?.company_id,
-        company_name: fullRequest?.company_name,
-        company_tax_id: fullRequest?.company_tax_id,
-        address_id: fullRequest?.address_id,
-        delivery_address: fullRequest?.delivery_address,
-        site_name: fullRequest?.site_name,
-        contact_person: fullRequest?.contact_person,
-        contact_phone: fullRequest?.contact_phone
-      });
       
       // If environment variable company was selected, override company info
       if (envCompanyInfo) {
         fullRequest.company_name = envCompanyInfo.name;
         fullRequest.company_tax_id = envCompanyInfo.tax_id;
-        // 標記這是環境變數公司，以便前端識別
-        fullRequest.company_is_from_env = true;
-        console.log('覆蓋環境變數公司資訊:', envCompanyInfo);
-      }
-      
-      // 如果沒有公司資訊，檢查是否有預設環境變數公司
-      if (!fullRequest.company_name && !envCompanyInfo && process.env.COMPANY_NAME) {
-        fullRequest.company_name = process.env.COMPANY_NAME;
-        fullRequest.company_tax_id = process.env.COMPANY_TAX_ID || '';
-        fullRequest.company_is_from_env = true;
-        console.log('使用預設環境變數公司:', {
-          name: fullRequest.company_name,
-          tax_id: fullRequest.company_tax_id
-        });
       }
 
       // Generate Excel
@@ -509,8 +458,1088 @@ async function getFullRequest(requestId: number) {
     FROM material_requests mr
     LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
     LEFT JOIN users u ON mr.user_id = u.id
-    LEFT JOIN companies c ON (mr.company_id IS NOT NULL AND mr.company_id::text ~ '^[0-9]+$' AND (mr.company_id::text)::integer = c.id)
-    LEFT JOIN addresses a ON (mr.address_id IS NOT NULL AND mr.address_id::text ~ '^[0-9]+$' AND (mr.address_id::text)::integer = a.id)
+    LEFT JOIN companies c ON mr.company_id::text ~ '^[0-9]+$' AND mr.company_id::integer = c.id
+    LEFT JOIN addresses a ON mr.address_id::text ~ '^[0-9]+$' AND mr.address_id::integer = a.id
+    WHERE mr.id = $1`,
+    [requestId]
+  );
+
+  if (requestResult.rows.length === 0) {
+    return null;
+  }
+
+  const request = requestResult.rows[0];
+
+  const itemsResult = await query(
+    `SELECT 
+      mri.*,
+      m.name as material_name,
+      m.unit as material_unit,
+      mc.name as material_category_name
+    FROM material_request_items mri
+    LEFT JOIN materials m ON mri.material_id = m.id
+    LEFT JOIN material_categories mc ON m.material_category_id = mc.id
+    WHERE mri.request_id = $1
+    ORDER BY mc.name, m.name`,
+    [requestId]
+  );
+
+  return {
+    ...request,
+    items: itemsResult.rows
+  };
+}
+
+export default router;
+
+
+        await sendEmail({
+          to: user.email,
+          subject: `叫料單已建立 - ${requestNumber}`,
+          request: fullRequest,
+          excelBuffer,
+          filename
+        });
+
+        await query(
+          'UPDATE material_requests SET email_sent = true WHERE id = $1',
+          [request.id]
+        );
+      } catch (error) {
+        console.error('發送郵件失敗:', error);
+      }
+
+      // Send LINE notification
+      try {
+        const lineTokenResult = await query(
+          'SELECT access_token FROM user_line_tokens WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+          [req.user?.id]
+        );
+
+        if (lineTokenResult.rows.length > 0) {
+          await sendLineNotify({
+            token: lineTokenResult.rows[0].access_token,
+            message: `叫料單 ${requestNumber} 已建立`,
+            request: fullRequest
+          });
+
+          await query(
+            'UPDATE material_requests SET line_notified = true WHERE id = $1',
+            [request.id]
+          );
+        }
+      } catch (error) {
+        console.error('發送LINE通知失敗:', error);
+      }
+
+      res.status(201).json({
+        message: '叫料單建立成功',
+        request: fullRequest
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      client.release();
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('建立叫料單錯誤:', error);
+    res.status(500).json({ error: '建立叫料單失敗' });
+  }
+});
+
+// Download Excel for request
+router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { company_id } = req.query; // 可選的公司 ID 參數
+
+    const fullRequest = await getFullRequest(parseInt(id));
+
+    if (!fullRequest || fullRequest.user_id !== req.user?.id) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // 如果提供了 company_id，覆蓋公司資訊
+    if (company_id) {
+      let selectedCompanyName = '';
+      let selectedCompanyTaxId = '';
+
+      const companyIdStr = String(company_id);
+      
+      if (companyIdStr.startsWith('env_')) {
+        // 環境變數公司
+        const envIndex = parseInt(companyIdStr.replace('env_', ''));
+        if (process.env.COMPANIES) {
+          try {
+            const companiesData = JSON.parse(process.env.COMPANIES);
+            const companiesArray = Array.isArray(companiesData) ? companiesData : [companiesData];
+            if (companiesArray[envIndex]) {
+              selectedCompanyName = companiesArray[envIndex].name || companiesArray[envIndex].company_name || '';
+              selectedCompanyTaxId = companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || '';
+              console.log('從環境變數獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, envIndex });
+            }
+          } catch (error) {
+            console.warn('無法解析環境變數公司資訊:', error);
+          }
+        }
+      } else {
+        // 數據庫公司
+        const companyIdNum = parseInt(companyIdStr);
+        if (!isNaN(companyIdNum)) {
+          try {
+            const companyResult = await query(
+              'SELECT name, tax_id FROM companies WHERE id = $1 AND user_id = $2',
+              [companyIdNum, req.user?.id]
+            );
+            if (companyResult.rows.length > 0) {
+              selectedCompanyName = companyResult.rows[0].name || '';
+              selectedCompanyTaxId = companyResult.rows[0].tax_id || '';
+              console.log('從數據庫獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, companyIdNum });
+            } else {
+              console.warn('找不到公司，ID:', companyIdNum, '用戶ID:', req.user?.id);
+            }
+          } catch (error) {
+            console.error('查詢公司資訊失敗:', error);
+          }
+        } else {
+          console.warn('無效的公司 ID:', companyIdStr);
+        }
+      }
+
+      // 覆蓋公司資訊（只要有公司名稱就覆蓋）
+      if (selectedCompanyName) {
+        fullRequest.company_name = selectedCompanyName;
+        fullRequest.company_tax_id = selectedCompanyTaxId || '';
+        // 清除 company_id，確保 generateExcel 使用覆蓋的資訊
+        fullRequest.company_id = null;
+        console.log('已覆蓋公司資訊:', { company_name: fullRequest.company_name, company_tax_id: fullRequest.company_tax_id });
+      } else {
+        console.warn('無法獲取公司資訊，company_id:', company_id);
+      }
+    }
+
+    const excelBuffer = await generateExcel(fullRequest);
+
+    // Generate filename: 工區＋叫料單＋時間＿（工程類別）
+    const filename = generateFilename(fullRequest);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('產生Excel錯誤:', error);
+    res.status(500).json({ error: '產生Excel失敗' });
+  }
+});
+
+// Delete material request
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if request exists and belongs to user
+    const checkResult = await query(
+      'SELECT id FROM material_requests WHERE id = $1 AND user_id = $2',
+      [id, req.user?.id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // Delete request (cascade will delete items due to ON DELETE CASCADE)
+    await query('DELETE FROM material_requests WHERE id = $1 AND user_id = $2', [id, req.user?.id]);
+
+    res.json({ message: '叫料單已刪除' });
+  } catch (error: any) {
+    console.error('刪除叫料單錯誤:', error);
+    res.status(500).json({ error: '刪除叫料單失敗' });
+  }
+});
+
+// Helper function to get full request with items
+async function getFullRequest(requestId: number) {
+  const requestResult = await query(
+    `SELECT 
+      mr.*,
+      cc.name as construction_category_name,
+      u.name as user_name,
+      u.email as user_email,
+      c.name as company_name,
+      c.tax_id as company_tax_id,
+      a.address as delivery_address,
+      a.site_name,
+      a.contact_person,
+      a.contact_phone
+    FROM material_requests mr
+    LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
+    LEFT JOIN users u ON mr.user_id = u.id
+    LEFT JOIN companies c ON mr.company_id::text ~ '^[0-9]+$' AND mr.company_id::integer = c.id
+    LEFT JOIN addresses a ON mr.address_id::text ~ '^[0-9]+$' AND mr.address_id::integer = a.id
+    WHERE mr.id = $1`,
+    [requestId]
+  );
+
+  if (requestResult.rows.length === 0) {
+    return null;
+  }
+
+  const request = requestResult.rows[0];
+
+  const itemsResult = await query(
+    `SELECT 
+      mri.*,
+      m.name as material_name,
+      m.unit as material_unit,
+      mc.name as material_category_name
+    FROM material_request_items mri
+    LEFT JOIN materials m ON mri.material_id = m.id
+    LEFT JOIN material_categories mc ON m.material_category_id = mc.id
+    WHERE mri.request_id = $1
+    ORDER BY mc.name, m.name`,
+    [requestId]
+  );
+
+  return {
+    ...request,
+    items: itemsResult.rows
+  };
+}
+
+export default router;
+
+
+        await sendEmail({
+          to: user.email,
+          subject: `叫料單已建立 - ${requestNumber}`,
+          request: fullRequest,
+          excelBuffer,
+          filename
+        });
+
+        await query(
+          'UPDATE material_requests SET email_sent = true WHERE id = $1',
+          [request.id]
+        );
+      } catch (error) {
+        console.error('發送郵件失敗:', error);
+      }
+
+      // Send LINE notification
+      try {
+        const lineTokenResult = await query(
+          'SELECT access_token FROM user_line_tokens WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+          [req.user?.id]
+        );
+
+        if (lineTokenResult.rows.length > 0) {
+          await sendLineNotify({
+            token: lineTokenResult.rows[0].access_token,
+            message: `叫料單 ${requestNumber} 已建立`,
+            request: fullRequest
+          });
+
+          await query(
+            'UPDATE material_requests SET line_notified = true WHERE id = $1',
+            [request.id]
+          );
+        }
+      } catch (error) {
+        console.error('發送LINE通知失敗:', error);
+      }
+
+      res.status(201).json({
+        message: '叫料單建立成功',
+        request: fullRequest
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      client.release();
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('建立叫料單錯誤:', error);
+    res.status(500).json({ error: '建立叫料單失敗' });
+  }
+});
+
+// Download Excel for request
+router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { company_id } = req.query; // 可選的公司 ID 參數
+
+    const fullRequest = await getFullRequest(parseInt(id));
+
+    if (!fullRequest || fullRequest.user_id !== req.user?.id) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // 如果提供了 company_id，覆蓋公司資訊
+    if (company_id) {
+      let selectedCompanyName = '';
+      let selectedCompanyTaxId = '';
+
+      const companyIdStr = String(company_id);
+      
+      if (companyIdStr.startsWith('env_')) {
+        // 環境變數公司
+        const envIndex = parseInt(companyIdStr.replace('env_', ''));
+        if (process.env.COMPANIES) {
+          try {
+            const companiesData = JSON.parse(process.env.COMPANIES);
+            const companiesArray = Array.isArray(companiesData) ? companiesData : [companiesData];
+            if (companiesArray[envIndex]) {
+              selectedCompanyName = companiesArray[envIndex].name || companiesArray[envIndex].company_name || '';
+              selectedCompanyTaxId = companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || '';
+              console.log('從環境變數獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, envIndex });
+            }
+          } catch (error) {
+            console.warn('無法解析環境變數公司資訊:', error);
+          }
+        }
+      } else {
+        // 數據庫公司
+        const companyIdNum = parseInt(companyIdStr);
+        if (!isNaN(companyIdNum)) {
+          try {
+            const companyResult = await query(
+              'SELECT name, tax_id FROM companies WHERE id = $1 AND user_id = $2',
+              [companyIdNum, req.user?.id]
+            );
+            if (companyResult.rows.length > 0) {
+              selectedCompanyName = companyResult.rows[0].name || '';
+              selectedCompanyTaxId = companyResult.rows[0].tax_id || '';
+              console.log('從數據庫獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, companyIdNum });
+            } else {
+              console.warn('找不到公司，ID:', companyIdNum, '用戶ID:', req.user?.id);
+            }
+          } catch (error) {
+            console.error('查詢公司資訊失敗:', error);
+          }
+        } else {
+          console.warn('無效的公司 ID:', companyIdStr);
+        }
+      }
+
+      // 覆蓋公司資訊（只要有公司名稱就覆蓋）
+      if (selectedCompanyName) {
+        fullRequest.company_name = selectedCompanyName;
+        fullRequest.company_tax_id = selectedCompanyTaxId || '';
+        // 清除 company_id，確保 generateExcel 使用覆蓋的資訊
+        fullRequest.company_id = null;
+        console.log('已覆蓋公司資訊:', { company_name: fullRequest.company_name, company_tax_id: fullRequest.company_tax_id });
+      } else {
+        console.warn('無法獲取公司資訊，company_id:', company_id);
+      }
+    }
+
+    const excelBuffer = await generateExcel(fullRequest);
+
+    // Generate filename: 工區＋叫料單＋時間＿（工程類別）
+    const filename = generateFilename(fullRequest);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('產生Excel錯誤:', error);
+    res.status(500).json({ error: '產生Excel失敗' });
+  }
+});
+
+// Delete material request
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if request exists and belongs to user
+    const checkResult = await query(
+      'SELECT id FROM material_requests WHERE id = $1 AND user_id = $2',
+      [id, req.user?.id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // Delete request (cascade will delete items due to ON DELETE CASCADE)
+    await query('DELETE FROM material_requests WHERE id = $1 AND user_id = $2', [id, req.user?.id]);
+
+    res.json({ message: '叫料單已刪除' });
+  } catch (error: any) {
+    console.error('刪除叫料單錯誤:', error);
+    res.status(500).json({ error: '刪除叫料單失敗' });
+  }
+});
+
+// Helper function to get full request with items
+async function getFullRequest(requestId: number) {
+  const requestResult = await query(
+    `SELECT 
+      mr.*,
+      cc.name as construction_category_name,
+      u.name as user_name,
+      u.email as user_email,
+      c.name as company_name,
+      c.tax_id as company_tax_id,
+      a.address as delivery_address,
+      a.site_name,
+      a.contact_person,
+      a.contact_phone
+    FROM material_requests mr
+    LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
+    LEFT JOIN users u ON mr.user_id = u.id
+    LEFT JOIN companies c ON mr.company_id::text ~ '^[0-9]+$' AND mr.company_id::integer = c.id
+    LEFT JOIN addresses a ON mr.address_id::text ~ '^[0-9]+$' AND mr.address_id::integer = a.id
+    WHERE mr.id = $1`,
+    [requestId]
+  );
+
+  if (requestResult.rows.length === 0) {
+    return null;
+  }
+
+  const request = requestResult.rows[0];
+
+  const itemsResult = await query(
+    `SELECT 
+      mri.*,
+      m.name as material_name,
+      m.unit as material_unit,
+      mc.name as material_category_name
+    FROM material_request_items mri
+    LEFT JOIN materials m ON mri.material_id = m.id
+    LEFT JOIN material_categories mc ON m.material_category_id = mc.id
+    WHERE mri.request_id = $1
+    ORDER BY mc.name, m.name`,
+    [requestId]
+  );
+
+  return {
+    ...request,
+    items: itemsResult.rows
+  };
+}
+
+export default router;
+
+
+        await sendEmail({
+          to: user.email,
+          subject: `叫料單已建立 - ${requestNumber}`,
+          request: fullRequest,
+          excelBuffer,
+          filename
+        });
+
+        await query(
+          'UPDATE material_requests SET email_sent = true WHERE id = $1',
+          [request.id]
+        );
+      } catch (error) {
+        console.error('發送郵件失敗:', error);
+      }
+
+      // Send LINE notification
+      try {
+        const lineTokenResult = await query(
+          'SELECT access_token FROM user_line_tokens WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+          [req.user?.id]
+        );
+
+        if (lineTokenResult.rows.length > 0) {
+          await sendLineNotify({
+            token: lineTokenResult.rows[0].access_token,
+            message: `叫料單 ${requestNumber} 已建立`,
+            request: fullRequest
+          });
+
+          await query(
+            'UPDATE material_requests SET line_notified = true WHERE id = $1',
+            [request.id]
+          );
+        }
+      } catch (error) {
+        console.error('發送LINE通知失敗:', error);
+      }
+
+      res.status(201).json({
+        message: '叫料單建立成功',
+        request: fullRequest
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      client.release();
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('建立叫料單錯誤:', error);
+    res.status(500).json({ error: '建立叫料單失敗' });
+  }
+});
+
+// Download Excel for request
+router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { company_id } = req.query; // 可選的公司 ID 參數
+
+    const fullRequest = await getFullRequest(parseInt(id));
+
+    if (!fullRequest || fullRequest.user_id !== req.user?.id) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // 如果提供了 company_id，覆蓋公司資訊
+    if (company_id) {
+      let selectedCompanyName = '';
+      let selectedCompanyTaxId = '';
+
+      const companyIdStr = String(company_id);
+      
+      if (companyIdStr.startsWith('env_')) {
+        // 環境變數公司
+        const envIndex = parseInt(companyIdStr.replace('env_', ''));
+        if (process.env.COMPANIES) {
+          try {
+            const companiesData = JSON.parse(process.env.COMPANIES);
+            const companiesArray = Array.isArray(companiesData) ? companiesData : [companiesData];
+            if (companiesArray[envIndex]) {
+              selectedCompanyName = companiesArray[envIndex].name || companiesArray[envIndex].company_name || '';
+              selectedCompanyTaxId = companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || '';
+              console.log('從環境變數獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, envIndex });
+            }
+          } catch (error) {
+            console.warn('無法解析環境變數公司資訊:', error);
+          }
+        }
+      } else {
+        // 數據庫公司
+        const companyIdNum = parseInt(companyIdStr);
+        if (!isNaN(companyIdNum)) {
+          try {
+            const companyResult = await query(
+              'SELECT name, tax_id FROM companies WHERE id = $1 AND user_id = $2',
+              [companyIdNum, req.user?.id]
+            );
+            if (companyResult.rows.length > 0) {
+              selectedCompanyName = companyResult.rows[0].name || '';
+              selectedCompanyTaxId = companyResult.rows[0].tax_id || '';
+              console.log('從數據庫獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, companyIdNum });
+            } else {
+              console.warn('找不到公司，ID:', companyIdNum, '用戶ID:', req.user?.id);
+            }
+          } catch (error) {
+            console.error('查詢公司資訊失敗:', error);
+          }
+        } else {
+          console.warn('無效的公司 ID:', companyIdStr);
+        }
+      }
+
+      // 覆蓋公司資訊（只要有公司名稱就覆蓋）
+      if (selectedCompanyName) {
+        fullRequest.company_name = selectedCompanyName;
+        fullRequest.company_tax_id = selectedCompanyTaxId || '';
+        // 清除 company_id，確保 generateExcel 使用覆蓋的資訊
+        fullRequest.company_id = null;
+        console.log('已覆蓋公司資訊:', { company_name: fullRequest.company_name, company_tax_id: fullRequest.company_tax_id });
+      } else {
+        console.warn('無法獲取公司資訊，company_id:', company_id);
+      }
+    }
+
+    const excelBuffer = await generateExcel(fullRequest);
+
+    // Generate filename: 工區＋叫料單＋時間＿（工程類別）
+    const filename = generateFilename(fullRequest);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('產生Excel錯誤:', error);
+    res.status(500).json({ error: '產生Excel失敗' });
+  }
+});
+
+// Delete material request
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if request exists and belongs to user
+    const checkResult = await query(
+      'SELECT id FROM material_requests WHERE id = $1 AND user_id = $2',
+      [id, req.user?.id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // Delete request (cascade will delete items due to ON DELETE CASCADE)
+    await query('DELETE FROM material_requests WHERE id = $1 AND user_id = $2', [id, req.user?.id]);
+
+    res.json({ message: '叫料單已刪除' });
+  } catch (error: any) {
+    console.error('刪除叫料單錯誤:', error);
+    res.status(500).json({ error: '刪除叫料單失敗' });
+  }
+});
+
+// Helper function to get full request with items
+async function getFullRequest(requestId: number) {
+  const requestResult = await query(
+    `SELECT 
+      mr.*,
+      cc.name as construction_category_name,
+      u.name as user_name,
+      u.email as user_email,
+      c.name as company_name,
+      c.tax_id as company_tax_id,
+      a.address as delivery_address,
+      a.site_name,
+      a.contact_person,
+      a.contact_phone
+    FROM material_requests mr
+    LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
+    LEFT JOIN users u ON mr.user_id = u.id
+    LEFT JOIN companies c ON mr.company_id::text ~ '^[0-9]+$' AND mr.company_id::integer = c.id
+    LEFT JOIN addresses a ON mr.address_id::text ~ '^[0-9]+$' AND mr.address_id::integer = a.id
+    WHERE mr.id = $1`,
+    [requestId]
+  );
+
+  if (requestResult.rows.length === 0) {
+    return null;
+  }
+
+  const request = requestResult.rows[0];
+
+  const itemsResult = await query(
+    `SELECT 
+      mri.*,
+      m.name as material_name,
+      m.unit as material_unit,
+      mc.name as material_category_name
+    FROM material_request_items mri
+    LEFT JOIN materials m ON mri.material_id = m.id
+    LEFT JOIN material_categories mc ON m.material_category_id = mc.id
+    WHERE mri.request_id = $1
+    ORDER BY mc.name, m.name`,
+    [requestId]
+  );
+
+  return {
+    ...request,
+    items: itemsResult.rows
+  };
+}
+
+export default router;
+
+
+        await sendEmail({
+          to: user.email,
+          subject: `叫料單已建立 - ${requestNumber}`,
+          request: fullRequest,
+          excelBuffer,
+          filename
+        });
+
+        await query(
+          'UPDATE material_requests SET email_sent = true WHERE id = $1',
+          [request.id]
+        );
+      } catch (error) {
+        console.error('發送郵件失敗:', error);
+      }
+
+      // Send LINE notification
+      try {
+        const lineTokenResult = await query(
+          'SELECT access_token FROM user_line_tokens WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+          [req.user?.id]
+        );
+
+        if (lineTokenResult.rows.length > 0) {
+          await sendLineNotify({
+            token: lineTokenResult.rows[0].access_token,
+            message: `叫料單 ${requestNumber} 已建立`,
+            request: fullRequest
+          });
+
+          await query(
+            'UPDATE material_requests SET line_notified = true WHERE id = $1',
+            [request.id]
+          );
+        }
+      } catch (error) {
+        console.error('發送LINE通知失敗:', error);
+      }
+
+      res.status(201).json({
+        message: '叫料單建立成功',
+        request: fullRequest
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      client.release();
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('建立叫料單錯誤:', error);
+    res.status(500).json({ error: '建立叫料單失敗' });
+  }
+});
+
+// Download Excel for request
+router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { company_id } = req.query; // 可選的公司 ID 參數
+
+    const fullRequest = await getFullRequest(parseInt(id));
+
+    if (!fullRequest || fullRequest.user_id !== req.user?.id) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // 如果提供了 company_id，覆蓋公司資訊
+    if (company_id) {
+      let selectedCompanyName = '';
+      let selectedCompanyTaxId = '';
+
+      const companyIdStr = String(company_id);
+      
+      if (companyIdStr.startsWith('env_')) {
+        // 環境變數公司
+        const envIndex = parseInt(companyIdStr.replace('env_', ''));
+        if (process.env.COMPANIES) {
+          try {
+            const companiesData = JSON.parse(process.env.COMPANIES);
+            const companiesArray = Array.isArray(companiesData) ? companiesData : [companiesData];
+            if (companiesArray[envIndex]) {
+              selectedCompanyName = companiesArray[envIndex].name || companiesArray[envIndex].company_name || '';
+              selectedCompanyTaxId = companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || '';
+              console.log('從環境變數獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, envIndex });
+            }
+          } catch (error) {
+            console.warn('無法解析環境變數公司資訊:', error);
+          }
+        }
+      } else {
+        // 數據庫公司
+        const companyIdNum = parseInt(companyIdStr);
+        if (!isNaN(companyIdNum)) {
+          try {
+            const companyResult = await query(
+              'SELECT name, tax_id FROM companies WHERE id = $1 AND user_id = $2',
+              [companyIdNum, req.user?.id]
+            );
+            if (companyResult.rows.length > 0) {
+              selectedCompanyName = companyResult.rows[0].name || '';
+              selectedCompanyTaxId = companyResult.rows[0].tax_id || '';
+              console.log('從數據庫獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, companyIdNum });
+            } else {
+              console.warn('找不到公司，ID:', companyIdNum, '用戶ID:', req.user?.id);
+            }
+          } catch (error) {
+            console.error('查詢公司資訊失敗:', error);
+          }
+        } else {
+          console.warn('無效的公司 ID:', companyIdStr);
+        }
+      }
+
+      // 覆蓋公司資訊（只要有公司名稱就覆蓋）
+      if (selectedCompanyName) {
+        fullRequest.company_name = selectedCompanyName;
+        fullRequest.company_tax_id = selectedCompanyTaxId || '';
+        // 清除 company_id，確保 generateExcel 使用覆蓋的資訊
+        fullRequest.company_id = null;
+        console.log('已覆蓋公司資訊:', { company_name: fullRequest.company_name, company_tax_id: fullRequest.company_tax_id });
+      } else {
+        console.warn('無法獲取公司資訊，company_id:', company_id);
+      }
+    }
+
+    const excelBuffer = await generateExcel(fullRequest);
+
+    // Generate filename: 工區＋叫料單＋時間＿（工程類別）
+    const filename = generateFilename(fullRequest);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('產生Excel錯誤:', error);
+    res.status(500).json({ error: '產生Excel失敗' });
+  }
+});
+
+// Delete material request
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if request exists and belongs to user
+    const checkResult = await query(
+      'SELECT id FROM material_requests WHERE id = $1 AND user_id = $2',
+      [id, req.user?.id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // Delete request (cascade will delete items due to ON DELETE CASCADE)
+    await query('DELETE FROM material_requests WHERE id = $1 AND user_id = $2', [id, req.user?.id]);
+
+    res.json({ message: '叫料單已刪除' });
+  } catch (error: any) {
+    console.error('刪除叫料單錯誤:', error);
+    res.status(500).json({ error: '刪除叫料單失敗' });
+  }
+});
+
+// Helper function to get full request with items
+async function getFullRequest(requestId: number) {
+  const requestResult = await query(
+    `SELECT 
+      mr.*,
+      cc.name as construction_category_name,
+      u.name as user_name,
+      u.email as user_email,
+      c.name as company_name,
+      c.tax_id as company_tax_id,
+      a.address as delivery_address,
+      a.site_name,
+      a.contact_person,
+      a.contact_phone
+    FROM material_requests mr
+    LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
+    LEFT JOIN users u ON mr.user_id = u.id
+    LEFT JOIN companies c ON mr.company_id::text ~ '^[0-9]+$' AND mr.company_id::integer = c.id
+    LEFT JOIN addresses a ON mr.address_id::text ~ '^[0-9]+$' AND mr.address_id::integer = a.id
+    WHERE mr.id = $1`,
+    [requestId]
+  );
+
+  if (requestResult.rows.length === 0) {
+    return null;
+  }
+
+  const request = requestResult.rows[0];
+
+  const itemsResult = await query(
+    `SELECT 
+      mri.*,
+      m.name as material_name,
+      m.unit as material_unit,
+      mc.name as material_category_name
+    FROM material_request_items mri
+    LEFT JOIN materials m ON mri.material_id = m.id
+    LEFT JOIN material_categories mc ON m.material_category_id = mc.id
+    WHERE mri.request_id = $1
+    ORDER BY mc.name, m.name`,
+    [requestId]
+  );
+
+  return {
+    ...request,
+    items: itemsResult.rows
+  };
+}
+
+export default router;
+
+
+        await sendEmail({
+          to: user.email,
+          subject: `叫料單已建立 - ${requestNumber}`,
+          request: fullRequest,
+          excelBuffer,
+          filename
+        });
+
+        await query(
+          'UPDATE material_requests SET email_sent = true WHERE id = $1',
+          [request.id]
+        );
+      } catch (error) {
+        console.error('發送郵件失敗:', error);
+      }
+
+      // Send LINE notification
+      try {
+        const lineTokenResult = await query(
+          'SELECT access_token FROM user_line_tokens WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+          [req.user?.id]
+        );
+
+        if (lineTokenResult.rows.length > 0) {
+          await sendLineNotify({
+            token: lineTokenResult.rows[0].access_token,
+            message: `叫料單 ${requestNumber} 已建立`,
+            request: fullRequest
+          });
+
+          await query(
+            'UPDATE material_requests SET line_notified = true WHERE id = $1',
+            [request.id]
+          );
+        }
+      } catch (error) {
+        console.error('發送LINE通知失敗:', error);
+      }
+
+      res.status(201).json({
+        message: '叫料單建立成功',
+        request: fullRequest
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      client.release();
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('建立叫料單錯誤:', error);
+    res.status(500).json({ error: '建立叫料單失敗' });
+  }
+});
+
+// Download Excel for request
+router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { company_id } = req.query; // 可選的公司 ID 參數
+
+    const fullRequest = await getFullRequest(parseInt(id));
+
+    if (!fullRequest || fullRequest.user_id !== req.user?.id) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // 如果提供了 company_id，覆蓋公司資訊
+    if (company_id) {
+      let selectedCompanyName = '';
+      let selectedCompanyTaxId = '';
+
+      const companyIdStr = String(company_id);
+      
+      if (companyIdStr.startsWith('env_')) {
+        // 環境變數公司
+        const envIndex = parseInt(companyIdStr.replace('env_', ''));
+        if (process.env.COMPANIES) {
+          try {
+            const companiesData = JSON.parse(process.env.COMPANIES);
+            const companiesArray = Array.isArray(companiesData) ? companiesData : [companiesData];
+            if (companiesArray[envIndex]) {
+              selectedCompanyName = companiesArray[envIndex].name || companiesArray[envIndex].company_name || '';
+              selectedCompanyTaxId = companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || '';
+              console.log('從環境變數獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, envIndex });
+            }
+          } catch (error) {
+            console.warn('無法解析環境變數公司資訊:', error);
+          }
+        }
+      } else {
+        // 數據庫公司
+        const companyIdNum = parseInt(companyIdStr);
+        if (!isNaN(companyIdNum)) {
+          try {
+            const companyResult = await query(
+              'SELECT name, tax_id FROM companies WHERE id = $1 AND user_id = $2',
+              [companyIdNum, req.user?.id]
+            );
+            if (companyResult.rows.length > 0) {
+              selectedCompanyName = companyResult.rows[0].name || '';
+              selectedCompanyTaxId = companyResult.rows[0].tax_id || '';
+              console.log('從數據庫獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, companyIdNum });
+            } else {
+              console.warn('找不到公司，ID:', companyIdNum, '用戶ID:', req.user?.id);
+            }
+          } catch (error) {
+            console.error('查詢公司資訊失敗:', error);
+          }
+        } else {
+          console.warn('無效的公司 ID:', companyIdStr);
+        }
+      }
+
+      // 覆蓋公司資訊（只要有公司名稱就覆蓋）
+      if (selectedCompanyName) {
+        fullRequest.company_name = selectedCompanyName;
+        fullRequest.company_tax_id = selectedCompanyTaxId || '';
+        // 清除 company_id，確保 generateExcel 使用覆蓋的資訊
+        fullRequest.company_id = null;
+        console.log('已覆蓋公司資訊:', { company_name: fullRequest.company_name, company_tax_id: fullRequest.company_tax_id });
+      } else {
+        console.warn('無法獲取公司資訊，company_id:', company_id);
+      }
+    }
+
+    const excelBuffer = await generateExcel(fullRequest);
+
+    // Generate filename: 工區＋叫料單＋時間＿（工程類別）
+    const filename = generateFilename(fullRequest);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('產生Excel錯誤:', error);
+    res.status(500).json({ error: '產生Excel失敗' });
+  }
+});
+
+// Delete material request
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if request exists and belongs to user
+    const checkResult = await query(
+      'SELECT id FROM material_requests WHERE id = $1 AND user_id = $2',
+      [id, req.user?.id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // Delete request (cascade will delete items due to ON DELETE CASCADE)
+    await query('DELETE FROM material_requests WHERE id = $1 AND user_id = $2', [id, req.user?.id]);
+
+    res.json({ message: '叫料單已刪除' });
+  } catch (error: any) {
+    console.error('刪除叫料單錯誤:', error);
+    res.status(500).json({ error: '刪除叫料單失敗' });
+  }
+});
+
+// Helper function to get full request with items
+async function getFullRequest(requestId: number) {
+  const requestResult = await query(
+    `SELECT 
+      mr.*,
+      cc.name as construction_category_name,
+      u.name as user_name,
+      u.email as user_email,
+      c.name as company_name,
+      c.tax_id as company_tax_id,
+      a.address as delivery_address,
+      a.site_name,
+      a.contact_person,
+      a.contact_phone
+    FROM material_requests mr
+    LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
+    LEFT JOIN users u ON mr.user_id = u.id
+    LEFT JOIN companies c ON mr.company_id::text ~ '^[0-9]+$' AND mr.company_id::integer = c.id
+    LEFT JOIN addresses a ON mr.address_id::text ~ '^[0-9]+$' AND mr.address_id::integer = a.id
     WHERE mr.id = $1`,
     [requestId]
   );
