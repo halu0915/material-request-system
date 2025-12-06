@@ -188,7 +188,7 @@ export default function RequestDetail() {
         </Link>
         <div className="flex gap-3">
           <button
-            onClick={handleDownloadExcel}
+            onClick={handleDownloadClick}
             className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
           >
             下載 Excel
@@ -300,6 +300,50 @@ export default function RequestDetail() {
           </div>
         </div>
       </div>
+
+      {/* Company Selection Dialog */}
+      {showCompanyDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">選擇公司</h2>
+            <p className="text-sm text-gray-600 mb-4">請選擇要顯示在 Excel 中的公司名稱與統編</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                公司 <span className="text-gray-400 text-xs">(選填，不選擇則使用原叫料單的公司)</span>
+              </label>
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value ? (isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value)) : '')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">使用原叫料單的公司</option>
+                {companies.map((company: any) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name} {company.tax_id ? `(${company.tax_id})` : ''}
+                    {company.is_from_env && ' [系統預設]'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCancelDownload}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmDownload}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                下載
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
