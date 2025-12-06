@@ -54,6 +54,7 @@ export async function generateExcel(request: any): Promise<Buffer> {
       deliveryAddress = request.delivery_address || '';
       contactPhone = request.contact_phone || '';
       contactPerson = request.contact_person || '';
+      console.log('使用 JOIN 的地址資訊:', { deliveryAddress, contactPhone, contactPerson });
     } else if (request.address_id) {
       // 如果沒有 JOIN 的資料，但有 address_id，則查詢地址
       const addressResult = await query(
@@ -64,11 +65,16 @@ export async function generateExcel(request: any): Promise<Buffer> {
         deliveryAddress = addressResult.rows[0].address || '';
         contactPhone = addressResult.rows[0].contact_phone || '';
         contactPerson = addressResult.rows[0].contact_person || '';
+        console.log('從資料庫查詢地址資訊:', { deliveryAddress, contactPhone, contactPerson });
+      } else {
+        console.warn('找不到地址資訊，address_id:', request.address_id);
       }
+    } else {
+      console.warn('沒有 address_id，無法取得地址資訊');
     }
     // 如果沒有 address_id，不顯示地址資訊（保持為空字串）
   } catch (error) {
-    console.warn('取得地址資訊失敗:', error);
+    console.error('取得地址資訊失敗:', error);
   }
 
   // Get site name (工區) - 從送貨地址提取工區名稱（不包含詳細地址）
