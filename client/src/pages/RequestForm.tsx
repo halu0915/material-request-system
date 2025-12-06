@@ -48,11 +48,20 @@ export default function RequestForm() {
   });
 
   // Fetch addresses
-  const { data: addresses } = useQuery({
+  const { data: addresses, isLoading: addressesLoading, error: addressesError } = useQuery({
     queryKey: ['addresses'],
     queryFn: async () => {
-      const response = await api.get('/api/addresses');
-      return response.data.addresses;
+      try {
+        const response = await api.get('/api/addresses');
+        console.log('地址 API 回應:', response.data);
+        // 確保返回的是數組
+        const addressList = response.data?.addresses || response.data || [];
+        console.log('地址列表:', addressList);
+        return Array.isArray(addressList) ? addressList : [];
+      } catch (error: any) {
+        console.error('載入地址列表錯誤:', error);
+        throw error;
+      }
     }
   });
 
@@ -332,22 +341,40 @@ export default function RequestForm() {
             </div>
           )}
 
-          <select
-            value={addressId}
-            onChange={(e) => setAddressId(e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">請選擇工區/地址（選填）</option>
-            {addresses?.map((address: any) => {
-              const siteName = address.site_name || extractSiteName(address.address);
-              const displayName = siteName ? `${siteName} - ${address.name}` : address.name;
-              return (
-                <option key={address.id} value={address.id}>
-                  {displayName} {address.is_default && '(預設)'}
-                </option>
-              );
-            })}
-          </select>
+          {addressesLoading ? (
+            <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm">
+              載入地址中...
+            </div>
+          ) : addressesError ? (
+            <div className="w-full px-3 py-2 border border-red-300 rounded-md bg-red-50 text-red-600 text-sm">
+              載入地址失敗，請重新整理頁面
+            </div>
+          ) : (
+            <select
+              value={addressId}
+              onChange={(e) => {
+                const value = e.target.value;
+                console.log('選擇地址:', value);
+                setAddressId(value ? parseInt(value) : '');
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">請選擇工區/地址（選填）</option>
+              {addresses && Array.isArray(addresses) && addresses.length > 0 ? (
+                addresses.map((address: any) => {
+                  const siteName = address.site_name || extractSiteName(address.address);
+                  const displayName = siteName ? `${siteName} - ${address.name}` : address.name;
+                  return (
+                    <option key={address.id} value={address.id}>
+                      {displayName} {address.is_default && '(預設)'}
+                    </option>
+                  );
+                })
+              ) : (
+                <option value="" disabled>尚無地址，請先建立地址</option>
+              )}
+            </select>
+          )}
           {selectedAddress && (
             <div className="mt-3 p-4 bg-blue-50 rounded-md border border-blue-200">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">已選擇的地址資訊</h3>
@@ -373,8 +400,11 @@ export default function RequestForm() {
               </div>
             </div>
           )}
-          {addresses?.length === 0 && !showAddressForm && (
+          {!addressesLoading && !addressesError && addresses && Array.isArray(addresses) && addresses.length === 0 && !showAddressForm && (
             <p className="mt-1 text-sm text-gray-500">尚未建立地址，請點擊「快速建立地址」或到地址管理建立地址</p>
+          )}
+          {addressesError && (
+            <p className="mt-1 text-sm text-red-500">載入地址時發生錯誤，請檢查網路連線或重新整理頁面</p>
           )}
         </div>
 
