@@ -52,16 +52,27 @@ export async function generateExcel(request: any): Promise<Buffer> {
         console.log('使用 address_id 查詢的地址資訊:', { deliveryAddress, contactPhone, contactPerson });
       }
     } else {
-      // Fallback to default address
-      const addressResult = await query(
+      // Fallback to default address or any address
+      let addressResult = await query(
         'SELECT address, contact_person, contact_phone FROM addresses WHERE user_id = $1 AND is_default = true LIMIT 1',
         [request.user_id]
       );
+      
+      // If no default address, try to get any address for the user
+      if (addressResult.rows.length === 0) {
+        addressResult = await query(
+          'SELECT address, contact_person, contact_phone FROM addresses WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+          [request.user_id]
+        );
+      }
+      
       if (addressResult.rows.length > 0) {
         deliveryAddress = addressResult.rows[0].address || '';
         contactPhone = addressResult.rows[0].contact_phone || '';
         contactPerson = addressResult.rows[0].contact_person || '';
-        console.log('使用默認地址:', { deliveryAddress, contactPhone, contactPerson });
+        console.log('使用默認地址或最近地址:', { deliveryAddress, contactPhone, contactPerson });
+      } else {
+        console.log('用戶沒有設置任何地址');
       }
     }
   } catch (error) {
@@ -227,10 +238,13 @@ export async function generateExcel(request: any): Promise<Buffer> {
     minute: '2-digit' 
   }), currentRow++);
   addInfoRow('申請人', request.user_name || '', currentRow++);
+  // 聯絡人資訊（如果有）
   if (contactPerson) {
     addInfoRow('聯絡人', contactPerson, currentRow++);
   }
-  addInfoRow('聯繫電話', contactPhone, currentRow++);
+  // 聯繫電話（必須顯示，即使為空）
+  addInfoRow('聯繫電話', contactPhone || '', currentRow++);
+  // 送貨地址（必須顯示，即使為空）
   addInfoRow('送貨地址', deliveryAddress || '', currentRow++);
   addInfoRow('狀態', request.status, currentRow++);
 
