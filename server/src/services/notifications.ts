@@ -52,28 +52,11 @@ export async function generateExcel(request: any): Promise<Buffer> {
         console.log('使用 address_id 查詢的地址資訊:', { deliveryAddress, contactPhone, contactPerson });
       }
     } else {
-      // Fallback to default address or any address
-      let addressResult = await query(
-        'SELECT address, contact_person, contact_phone FROM addresses WHERE user_id = $1 AND is_default = true LIMIT 1',
-        [request.user_id]
-      );
-      
-      // If no default address, try to get any address for the user
-      if (addressResult.rows.length === 0) {
-        addressResult = await query(
-          'SELECT address, contact_person, contact_phone FROM addresses WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
-          [request.user_id]
-        );
-      }
-      
-      if (addressResult.rows.length > 0) {
-        deliveryAddress = addressResult.rows[0].address || '';
-        contactPhone = addressResult.rows[0].contact_phone || '';
-        contactPerson = addressResult.rows[0].contact_person || '';
-        console.log('使用默認地址或最近地址:', { deliveryAddress, contactPhone, contactPerson });
-      } else {
-        console.log('用戶沒有設置任何地址');
-      }
+      // 如果沒有 address_id，不應該使用 fallback 地址
+      // 因為用戶可能沒有選擇地址，強制使用默認地址會造成混淆
+      // 只有在明確選擇了地址時才顯示地址資訊
+      console.log('沒有選擇地址（address_id 為 null），不顯示地址資訊');
+      // deliveryAddress, contactPhone, contactPerson 保持為空字串
     }
   } catch (error) {
     console.warn('取得地址資訊失敗:', error);
@@ -239,7 +222,23 @@ export async function generateExcel(request: any): Promise<Buffer> {
     hour: '2-digit', 
     minute: '2-digit' 
   }), currentRow++);
-  addInfoRow('申請人', request.user_name || '', currentRow++);
+  // 申請人：如果用戶名稱是「訪客」，嘗試使用 email 的前綴或顯示 email
+  let applicantName = request.user_name || '';
+  if (applicantName === '訪客' || applicantName === '訪客使用者' || !applicantName) {
+    // 如果是訪客帳號，嘗試從 email 提取更有意義的名稱
+    if (request.user_email) {
+      const emailPrefix = request.user_email.split('@')[0];
+      // 如果 email 是 guest_xxx 格式，顯示為「訪客用戶」
+      if (emailPrefix.startsWith('guest_')) {
+        applicantName = '訪客用戶';
+      } else {
+        applicantName = request.user_email;
+      }
+    } else {
+      applicantName = '訪客';
+    }
+  }
+  addInfoRow('申請人', applicantName, currentRow++);
   // 聯絡人資訊（如果有）
   if (contactPerson) {
     addInfoRow('聯絡人', contactPerson, currentRow++);
