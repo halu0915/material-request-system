@@ -122,6 +122,20 @@ export default function RequestForm() {
   // Get selected address details
   const selectedAddress = addresses?.find((addr: any) => addr.id === addressId);
 
+  // 提取工區名稱（從地址中）
+  const extractSiteName = (address?: string): string => {
+    if (!address) return '';
+    const parts = address.split(' - ');
+    if (parts.length > 1 && parts[0].trim()) {
+      return parts[0].trim();
+    }
+    const parts2 = address.split('-');
+    if (parts2.length > 1 && parts2[0].trim()) {
+      return parts2[0].trim();
+    }
+    return '';
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">新增叫料單</h1>
@@ -159,23 +173,33 @@ export default function RequestForm() {
         {/* Address Selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            送貨地址 <span className="text-gray-400 text-xs">(選填)</span>
+            工區/送貨地址 <span className="text-gray-400 text-xs">(選填)</span>
           </label>
           <select
             value={addressId}
             onChange={(e) => setAddressId(e.target.value ? parseInt(e.target.value) : '')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="">請選擇地址（選填）</option>
-            {addresses?.map((address: any) => (
-              <option key={address.id} value={address.id}>
-                {address.name} {address.is_default && '(預設)'}
-              </option>
-            ))}
+            <option value="">請選擇工區/地址（選填）</option>
+            {addresses?.map((address: any) => {
+              const siteName = extractSiteName(address.address);
+              const displayName = siteName ? `${siteName} - ${address.name}` : address.name;
+              return (
+                <option key={address.id} value={address.id}>
+                  {displayName} {address.is_default && '(預設)'}
+                </option>
+              );
+            })}
           </select>
           {selectedAddress && (
             <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
               <div className="space-y-2 text-sm">
+                {extractSiteName(selectedAddress.address) && (
+                  <div>
+                    <span className="font-medium text-gray-700">工區：</span>
+                    <span className="text-gray-600">{extractSiteName(selectedAddress.address)}</span>
+                  </div>
+                )}
                 <div>
                   <span className="font-medium text-gray-700">送貨地址：</span>
                   <span className="text-gray-600">{selectedAddress.address}</span>
