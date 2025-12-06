@@ -14,7 +14,7 @@ export default function RequestForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [constructionCategoryId, setConstructionCategoryId] = useState<number | ''>('');
-  const [companyId, setCompanyId] = useState<number | ''>('');
+  const [companyId, setCompanyId] = useState<number | string | ''>(''); // 可以是數字（數據庫）或字串（環境變數）
   const [items, setItems] = useState<RequestItem[]>([]);
   const [notes, setNotes] = useState('');
   const [selectedMaterial, setSelectedMaterial] = useState<number | ''>('');
@@ -119,18 +119,26 @@ export default function RequestForm() {
           </label>
           <select
             value={companyId}
-            onChange={(e) => setCompanyId(e.target.value ? parseInt(e.target.value) : '')}
+            onChange={(e) => {
+              const value = e.target.value;
+              // 環境變數公司的 ID 是字串（如 "env_0"），數據庫公司的 ID 是數字
+              setCompanyId(value ? (isNaN(Number(value)) ? value : Number(value)) : '');
+            }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">請選擇公司（選填）</option>
             {companies?.map((company: any) => (
               <option key={company.id} value={company.id}>
                 {company.name} {company.tax_id ? `(${company.tax_id})` : ''}
+                {company.is_from_env && ' [系統預設]'}
               </option>
             ))}
           </select>
           {companies?.length === 0 && (
             <p className="mt-1 text-sm text-gray-500">尚未建立公司，Excel 將使用預設公司資訊</p>
+          )}
+          {companies && companies.some((c: any) => c.is_from_env) && (
+            <p className="mt-1 text-sm text-gray-500">標記 [系統預設] 的公司來自環境變數，不可修改或刪除</p>
           )}
         </div>
 

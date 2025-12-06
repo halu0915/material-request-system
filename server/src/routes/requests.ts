@@ -88,6 +88,37 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: '施工類別和材料項目必填' });
     }
 
+    // Handle company_id - if it's from environment variable (starts with "env_"), don't save to DB
+    // but we'll use it in Excel generation
+    let dbCompanyId = null;
+    let envCompanyInfo = null;
+    
+    if (company_id) {
+      if (typeof company_id === 'string' && company_id.startsWith('env_')) {
+        // This is an environment variable company, extract info from COMPANIES
+        const envIndex = parseInt(company_id.replace('env_', ''));
+        if (process.env.COMPANIES) {
+          try {
+            const companiesData = JSON.parse(process.env.COMPANIES);
+            const companiesArray = Array.isArray(companiesData) ? companiesData : [companiesData];
+            if (companiesArray[envIndex]) {
+              envCompanyInfo = {
+                name: companiesArray[envIndex].name || companiesArray[envIndex].company_name || '',
+                tax_id: companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || ''
+              };
+            }
+          } catch (error) {
+            console.warn('無法解析環境變數公司資訊:', error);
+          }
+        }
+        // Don't save env company ID to database
+        dbCompanyId = null;
+      } else {
+        // This is a database company
+        dbCompanyId = company_id;
+      }
+    }
+
     // Generate request number
     const requestNumber = `MR-${Date.now()}-${uuidv4().substring(0, 8).toUpperCase()}`;
 
@@ -103,7 +134,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         `INSERT INTO material_requests 
          (user_id, company_id, request_number, construction_category_id, notes, status)
          VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING *`,
-        [req.user?.id, company_id || null, requestNumber, construction_category_id, notes || null]
+        [req.user?.id, dbCompanyId, requestNumber, construction_category_id, notes || null]
       );
 
       const request = requestResult.rows[0];
@@ -129,6 +160,12 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
       // Get full request data
       const fullRequest = await getFullRequest(request.id);
+      
+      // If environment variable company was selected, override company info
+      if (envCompanyInfo) {
+        fullRequest.company_name = envCompanyInfo.name;
+        fullRequest.company_tax_id = envCompanyInfo.tax_id;
+      }
 
       // Generate Excel
       const excelBuffer = await generateExcel(fullRequest);
