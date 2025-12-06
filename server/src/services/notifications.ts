@@ -16,10 +16,11 @@ export async function generateExcel(request: any): Promise<Buffer> {
   let companyName = '';
   let companyTaxId = '';
   
-  // 優先使用選擇的公司資訊（從 getFullRequest JOIN 的資料）
-  if (request.company_name && request.company_tax_id) {
+  // 優先使用 request 中已設置的公司資訊（可能是從下載時選擇的公司覆蓋的）
+  if (request.company_name) {
     companyName = request.company_name;
-    companyTaxId = request.company_tax_id;
+    companyTaxId = request.company_tax_id || '';
+    console.log('使用覆蓋的公司資訊:', { companyName, companyTaxId });
   } else if (request.company_id) {
     // 如果有 company_id 但沒有 JOIN 的資料，查詢公司資訊
     try {
@@ -30,6 +31,7 @@ export async function generateExcel(request: any): Promise<Buffer> {
       if (companyResult.rows.length > 0) {
         companyName = companyResult.rows[0].name || '';
         companyTaxId = companyResult.rows[0].tax_id || '';
+        console.log('從數據庫查詢公司資訊:', { companyName, companyTaxId });
       }
     } catch (error) {
       console.warn('查詢公司資訊失敗:', error);
@@ -37,9 +39,10 @@ export async function generateExcel(request: any): Promise<Buffer> {
   }
   
   // 如果還是沒有公司資訊，使用環境變數
-  if (!companyName || !companyTaxId) {
+  if (!companyName) {
     companyName = process.env.COMPANY_NAME || '金鴻空調機電工程有限公司';
     companyTaxId = process.env.COMPANY_TAX_ID || '16272724';
+    console.log('使用環境變數公司資訊:', { companyName, companyTaxId });
   }
 
   // Get address and contact info from request

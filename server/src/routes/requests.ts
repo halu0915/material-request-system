@@ -359,10 +359,12 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
         }
       }
 
-      // 覆蓋公司資訊
-      if (selectedCompanyName && selectedCompanyTaxId) {
+      // 覆蓋公司資訊（只要有公司名稱就覆蓋）
+      if (selectedCompanyName) {
         fullRequest.company_name = selectedCompanyName;
-        fullRequest.company_tax_id = selectedCompanyTaxId;
+        fullRequest.company_tax_id = selectedCompanyTaxId || '';
+        // 清除 company_id，確保 generateExcel 使用覆蓋的資訊
+        fullRequest.company_id = null;
       }
     }
 
