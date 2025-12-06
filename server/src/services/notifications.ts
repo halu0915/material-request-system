@@ -428,8 +428,14 @@ export async function generateExcel(request: any): Promise<Buffer> {
         cellStyle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
       }
       
-      // 確保值存在（特別是第 6、7、8 欄）
-      if (colNumber === 6) {
+      // 確保值存在（特別是第 1、6、7、8 欄）
+      if (colNumber === 1) {
+        // 第 1 欄：工區（A13 等）
+        if (cell.value === null || cell.value === undefined || String(cell.value).trim() === '') {
+          cell.value = siteName || '';
+          console.log('第 1 欄（工區）重新設置為:', cell.value, 'siteName:', siteName);
+        }
+      } else if (colNumber === 6) {
         // 第 6 欄：數量
         if (cell.value === null || cell.value === undefined || cell.value === '') {
           const qty = item.quantity !== null && item.quantity !== undefined ? item.quantity : 0;
@@ -457,6 +463,7 @@ export async function generateExcel(request: any): Promise<Buffer> {
         cell.value = '';
       }
       
+      // 先設置值，再設置樣式，確保值不會被樣式覆蓋
       cell.style = cellStyle;
       
       // 添加調試日誌（僅第一行）
@@ -469,12 +476,11 @@ export async function generateExcel(request: any): Promise<Buffer> {
     // 特別確保 A13（第一筆資料的第一欄）有值並可見
     if (i === 0) {
       const firstCell = dataRow.getCell(1);
-      // 確保值存在
-      if (!firstCell.value || String(firstCell.value).trim() === '') {
-        console.warn('A13 儲存格為空，設置 siteName:', siteName);
-        firstCell.value = siteName || '';
-      }
-      // 確保儲存格樣式正確
+      // 強制設置值，確保 A13 有值
+      const siteNameValue = siteName || '';
+      firstCell.value = siteNameValue;
+      
+      // 確保儲存格樣式正確（在設置值之後）
       firstCell.style = {
         font: { name: '微軟正黑體', size: 11, color: { argb: 'FF000000' }, bold: false },
         alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
@@ -483,9 +489,12 @@ export async function generateExcel(request: any): Promise<Buffer> {
           left: { style: 'thin', color: { argb: 'FF000000' } },
           bottom: { style: 'thin', color: { argb: 'FF000000' } },
           right: { style: 'thin', color: { argb: 'FF000000' } }
-        }
+        },
+        fill: i % 2 === 1 ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } } : undefined
       };
-      console.log('A13 儲存格值:', firstCell.value, 'siteName:', siteName, '類型:', typeof firstCell.value);
+      
+      console.log('A13 儲存格最終值:', firstCell.value, 'siteName:', siteName, '類型:', typeof firstCell.value, '是否為空:', !firstCell.value || String(firstCell.value).trim() === '');
+      console.log('A13 儲存格 rowData[0]:', rowData[0], 'toString(siteName):', toString(siteName || ''));
     }
   }
 
