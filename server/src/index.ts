@@ -144,11 +144,23 @@ if (process.env.NODE_ENV === 'production') {
   const publicPath = path.join(__dirname, '../public');
   if (fs.existsSync(path.join(publicPath, 'index.html'))) {
     app.use(express.static(publicPath));
+    // Serve index.html for root route
     app.get('/', (req, res) => {
       if (req.path.startsWith('/api')) {
         return;
       }
       res.sendFile(path.join(publicPath, 'index.html'));
+    });
+    // Serve index.html for all other non-API routes (SPA routing)
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api') || req.path === '/health') {
+        return next();
+      }
+      res.sendFile(path.join(publicPath, 'index.html'), (err) => {
+        if (err) {
+          next(err);
+        }
+      });
     });
   }
 }
