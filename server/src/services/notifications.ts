@@ -16,15 +16,44 @@ export async function generateExcel(request: any): Promise<Buffer> {
   let companyName = '';
   let companyTaxId = '';
   
-  // 優先使用選擇的公司資訊
+  console.log('公司資訊檢查:', {
+    company_name: request.company_name,
+    company_tax_id: request.company_tax_id,
+    company_id: request.company_id,
+    hasCompanyName: !!request.company_name,
+    hasCompanyTaxId: !!request.company_tax_id
+  });
+  
+  // 優先使用選擇的公司資訊（從 getFullRequest JOIN 的資料）
   if (request.company_name && request.company_tax_id) {
     companyName = request.company_name;
     companyTaxId = request.company_tax_id;
-  } else {
-    // 如果沒有選擇公司，使用環境變數 COMPANY_NAME
+    console.log('使用 JOIN 的公司資訊:', { companyName, companyTaxId });
+  } else if (request.company_id) {
+    // 如果有 company_id 但沒有 JOIN 的資料，查詢公司資訊
+    try {
+      const companyResult = await query(
+        'SELECT name, tax_id FROM companies WHERE id = $1',
+        [request.company_id]
+      );
+      if (companyResult.rows.length > 0) {
+        companyName = companyResult.rows[0].name || '';
+        companyTaxId = companyResult.rows[0].tax_id || '';
+        console.log('使用 company_id 查詢的公司資訊:', { companyName, companyTaxId });
+      }
+    } catch (error) {
+      console.warn('查詢公司資訊失敗:', error);
+    }
+  }
+  
+  // 如果還是沒有公司資訊，使用環境變數
+  if (!companyName || !companyTaxId) {
     companyName = process.env.COMPANY_NAME || '金鴻空調機電工程有限公司';
     companyTaxId = process.env.COMPANY_TAX_ID || '16272724';
+    console.log('使用環境變數或默認公司資訊:', { companyName, companyTaxId });
   }
+  
+  console.log('最終使用的公司資訊:', { companyName, companyTaxId });
 
   // Get address and contact info from request
   // 優先使用已經 JOIN 的地址資訊（如果 getFullRequest 已經 JOIN）
@@ -334,63 +363,126 @@ export async function generateExcel(request: any): Promise<Buffer> {
     console.warn('取得月統計失敗:', error);
   }
 
-  // 月份統計格式：日期, 分類, 數量, 狀態
-  const monthlyData = [
-    ['日期', '分類', '數量', '狀態']
-  ];
-
-  for (const stat of monthlyStats) {
-    monthlyData.push([
-      toString(monthKey),                        // 日期 (YYYYMM)
-      toString(stat.material_category_name || stat.material_name || ''), // 分類
-      toString(stat.total_quantity || 0),       // 數量 (轉為字串)
-      toString(stat.status || '')                // 狀態
-    ]);
-  }
-
-  // Sheet 2: 月份統計 - 使用月份格式作為分頁名稱
+  // Sheet 2: 月份統計 - 重新設計結構和排版
   const monthlySheet = workbook.addWorksheet(monthSheetName, {
     pageSetup: {
       paperSize: 9, // A4
-      orientation: 'landscape',
+      orientation: 'portrait', // 改為縱向
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0
     }
   });
 
-  // 添加表頭
-  const monthlyHeaders = ['日期', '分類', '數量', '狀態'];
+  // 定義月統計樣式
+  const monthlyHeaderStyle: Partial<ExcelJS.Style> = {
+    font: { name: '微軟正黑體', size: 14, bold: true, color: { argb: 'FFFFFFFF' } },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } }, // 藍色背景
+    alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+    border: {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
+    }
+  };
+
+  const monthlyDataRowStyle: Partial<ExcelJS.Style> = {
+    font: { name: '微軟正黑體', size: 11, color: { argb: 'FF000000' } },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } }, // 白色背景
+    alignment: { vertical: 'middle', horizontal: 'left', wrapText: true },
+    border: {
+      top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+      left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+      bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+      right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
+    }
+  };
+
+  const monthlyAlternateRowStyle: Partial<ExcelJS.Style> = {
+    font: { name: '微軟正黑體', size: 11, color: { argb: 'FF000000' } },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }, // 淺灰色背景
+    alignment: { vertical: 'middle', horizontal: 'left', wrapText: true },
+    border: {
+      top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+      left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+      bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+      right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
+    }
+  };
+
+  // 添加標題行
+  const titleRow = monthlySheet.addRow([`${monthSheetName}`]);
+  monthlySheet.mergeCells(1, 1, 1, 5); // 合併5欄
+  titleRow.getCell(1).style = {
+    font: { name: '微軟正黑體', size: 16, bold: true, color: { argb: 'FF000000' } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } } // 淺灰色背景
+  };
+  titleRow.height = 30;
+
+  // 空行
+  monthlySheet.addRow([]);
+
+  // 添加表頭 - 重新設計欄位
+  const monthlyHeaders = ['日期', '材料類別', '材料名稱', '數量', '單位', '狀態'];
   const monthlyHeaderRow = monthlySheet.addRow(monthlyHeaders);
   monthlyHeaderRow.eachCell((cell) => {
-    cell.style = headerStyle;
+    cell.style = monthlyHeaderStyle;
   });
   monthlyHeaderRow.height = 25;
 
   // 設置欄位寬度
   monthlySheet.columns = [
-    { width: 15 },
-    { width: 25 },
-    { width: 15 },
-    { width: 15 }
+    { width: 15 }, // 日期
+    { width: 20 }, // 材料類別
+    { width: 30 }, // 材料名稱
+    { width: 12 }, // 數量
+    { width: 10 }, // 單位
+    { width: 12 }  // 狀態
   ];
 
-  // 添加數據行
+  // 添加數據行 - 重新設計數據結構
   for (let i = 0; i < monthlyStats.length; i++) {
     const stat = monthlyStats[i];
     const rowData = [
-      toString(monthKey),
-      toString(stat.material_category_name || stat.material_name || ''),
-      toString(stat.total_quantity || 0),
-      toString(stat.status || '')
+      toString(monthSheetName.replace('統計', '')), // 日期：顯示月份（如「2025年11月」）
+      toString(stat.material_category_name || ''), // 材料類別
+      toString(stat.material_name || ''), // 材料名稱
+      toString(stat.total_quantity || 0), // 數量
+      toString(stat.unit || ''), // 單位
+      toString(stat.status || '') // 狀態
     ];
 
     const dataRow = monthlySheet.addRow(rowData);
-    const rowStyle = i % 2 === 0 ? dataRowStyle : alternateRowStyle;
+    const rowStyle = i % 2 === 0 ? monthlyDataRowStyle : monthlyAlternateRowStyle;
     dataRow.eachCell((cell) => {
       cell.style = rowStyle;
     });
     dataRow.height = 20;
+  }
+
+  // 添加統計摘要行（如果有數據）
+  if (monthlyStats.length > 0) {
+    monthlySheet.addRow([]); // 空行
+    
+    const summaryRow = monthlySheet.addRow(['合計', '', '', '', '', '']);
+    monthlySheet.mergeCells(summaryRow.number, 1, summaryRow.number, 3); // 合併前3欄
+    summaryRow.getCell(1).style = {
+      font: { name: '微軟正黑體', size: 12, bold: true, color: { argb: 'FF000000' } },
+      alignment: { vertical: 'middle', horizontal: 'right' },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } }
+    };
+    
+    // 計算總數量
+    const totalQuantity = monthlyStats.reduce((sum, stat) => sum + (parseFloat(toString(stat.total_quantity)) || 0), 0);
+    summaryRow.getCell(4).value = totalQuantity;
+    summaryRow.getCell(4).style = {
+      font: { name: '微軟正黑體', size: 12, bold: true, color: { argb: 'FF000000' } },
+      alignment: { vertical: 'middle', horizontal: 'right' },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } }
+    };
+    summaryRow.height = 25;
   }
 
   // Generate buffer
