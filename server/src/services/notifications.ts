@@ -336,22 +336,23 @@ export async function generateExcel(request: any): Promise<Buffer> {
   }
   currentRow++;
 
-  // 添加材料明細表頭（7欄位格式，材料類別與材料名稱合併）
-  const headers = ['工區', '施工類別', '材料名稱', '材料規格', '單位', '數量', '備註'];
+  // 添加材料明細表頭（8欄位格式）
+  const headers = ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '數量', '單位', '備註'];
   const headerRow = requestSheet.addRow(headers);
   headerRow.eachCell((cell, colNumber) => {
     cell.style = headerStyle;
   });
   headerRow.height = 25;
 
-  // 設置欄位寬度（7欄位）
+  // 設置欄位寬度（8欄位）
   requestSheet.columns = [
     { width: 15 }, // 工區
     { width: 15 }, // 施工類別
-    { width: 30 }, // 材料名稱（合併了材料類別，所以寬度增加）
+    { width: 15 }, // 材料類別
+    { width: 20 }, // 材料名稱
     { width: 15 }, // 材料規格
-    { width: 10 }, // 單位
     { width: 10 }, // 數量
+    { width: 10 }, // 單位
     { width: 25 }  // 備註
   ];
 
