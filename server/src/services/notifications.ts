@@ -47,30 +47,31 @@ export async function generateExcel(request: any): Promise<Buffer> {
   // 例如：三總 - 台北市內湖區成功路二段325號
   let siteName = '';
   if (deliveryAddress) {
-    // 嘗試用 " - " 分割
+    // 優先使用 " - " 分割（空格+破折號+空格）
     const parts = deliveryAddress.split(' - ');
-    if (parts.length > 0 && parts[0].trim()) {
+    if (parts.length > 1 && parts[0].trim()) {
+      // 如果有 " - "，第一部分就是工區
       siteName = parts[0].trim();
     } else {
-      // 如果沒有 " - "，嘗試用 "-" 分割
+      // 如果沒有 " - "，嘗試用 "-" 分割（無空格）
       const parts2 = deliveryAddress.split('-');
-      if (parts2.length > 0 && parts2[0].trim()) {
+      if (parts2.length > 1 && parts2[0].trim()) {
         siteName = parts2[0].trim();
+      } else {
+        // 如果地址中沒有分隔符，嘗試從地址中提取常見的工區名稱
+        const commonSites = ['三總', '金山', '關西', '新竹', '台北', '台中', '高雄'];
+        for (const site of commonSites) {
+          if (deliveryAddress.includes(site)) {
+            siteName = site;
+            break;
+          }
+        }
       }
     }
   }
   
-  // 如果還是沒有工區，嘗試從地址中提取常見的工區名稱
-  if (!siteName && deliveryAddress) {
-    // 檢查是否包含常見工區名稱
-    const commonSites = ['三總', '金山', '關西', '新竹', '台北', '台中', '高雄'];
-    for (const site of commonSites) {
-      if (deliveryAddress.includes(site)) {
-        siteName = site;
-        break;
-      }
-    }
-  }
+  // 如果還是沒有工區，工區欄位會是空的
+  // 這表示用戶需要設置格式正確的地址（工區 - 詳細地址）
   
   // 如果還是沒有，使用默認值或留空
   // siteName 保持為空字串，讓用戶知道需要設置地址
