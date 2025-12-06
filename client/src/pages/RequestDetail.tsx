@@ -43,8 +43,23 @@ export default function RequestDetail() {
     if (!id) return;
     try {
       const response = await api.get(`/api/requests/${id}/excel`, {
-        responseType: 'blob'
+        responseType: 'blob',
+        validateStatus: (status) => status === 200
       });
+      
+      // 檢查響應類型，確保是 Excel 文件
+      const contentType = response.headers['content-type'] || '';
+      if (!contentType.includes('spreadsheet') && !contentType.includes('excel') && !contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+        // 如果不是 Excel 文件，嘗試讀取為文本（可能是錯誤訊息）
+        const text = await response.data.text();
+        try {
+          const errorData = JSON.parse(text);
+          alert(errorData.error || '下載 Excel 失敗');
+        } catch {
+          alert('下載 Excel 失敗：伺服器返回了非預期的響應');
+        }
+        return;
+      }
       
       // 從 Content-Disposition header 獲取文件名，或使用默認名稱
       const contentDisposition = response.headers['content-disposition'];
@@ -65,9 +80,28 @@ export default function RequestDetail() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
       console.error('下載 Excel 失敗:', error);
-      alert('下載 Excel 失敗，請稍後再試');
+      
+      // 如果是 blob 類型的錯誤響應，嘗試讀取錯誤訊息
+      if (error.response && error.response.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const errorData = JSON.parse(text);
+          alert(errorData.error || '下載 Excel 失敗');
+        } catch {
+          if (error.response.status === 401) {
+            alert('請先登入');
+            window.location.href = '/login';
+          } else if (error.response.status === 404) {
+            alert('找不到叫料單');
+          } else {
+            alert('下載 Excel 失敗，請稍後再試');
+          }
+        }
+      } else {
+        alert(error.response?.data?.error || '下載 Excel 失敗，請稍後再試');
+      }
     }
   };
 
