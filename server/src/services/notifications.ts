@@ -122,9 +122,9 @@ export async function generateExcel(request: any): Promise<Buffer> {
   }
   // 如果還是沒有工區，工區欄位會是空的
 
-  // Format date - 格式: YYYYMMDD HHMM
-  const createdDate = new Date(request.created_at);
-  const dateTimeStr = `${createdDate.getFullYear()}${String(createdDate.getMonth() + 1).padStart(2, '0')}${String(createdDate.getDate()).padStart(2, '0')} ${String(createdDate.getHours()).padStart(2, '0')}${String(createdDate.getMinutes()).padStart(2, '0')}`;
+  // Format date - 格式: YYYYMMDD HHMM (使用台灣時區)
+  const createdDateForFilename = new Date(request.created_at);
+  const dateTimeStr = `${createdDateForFilename.getFullYear()}${String(createdDateForFilename.getMonth() + 1).padStart(2, '0')}${String(createdDateForFilename.getDate()).padStart(2, '0')} ${String(createdDateForFilename.getHours()).padStart(2, '0')}${String(createdDateForFilename.getMinutes()).padStart(2, '0')}`;
 
   // Helper function to convert any value to string
   const toString = (value: any): string => {
