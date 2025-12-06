@@ -253,21 +253,7 @@ export async function generateExcel(request: any): Promise<Buffer> {
     }
   }
 
-  // 空行（添加邊框）
-  const emptyRow = requestSheet.addRow([]);
-  emptyRow.height = 10;
-  // 為空行的所有儲存格添加邊框
-  for (let col = 1; col <= 8; col++) {
-    const cell = emptyRow.getCell(col);
-    cell.style = {
-      border: {
-        top: { style: 'thin', color: { argb: 'FF000000' } },
-        left: { style: 'thin', color: { argb: 'FF000000' } },
-        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-        right: { style: 'thin', color: { argb: 'FF000000' } }
-      }
-    };
-  }
+  // 取消第三行（空行），直接進入資訊區塊
 
   // 添加叫料單基本資訊（兩欄格式：標籤 | 值）
   const addInfoRow = (label: string, value: string, startRow: number) => {
@@ -334,20 +320,19 @@ export async function generateExcel(request: any): Promise<Buffer> {
   }
   currentRow++;
 
-  // 添加材料明細表頭（8欄位格式，符合圖片）
-  const headers = ['工區', '施工類別', '材料類別', '材料名稱', '材料規格', '單位', '數量', '備註'];
+  // 添加材料明細表頭（7欄位格式，材料類別與材料名稱合併）
+  const headers = ['工區', '施工類別', '材料名稱', '材料規格', '單位', '數量', '備註'];
   const headerRow = requestSheet.addRow(headers);
   headerRow.eachCell((cell, colNumber) => {
     cell.style = headerStyle;
   });
   headerRow.height = 25;
 
-  // 設置欄位寬度（8欄位）
+  // 設置欄位寬度（7欄位）
   requestSheet.columns = [
     { width: 15 }, // 工區
     { width: 15 }, // 施工類別
-    { width: 15 }, // 材料類別
-    { width: 20 }, // 材料名稱
+    { width: 30 }, // 材料名稱（合併了材料類別，所以寬度增加）
     { width: 15 }, // 材料規格
     { width: 10 }, // 單位
     { width: 10 }, // 數量
