@@ -175,8 +175,26 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         // Don't save env company ID to database
         dbCompanyId = null;
       } else {
-        // This is a database company
-        dbCompanyId = company_id;
+        // Database company ID - validate it's a valid integer
+        const companyIdNum = typeof company_id === 'string' ? parseInt(company_id) : company_id;
+        if (!isNaN(companyIdNum) && Number.isInteger(companyIdNum) && companyIdNum > 0) {
+          dbCompanyId = companyIdNum;
+        } else {
+          console.warn('無效的 company_id:', company_id, '將設為 null');
+          dbCompanyId = null;
+        }
+      }
+    }
+    
+    // Handle address_id - validate it's a valid integer
+    let dbAddressId = null;
+    if (address_id) {
+      const addressIdNum = typeof address_id === 'string' ? parseInt(address_id) : address_id;
+      if (!isNaN(addressIdNum) && Number.isInteger(addressIdNum) && addressIdNum > 0) {
+        dbAddressId = addressIdNum;
+      } else {
+        console.warn('無效的 address_id:', address_id, '將設為 null');
+        dbAddressId = null;
       }
     }
 
