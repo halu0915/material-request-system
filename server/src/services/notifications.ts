@@ -237,6 +237,8 @@ export async function generateExcel(request: any): Promise<Buffer> {
   }), currentRow++);
   // 申請人欄位已取消，待建立登入系統架構後再實作
   // addInfoRow('申請人', applicantName, currentRow++);
+  // 工區資訊（必須顯示，即使為空）
+  addInfoRow('工區', siteName || '', currentRow++);
   // 聯絡人資訊（必須顯示，即使為空）
   addInfoRow('聯絡人', contactPerson || '', currentRow++);
   // 聯繫電話（必須顯示，即使為空）
