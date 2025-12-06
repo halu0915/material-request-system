@@ -312,31 +312,54 @@ export async function generateExcel(request: any): Promise<Buffer> {
     const rowStyle = i % 2 === 0 ? dataRowStyle : alternateRowStyle;
     dataRow.eachCell((cell, colNumber) => {
       // 確保所有儲存格都有正確的樣式
-      cell.style = {
-        ...rowStyle,
-        // 確保文字顏色可見
-        font: {
-          ...rowStyle.font,
-          color: { argb: 'FF000000' } // 黑色文字
+      const cellStyle: Partial<ExcelJS.Style> = {
+        font: { 
+          name: '微軟正黑體', 
+          size: 11,
+          color: { argb: 'FF000000' } // 確保文字顏色是黑色
         },
-        // 確保對齊方式
         alignment: {
           vertical: 'middle',
           horizontal: colNumber === 1 ? 'center' : 'left', // 第一欄（工區）置中，其他靠左
           wrapText: true
+        },
+        border: {
+          top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+          left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+          bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+          right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
         }
       };
+      
+      // 如果是交替行，添加背景色
+      if (i % 2 === 1) {
+        cellStyle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+      }
+      
+      cell.style = cellStyle;
     });
     dataRow.height = 20;
     
-    // 特別確保 A13（第一筆資料的第一欄）有值
+    // 特別確保 A13（第一筆資料的第一欄）有值並可見
     if (i === 0) {
       const firstCell = dataRow.getCell(1);
-      if (!firstCell.value || firstCell.value === '') {
-        console.warn('A13 儲存格為空，siteName:', siteName);
+      // 確保值存在
+      if (!firstCell.value || String(firstCell.value).trim() === '') {
+        console.warn('A13 儲存格為空，設置 siteName:', siteName);
         firstCell.value = siteName || '';
       }
-      console.log('A13 儲存格值:', firstCell.value, 'siteName:', siteName);
+      // 確保儲存格樣式正確
+      firstCell.style = {
+        font: { name: '微軟正黑體', size: 11, color: { argb: 'FF000000' }, bold: false },
+        alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+        border: {
+          top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+          left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+          bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+          right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+        }
+      };
+      console.log('A13 儲存格值:', firstCell.value, 'siteName:', siteName, '類型:', typeof firstCell.value);
     }
   }
 
