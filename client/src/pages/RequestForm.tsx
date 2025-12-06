@@ -192,30 +192,27 @@ export default function RequestForm() {
             })}
           </select>
           {selectedAddress && (
-            <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
-              <div className="space-y-2 text-sm">
+            <div className="mt-3 p-4 bg-blue-50 rounded-md border border-blue-200">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">已選擇的地址資訊</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 {(selectedAddress.site_name || extractSiteName(selectedAddress.address)) && (
-                  <div>
-                    <span className="font-medium text-gray-700">工區：</span>
-                    <span className="text-gray-600">{selectedAddress.site_name || extractSiteName(selectedAddress.address)}</span>
+                  <div className="bg-white p-2 rounded border border-gray-200">
+                    <span className="block text-xs font-medium text-gray-500 mb-1">工區</span>
+                    <span className="text-gray-900 font-medium">{selectedAddress.site_name || extractSiteName(selectedAddress.address)}</span>
                   </div>
                 )}
-                <div>
-                  <span className="font-medium text-gray-700">送貨地址：</span>
-                  <span className="text-gray-600">{selectedAddress.address}</span>
+                <div className="bg-white p-2 rounded border border-gray-200">
+                  <span className="block text-xs font-medium text-gray-500 mb-1">送貨地址</span>
+                  <span className="text-gray-900">{selectedAddress.address || '-'}</span>
                 </div>
-                {selectedAddress.contact_person && (
-                  <div>
-                    <span className="font-medium text-gray-700">聯絡人：</span>
-                    <span className="text-gray-600">{selectedAddress.contact_person}</span>
-                  </div>
-                )}
-                {selectedAddress.contact_phone && (
-                  <div>
-                    <span className="font-medium text-gray-700">聯絡電話：</span>
-                    <span className="text-gray-600">{selectedAddress.contact_phone}</span>
-                  </div>
-                )}
+                <div className="bg-white p-2 rounded border border-gray-200">
+                  <span className="block text-xs font-medium text-gray-500 mb-1">聯絡人</span>
+                  <span className="text-gray-900">{selectedAddress.contact_person || '-'}</span>
+                </div>
+                <div className="bg-white p-2 rounded border border-gray-200">
+                  <span className="block text-xs font-medium text-gray-500 mb-1">聯繫電話</span>
+                  <span className="text-gray-900">{selectedAddress.contact_phone || '-'}</span>
+                </div>
               </div>
             </div>
           )}
