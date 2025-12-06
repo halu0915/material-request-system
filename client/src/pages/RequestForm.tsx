@@ -19,6 +19,15 @@ export default function RequestForm() {
   const [items, setItems] = useState<RequestItem[]>([]);
   const [notes, setNotes] = useState('');
   const [selectedMaterial, setSelectedMaterial] = useState<number | ''>('');
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [newAddress, setNewAddress] = useState({
+    name: '',
+    address: '',
+    site_name: '',
+    contact_person: '',
+    contact_phone: '',
+    is_default: false
+  });
 
   // Fetch construction categories
   const { data: constructionCategories } = useQuery({
@@ -46,6 +55,44 @@ export default function RequestForm() {
       return response.data.addresses;
     }
   });
+
+  // Create address mutation
+  const createAddress = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await api.post('/api/addresses', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['addresses'] });
+      // 自動選擇新建立的地址
+      if (data?.address?.id) {
+        setAddressId(data.address.id);
+      }
+      setShowAddressForm(false);
+      // 重置表單
+      setNewAddress({
+        name: '',
+        address: '',
+        site_name: '',
+        contact_person: '',
+        contact_phone: '',
+        is_default: false
+      });
+      alert('地址建立成功！');
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.error || '建立地址失敗');
+    }
+  });
+
+  const handleCreateAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAddress.name || !newAddress.address) {
+      alert('請填寫地址名稱和完整地址');
+      return;
+    }
+    createAddress.mutate(newAddress);
+  };
 
   // Fetch materials based on construction category
   const { data: materials } = useQuery({
@@ -172,9 +219,119 @@ export default function RequestForm() {
 
         {/* Address Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            工區/送貨地址 <span className="text-gray-400 text-xs">(選填)</span>
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-sm font-medium text-gray-700">
+              工區/送貨地址 <span className="text-gray-400 text-xs">(選填)</span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowAddressForm(!showAddressForm)}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              {showAddressForm ? '取消建立' : '+ 快速建立地址'}
+            </button>
+          </div>
+          
+          {showAddressForm && (
+            <div className="mb-4 p-4 bg-gray-50 rounded-md border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">快速建立地址</h3>
+              <form onSubmit={handleCreateAddress} className="space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">地址名稱 <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={newAddress.name}
+                    onChange={(e) => setNewAddress({ ...newAddress, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="例如：三總工地"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">工區</label>
+                  <input
+                    type="text"
+                    value={newAddress.site_name}
+                    onChange={(e) => setNewAddress({ ...newAddress, site_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="例如：三總"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">完整地址 <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={newAddress.address}
+                    onChange={(e) => setNewAddress({ ...newAddress, address: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="例如：台北市內湖區成功路二段325號"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">聯絡人</label>
+                    <input
+                      type="text"
+                      value={newAddress.contact_person}
+                      onChange={(e) => setNewAddress({ ...newAddress, contact_person: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="選填"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">聯繫電話</label>
+                    <input
+                      type="text"
+                      value={newAddress.contact_phone}
+                      onChange={(e) => setNewAddress({ ...newAddress, contact_phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="選填"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_default"
+                    checked={newAddress.is_default}
+                    onChange={(e) => setNewAddress({ ...newAddress, is_default: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="is_default" className="ml-2 block text-xs text-gray-700">
+                    設為預設地址
+                  </label>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddressForm(false);
+                      setNewAddress({
+                        name: '',
+                        address: '',
+                        site_name: '',
+                        contact_person: '',
+                        contact_phone: '',
+                        is_default: false
+                      });
+                    }}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createAddress.isPending}
+                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {createAddress.isPending ? '建立中...' : '建立'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
           <select
             value={addressId}
             onChange={(e) => setAddressId(e.target.value ? parseInt(e.target.value) : '')}
@@ -216,8 +373,8 @@ export default function RequestForm() {
               </div>
             </div>
           )}
-          {addresses?.length === 0 && (
-            <p className="mt-1 text-sm text-gray-500">尚未建立地址，請先到地址管理建立地址</p>
+          {addresses?.length === 0 && !showAddressForm && (
+            <p className="mt-1 text-sm text-gray-500">尚未建立地址，請點擊「快速建立地址」或到地址管理建立地址</p>
           )}
         </div>
 
