@@ -222,23 +222,8 @@ export async function generateExcel(request: any): Promise<Buffer> {
     hour: '2-digit', 
     minute: '2-digit' 
   }), currentRow++);
-  // 申請人：如果用戶名稱是「訪客」，嘗試使用 email 的前綴或顯示 email
-  let applicantName = request.user_name || '';
-  if (applicantName === '訪客' || applicantName === '訪客使用者' || !applicantName) {
-    // 如果是訪客帳號，嘗試從 email 提取更有意義的名稱
-    if (request.user_email) {
-      const emailPrefix = request.user_email.split('@')[0];
-      // 如果 email 是 guest_xxx 格式，顯示為「訪客用戶」
-      if (emailPrefix.startsWith('guest_')) {
-        applicantName = '訪客用戶';
-      } else {
-        applicantName = request.user_email;
-      }
-    } else {
-      applicantName = '訪客';
-    }
-  }
-  addInfoRow('申請人', applicantName, currentRow++);
+  // 申請人欄位已取消，待建立登入系統架構後再實作
+  // addInfoRow('申請人', applicantName, currentRow++);
   // 聯絡人資訊（如果有）
   if (contactPerson) {
     addInfoRow('聯絡人', contactPerson, currentRow++);
