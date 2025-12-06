@@ -98,37 +98,18 @@ if (process.env.NODE_ENV === 'production') {
       console.warn('📋 將使用備用 HTML 頁面');
       console.log('✅ 備用 HTML 頁面已設置:', publicPath);
       
-      // Serve dashboard.html as main page if it exists, otherwise use index.html
+      // Serve index.html for root route
       app.get('/', (req, res) => {
-        const dashboardPath = path.join(publicPath, 'dashboard.html');
-        if (fs.existsSync(dashboardPath)) {
-          return res.sendFile(dashboardPath);
-        }
-        // Fallback to index.html if dashboard doesn't exist
         const backupHtml = path.join(publicPath, 'index.html');
         res.sendFile(backupHtml);
       });
 
-      // Serve dashboard.html route
-      app.get('/dashboard.html', (req, res) => {
-        const dashboardPath = path.join(publicPath, 'dashboard.html');
-        if (fs.existsSync(dashboardPath)) {
-          return res.sendFile(dashboardPath);
-        }
-        res.status(404).send('Dashboard not found');
-      });
-
-      // Fallback for all other routes
+      // Fallback for all other routes (SPA routing)
       app.get('*', (req, res, next) => {
         if (req.path.startsWith('/api') || req.path === '/health') {
           return next();
         }
-        // Try dashboard first, then index.html
-        const dashboardPath = path.join(publicPath, 'dashboard.html');
-        if (fs.existsSync(dashboardPath)) {
-          return res.sendFile(dashboardPath);
-        }
-        // Fallback to index.html
+        // Serve index.html for all other routes (SPA routing)
         const backupHtml = path.join(publicPath, 'index.html');
         res.sendFile(backupHtml, (err) => {
           if (err) {
