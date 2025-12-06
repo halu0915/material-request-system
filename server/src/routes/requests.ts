@@ -61,6 +61,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         c.name as company_name,
         c.tax_id as company_tax_id,
         a.address as delivery_address,
+        a.site_name,
         a.contact_person,
         a.contact_phone,
         COALESCE(SUM(mri.quantity), 0) as total_quantity,
@@ -73,7 +74,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       LEFT JOIN material_request_items mri ON mr.id = mri.request_id
       LEFT JOIN materials m ON mri.material_id = m.id
       WHERE mr.user_id = $1
-      GROUP BY mr.id, cc.name, u.name, u.email, c.name, c.tax_id, a.address, a.contact_person, a.contact_phone
+      GROUP BY mr.id, cc.name, u.name, u.email, c.name, c.tax_id, a.address, a.site_name, a.contact_person, a.contact_phone
       ORDER BY mr.created_at DESC`,
       [req.user?.id]
     );
