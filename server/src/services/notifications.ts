@@ -26,14 +26,21 @@ export async function generateExcel(request: any): Promise<Buffer> {
     companyTaxId = process.env.COMPANY_TAX_ID || '16272724';
   }
 
-  // Get address and contact info from request (if address_id is set) or default address
+  // Get address and contact info from request
+  // 優先使用已經 JOIN 的地址資訊（如果 getFullRequest 已經 JOIN）
   let deliveryAddress = '';
   let contactPhone = '';
   let contactPerson = '';
   
   try {
-    if (request.address_id) {
-      // Use the address from the request
+    // 優先使用已經 JOIN 的地址資訊（如果有的話）
+    if (request.delivery_address || request.contact_person || request.contact_phone) {
+      deliveryAddress = request.delivery_address || '';
+      contactPhone = request.contact_phone || '';
+      contactPerson = request.contact_person || '';
+      console.log('使用 JOIN 的地址資訊:', { deliveryAddress, contactPhone, contactPerson });
+    } else if (request.address_id) {
+      // 如果沒有 JOIN 的資料，但有 address_id，則查詢地址
       const addressResult = await query(
         'SELECT address, contact_person, contact_phone FROM addresses WHERE id = $1',
         [request.address_id]
@@ -42,12 +49,8 @@ export async function generateExcel(request: any): Promise<Buffer> {
         deliveryAddress = addressResult.rows[0].address || '';
         contactPhone = addressResult.rows[0].contact_phone || '';
         contactPerson = addressResult.rows[0].contact_person || '';
+        console.log('使用 address_id 查詢的地址資訊:', { deliveryAddress, contactPhone, contactPerson });
       }
-    } else if (request.delivery_address) {
-      // Use address from request object (if already joined)
-      deliveryAddress = request.delivery_address || '';
-      contactPhone = request.contact_phone || '';
-      contactPerson = request.contact_person || '';
     } else {
       // Fallback to default address
       const addressResult = await query(
@@ -58,11 +61,14 @@ export async function generateExcel(request: any): Promise<Buffer> {
         deliveryAddress = addressResult.rows[0].address || '';
         contactPhone = addressResult.rows[0].contact_phone || '';
         contactPerson = addressResult.rows[0].contact_person || '';
+        console.log('使用默認地址:', { deliveryAddress, contactPhone, contactPerson });
       }
     }
   } catch (error) {
     console.warn('取得地址資訊失敗:', error);
   }
+  
+  console.log('最終地址資訊:', { deliveryAddress, contactPhone, contactPerson, address_id: request.address_id });
 
   // Get site name (工區) - 從送貨地址提取
   // 地址格式通常是：工區 - 詳細地址
