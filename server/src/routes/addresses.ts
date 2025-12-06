@@ -21,7 +21,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 // Create address
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { name, address, contact_person, contact_phone, is_default } = req.body;
+    const { name, address, site_name, contact_person, contact_phone, is_default } = req.body;
 
     if (!name || !address) {
       return res.status(400).json({ error: '名稱和地址必填' });
@@ -36,9 +36,9 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     }
 
     const result = await query(
-      `INSERT INTO addresses (user_id, name, address, contact_person, contact_phone, is_default)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [req.user?.id, name, address, contact_person || null, contact_phone || null, is_default || false]
+      `INSERT INTO addresses (user_id, name, address, site_name, contact_person, contact_phone, is_default)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [req.user?.id, name, address, site_name || null, contact_person || null, contact_phone || null, is_default || false]
     );
 
     res.status(201).json({ address: result.rows[0] });
@@ -52,7 +52,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, address, contact_person, contact_phone, is_default } = req.body;
+    const { name, address, site_name, contact_person, contact_phone, is_default } = req.body;
 
     if (!name || !address) {
       return res.status(400).json({ error: '名稱和地址必填' });
@@ -78,9 +78,9 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
 
     const result = await query(
       `UPDATE addresses 
-       SET name = $1, address = $2, contact_person = $3, contact_phone = $4, is_default = $5, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $6 AND user_id = $7 RETURNING *`,
-      [name, address, contact_person || null, contact_phone || null, is_default || false, id, req.user?.id]
+       SET name = $1, address = $2, site_name = $3, contact_person = $4, contact_phone = $5, is_default = $6, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $7 AND user_id = $8 RETURNING *`,
+      [name, address, site_name || null, contact_person || null, contact_phone || null, is_default || false, id, req.user?.id]
     );
 
     res.json({ address: result.rows[0] });

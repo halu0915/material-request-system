@@ -179,6 +179,17 @@ export const createTables = async (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id);
     `);
 
+    // Add site_name column to addresses table if it doesn't exist
+    try {
+      await query(`
+        ALTER TABLE addresses 
+        ADD COLUMN IF NOT EXISTS site_name VARCHAR(255)
+      `);
+      console.log('地址表工區欄位檢查完成');
+    } catch (error) {
+      console.warn('添加工區欄位時發生錯誤（可能已存在）:', error);
+    }
+
     console.log('資料表建立完成');
   } catch (error) {
     console.error('建立資料表時發生錯誤:', error);

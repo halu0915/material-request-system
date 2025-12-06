@@ -182,7 +182,7 @@ export default function RequestForm() {
           >
             <option value="">請選擇工區/地址（選填）</option>
             {addresses?.map((address: any) => {
-              const siteName = extractSiteName(address.address);
+              const siteName = address.site_name || extractSiteName(address.address);
               const displayName = siteName ? `${siteName} - ${address.name}` : address.name;
               return (
                 <option key={address.id} value={address.id}>
@@ -194,10 +194,10 @@ export default function RequestForm() {
           {selectedAddress && (
             <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
               <div className="space-y-2 text-sm">
-                {extractSiteName(selectedAddress.address) && (
+                {(selectedAddress.site_name || extractSiteName(selectedAddress.address)) && (
                   <div>
                     <span className="font-medium text-gray-700">工區：</span>
-                    <span className="text-gray-600">{extractSiteName(selectedAddress.address)}</span>
+                    <span className="text-gray-600">{selectedAddress.site_name || extractSiteName(selectedAddress.address)}</span>
                   </div>
                 )}
                 <div>

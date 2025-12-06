@@ -8,6 +8,7 @@ import RequestForm from './pages/RequestForm';
 import RequestList from './pages/RequestList';
 import RequestDetail from './pages/RequestDetail';
 import Materials from './pages/Materials';
+import Addresses from './pages/Addresses';
 import Layout from './components/Layout';
 import AuthCallback from './pages/AuthCallback';
 
@@ -61,6 +62,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Materials />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/addresses"
+        element={
+          <ProtectedRoute>
+            <Addresses />
           </ProtectedRoute>
         }
       />
