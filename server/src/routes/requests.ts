@@ -61,7 +61,6 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         c.name as company_name,
         c.tax_id as company_tax_id,
         a.address as delivery_address,
-        a.site_name,
         a.contact_person,
         a.contact_phone,
         COALESCE(SUM(mri.quantity), 0) as total_quantity,
@@ -74,7 +73,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       LEFT JOIN material_request_items mri ON mr.id = mri.request_id
       LEFT JOIN materials m ON mri.material_id = m.id
       WHERE mr.user_id = $1
-      GROUP BY mr.id, cc.name, u.name, u.email, c.name, c.tax_id, a.address, a.site_name, a.contact_person, a.contact_phone
+      GROUP BY mr.id, cc.name, u.name, u.email, c.name, c.tax_id, a.address, a.contact_person, a.contact_phone
       ORDER BY mr.created_at DESC`,
       [req.user?.id]
     );
@@ -101,7 +100,6 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
         c.name as company_name,
         c.tax_id as company_tax_id,
         a.address as delivery_address,
-        a.site_name,
         a.contact_person,
         a.contact_phone
       FROM material_requests mr
@@ -317,11 +315,55 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const { company_id } = req.query; // 可選的公司 ID 參數
 
     const fullRequest = await getFullRequest(parseInt(id));
 
     if (!fullRequest || fullRequest.user_id !== req.user?.id) {
       return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // 如果提供了 company_id，覆蓋公司資訊
+    if (company_id) {
+      let selectedCompanyName = '';
+      let selectedCompanyTaxId = '';
+
+      if (typeof company_id === 'string' && company_id.startsWith('env_')) {
+        // 環境變數公司
+        const envIndex = parseInt(company_id.replace('env_', ''));
+        if (process.env.COMPANIES) {
+          try {
+            const companiesData = JSON.parse(process.env.COMPANIES);
+            const companiesArray = Array.isArray(companiesData) ? companiesData : [companiesData];
+            if (companiesArray[envIndex]) {
+              selectedCompanyName = companiesArray[envIndex].name || companiesArray[envIndex].company_name || '';
+              selectedCompanyTaxId = companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || '';
+            }
+          } catch (error) {
+            console.warn('無法解析環境變數公司資訊:', error);
+          }
+        }
+      } else {
+        // 數據庫公司
+        try {
+          const companyResult = await query(
+            'SELECT name, tax_id FROM companies WHERE id = $1 AND user_id = $2',
+            [company_id, req.user?.id]
+          );
+          if (companyResult.rows.length > 0) {
+            selectedCompanyName = companyResult.rows[0].name || '';
+            selectedCompanyTaxId = companyResult.rows[0].tax_id || '';
+          }
+        } catch (error) {
+          console.warn('查詢公司資訊失敗:', error);
+        }
+      }
+
+      // 覆蓋公司資訊
+      if (selectedCompanyName && selectedCompanyTaxId) {
+        fullRequest.company_name = selectedCompanyName;
+        fullRequest.company_tax_id = selectedCompanyTaxId;
+      }
     }
 
     const excelBuffer = await generateExcel(fullRequest);
@@ -374,7 +416,6 @@ async function getFullRequest(requestId: number) {
       c.name as company_name,
       c.tax_id as company_tax_id,
       a.address as delivery_address,
-      a.site_name,
       a.contact_person,
       a.contact_phone
     FROM material_requests mr

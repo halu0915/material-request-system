@@ -1,11 +1,25 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import api from '../utils/api';
 
 export default function RequestDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [showCompanyDialog, setShowCompanyDialog] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | number | ''>('');
+
+  // Fetch companies for selection
+  const { data: companiesData } = useQuery({
+    queryKey: ['companies'],
+    queryFn: async () => {
+      const response = await api.get('/api/companies');
+      return response.data;
+    }
+  });
+
+  const companies = companiesData?.companies || [];
 
   const { data, isLoading } = useQuery({
     queryKey: ['request', id],
@@ -39,10 +53,16 @@ export default function RequestDetail() {
     }
   };
 
-  const handleDownloadExcel = async () => {
+  const handleDownloadExcel = async (companyId?: string | number) => {
     if (!id) return;
     try {
+      const params: any = {};
+      if (companyId) {
+        params.company_id = companyId;
+      }
+      
       const response = await api.get(`/api/requests/${id}/excel`, {
+        params,
         responseType: 'blob',
         validateStatus: (status) => status === 200
       });
@@ -103,6 +123,21 @@ export default function RequestDetail() {
         alert(error.response?.data?.error || '下載 Excel 失敗，請稍後再試');
       }
     }
+  };
+
+  const handleDownloadClick = () => {
+    setShowCompanyDialog(true);
+    setSelectedCompanyId('');
+  };
+
+  const handleConfirmDownload = () => {
+    setShowCompanyDialog(false);
+    handleDownloadExcel(selectedCompanyId || undefined);
+  };
+
+  const handleCancelDownload = () => {
+    setShowCompanyDialog(false);
+    setSelectedCompanyId('');
   };
 
   if (isLoading) {

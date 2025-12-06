@@ -1,9 +1,24 @@
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import api from '../utils/api';
 
 export default function RequestList() {
   const queryClient = useQueryClient();
+  const [showCompanyDialog, setShowCompanyDialog] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | number | ''>('');
+  const [pendingDownload, setPendingDownload] = useState<{ requestId: number; requestNumber: string } | null>(null);
+
+  // Fetch companies for selection
+  const { data: companiesData } = useQuery({
+    queryKey: ['companies'],
+    queryFn: async () => {
+      const response = await api.get('/api/companies');
+      return response.data;
+    }
+  });
+
+  const companies = companiesData?.companies || [];
   
   const { data, isLoading } = useQuery({
     queryKey: ['requests'],
@@ -34,9 +49,15 @@ export default function RequestList() {
     }
   };
 
-  const handleDownloadExcel = async (requestId: number, requestNumber: string) => {
+  const handleDownloadExcel = async (requestId: number, requestNumber: string, companyId?: string | number) => {
     try {
+      const params: any = {};
+      if (companyId) {
+        params.company_id = companyId;
+      }
+      
       const response = await api.get(`/api/requests/${requestId}/excel`, {
+        params,
         responseType: 'blob',
         validateStatus: (status) => status === 200
       });
@@ -97,6 +118,27 @@ export default function RequestList() {
         alert(error.response?.data?.error || '下載 Excel 失敗，請稍後再試');
       }
     }
+  };
+
+  const handleDownloadClick = (requestId: number, requestNumber: string) => {
+    setPendingDownload({ requestId, requestNumber });
+    setShowCompanyDialog(true);
+    setSelectedCompanyId('');
+  };
+
+  const handleConfirmDownload = () => {
+    if (pendingDownload) {
+      setShowCompanyDialog(false);
+      handleDownloadExcel(pendingDownload.requestId, pendingDownload.requestNumber, selectedCompanyId || undefined);
+      setPendingDownload(null);
+      setSelectedCompanyId('');
+    }
+  };
+
+  const handleCancelDownload = () => {
+    setShowCompanyDialog(false);
+    setPendingDownload(null);
+    setSelectedCompanyId('');
   };
 
   const requests = data?.requests || [];
@@ -206,12 +248,12 @@ export default function RequestList() {
                         >
                           查看
                         </Link>
-                        <button
-                          onClick={() => handleDownloadExcel(request.id, request.request_number)}
-                          className="text-green-600 hover:text-green-900 mr-4"
-                        >
-                          下載 Excel
-                        </button>
+                      <button
+                        onClick={() => handleDownloadClick(request.id, request.request_number)}
+                        className="text-green-600 hover:text-green-900 mr-4"
+                      >
+                        下載 Excel
+                      </button>
                         <button
                           onClick={() => handleDelete(request.id, request.request_number)}
                           disabled={deleteRequest.isPending}

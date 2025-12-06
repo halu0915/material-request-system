@@ -98,18 +98,37 @@ if (process.env.NODE_ENV === 'production') {
       console.warn('📋 將使用備用 HTML 頁面');
       console.log('✅ 備用 HTML 頁面已設置:', publicPath);
       
-      // Serve index.html for root route
+      // Serve dashboard.html as main page if it exists, otherwise use index.html
       app.get('/', (req, res) => {
+        const dashboardPath = path.join(publicPath, 'dashboard.html');
+        if (fs.existsSync(dashboardPath)) {
+          return res.sendFile(dashboardPath);
+        }
+        // Fallback to index.html if dashboard doesn't exist
         const backupHtml = path.join(publicPath, 'index.html');
         res.sendFile(backupHtml);
       });
 
-      // Fallback for all other routes (SPA routing)
+      // Serve dashboard.html route
+      app.get('/dashboard.html', (req, res) => {
+        const dashboardPath = path.join(publicPath, 'dashboard.html');
+        if (fs.existsSync(dashboardPath)) {
+          return res.sendFile(dashboardPath);
+        }
+        res.status(404).send('Dashboard not found');
+      });
+
+      // Fallback for all other routes
       app.get('*', (req, res, next) => {
         if (req.path.startsWith('/api') || req.path === '/health') {
           return next();
         }
-        // Serve index.html for all other routes (SPA routing)
+        // Try dashboard first, then index.html
+        const dashboardPath = path.join(publicPath, 'dashboard.html');
+        if (fs.existsSync(dashboardPath)) {
+          return res.sendFile(dashboardPath);
+        }
+        // Fallback to index.html
         const backupHtml = path.join(publicPath, 'index.html');
         res.sendFile(backupHtml, (err) => {
           if (err) {
@@ -144,23 +163,11 @@ if (process.env.NODE_ENV === 'production') {
   const publicPath = path.join(__dirname, '../public');
   if (fs.existsSync(path.join(publicPath, 'index.html'))) {
     app.use(express.static(publicPath));
-    // Serve index.html for root route
     app.get('/', (req, res) => {
       if (req.path.startsWith('/api')) {
         return;
       }
       res.sendFile(path.join(publicPath, 'index.html'));
-    });
-    // Serve index.html for all other non-API routes (SPA routing)
-    app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api') || req.path === '/health') {
-        return next();
-      }
-      res.sendFile(path.join(publicPath, 'index.html'), (err) => {
-        if (err) {
-          next(err);
-        }
-      });
     });
   }
 }
