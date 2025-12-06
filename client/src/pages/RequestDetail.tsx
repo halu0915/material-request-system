@@ -1,9 +1,11 @@
-import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../utils/api';
 
 export default function RequestDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ['request', id],
@@ -12,6 +14,30 @@ export default function RequestDetail() {
       return response.data;
     }
   });
+
+  const deleteRequest = useMutation({
+    mutationFn: async (requestId: number) => {
+      const response = await api.delete(`/api/requests/${requestId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      navigate('/requests');
+    }
+  });
+
+  const handleDelete = async () => {
+    if (!id || !data?.request) return;
+    
+    if (window.confirm(`確定要刪除叫料單 ${data.request.request_number} 嗎？此操作無法復原。`)) {
+      try {
+        await deleteRequest.mutateAsync(parseInt(id));
+        alert('叫料單已刪除');
+      } catch (error: any) {
+        alert(error.response?.data?.error || '刪除失敗');
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -43,13 +69,22 @@ export default function RequestDetail() {
         >
           ← 返回列表
         </Link>
-        <a
-          href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/requests/${id}/excel`}
-          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-          download
-        >
-          下載 Excel
-        </a>
+        <div className="flex gap-3">
+          <a
+            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/requests/${id}/excel`}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+            download
+          >
+            下載 Excel
+          </a>
+          <button
+            onClick={handleDelete}
+            disabled={deleteRequest.isPending}
+            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 disabled:opacity-50"
+          >
+            {deleteRequest.isPending ? '刪除中...' : '刪除叫料單'}
+          </button>
+        </div>
       </div>
 
       <div className="bg-white shadow rounded-lg overflow-hidden">

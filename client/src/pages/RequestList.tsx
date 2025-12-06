@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../utils/api';
 
 export default function RequestList() {
+  const queryClient = useQueryClient();
+  
   const { data, isLoading } = useQuery({
     queryKey: ['requests'],
     queryFn: async () => {
@@ -10,6 +12,27 @@ export default function RequestList() {
       return response.data;
     }
   });
+
+  const deleteRequest = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await api.delete(`/api/requests/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+    }
+  });
+
+  const handleDelete = async (id: number, requestNumber: string) => {
+    if (window.confirm(`確定要刪除叫料單 ${requestNumber} 嗎？此操作無法復原。`)) {
+      try {
+        await deleteRequest.mutateAsync(id);
+        alert('叫料單已刪除');
+      } catch (error: any) {
+        alert(error.response?.data?.error || '刪除失敗');
+      }
+    }
+  };
 
   const requests = data?.requests || [];
 
@@ -97,12 +120,19 @@ export default function RequestList() {
                         查看
                       </Link>
                       <a
-                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/requests/${request.id}/excel`}
-                        className="text-green-600 hover:text-green-900"
+                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/requests/${request.id}/excel`}
+                        className="text-green-600 hover:text-green-900 mr-4"
                         download
                       >
                         下載 Excel
                       </a>
+                      <button
+                        onClick={() => handleDelete(request.id, request.request_number)}
+                        disabled={deleteRequest.isPending}
+                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                      >
+                        {deleteRequest.isPending ? '刪除中...' : '刪除'}
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -319,6 +319,31 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
   }
 });
 
+// Delete material request
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if request exists and belongs to user
+    const checkResult = await query(
+      'SELECT id FROM material_requests WHERE id = $1 AND user_id = $2',
+      [id, req.user?.id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // Delete request (cascade will delete items due to ON DELETE CASCADE)
+    await query('DELETE FROM material_requests WHERE id = $1 AND user_id = $2', [id, req.user?.id]);
+
+    res.json({ message: '叫料單已刪除' });
+  } catch (error: any) {
+    console.error('刪除叫料單錯誤:', error);
+    res.status(500).json({ error: '刪除叫料單失敗' });
+  }
+});
+
 // Helper function to get full request with items
 async function getFullRequest(requestId: number) {
   const requestResult = await query(
