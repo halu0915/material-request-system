@@ -71,9 +71,10 @@ export async function generateExcel(request: any): Promise<Buffer> {
     console.warn('取得地址資訊失敗:', error);
   }
 
-  // Get site name (工區) - 從送貨地址提取
+  // Get site name (工區) - 從送貨地址提取工區名稱（不包含詳細地址）
   // 地址格式通常是：工區 - 詳細地址
   // 例如：三總 - 台北市內湖區成功路二段325號
+  // 提取後只使用工區部分（如：三總），不包含詳細地址
   let siteName = '';
   if (deliveryAddress) {
     // 優先使用 " - " 分割（空格+破折號+空格）

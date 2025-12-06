@@ -7,24 +7,41 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
+// Helper function to extract site name (工區) - 只從地址中提取工區，不包含詳細地址
+function extractSiteName(deliveryAddress?: string): string {
+  if (!deliveryAddress) return '';
+  
+  // 優先使用 " - " 分割（空格+破折號+空格）
+  const parts = deliveryAddress.split(' - ');
+  if (parts.length > 1 && parts[0].trim()) {
+    // 如果有 " - "，第一部分就是工區
+    return parts[0].trim();
+  }
+  
+  // 如果沒有 " - "，嘗試用 "-" 分割（無空格）
+  const parts2 = deliveryAddress.split('-');
+  if (parts2.length > 1 && parts2[0].trim()) {
+    return parts2[0].trim();
+  }
+  
+  // 如果地址中沒有分隔符，嘗試從地址中提取常見的工區名稱
+  const commonSites = ['三總', '金山', '關西', '新竹', '台北', '台中', '高雄'];
+  for (const site of commonSites) {
+    if (deliveryAddress.includes(site)) {
+      return site;
+    }
+  }
+  
+  return '';
+}
+
 // Helper function to generate filename: 工區＋叫料單＋時間＿（工程類別）
 function generateFilename(request: any): string {
   const createdDate = new Date(request.created_at);
   const dateStr = `${createdDate.getFullYear()}${String(createdDate.getMonth() + 1).padStart(2, '0')}${String(createdDate.getDate()).padStart(2, '0')}`;
   
-  // 提取工區（從地址中）
-  let siteName = '';
-  if (request.delivery_address) {
-    const parts = request.delivery_address.split(' - ');
-    if (parts.length > 1 && parts[0].trim()) {
-      siteName = parts[0].trim();
-    } else {
-      const parts2 = request.delivery_address.split('-');
-      if (parts2.length > 1 && parts2[0].trim()) {
-        siteName = parts2[0].trim();
-      }
-    }
-  }
+  // 提取工區（只使用工區，不包含地址）
+  const siteName = extractSiteName(request.delivery_address);
   
   const categoryName = request.construction_category_name || '未分類';
   const sitePrefix = siteName ? `${siteName}-` : '';
