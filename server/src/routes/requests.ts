@@ -195,7 +195,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         `INSERT INTO material_requests 
          (user_id, company_id, address_id, request_number, construction_category_id, notes, status)
          VALUES ($1, $2, $3, $4, $5, $6, 'pending') RETURNING *`,
-        [req.user?.id, dbCompanyId, address_id || null, requestNumber, construction_category_id, notes || null]
+        [req.user?.id, dbCompanyId, dbAddressId, requestNumber, construction_category_id, notes || null]
       );
 
       const request = requestResult.rows[0];
