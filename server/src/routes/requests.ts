@@ -213,8 +213,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       // Create request
       const requestResult = await client.query(
         `INSERT INTO material_requests 
-         (user_id, company_id, address_id, request_number, construction_category_id, notes, status)
-         VALUES ($1, $2, $3, $4, $5, $6, 'pending') RETURNING *`,
+         (user_id, company_id, address_id, request_number, construction_category_id, notes, status, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 'pending', CURRENT_TIMESTAMP) RETURNING *`,
         [req.user?.id, dbCompanyId, dbAddressId, requestNumber, construction_category_id, notes || null]
       );
 
