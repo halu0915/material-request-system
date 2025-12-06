@@ -54,60 +54,50 @@ export async function generateExcel(request: any): Promise<Buffer> {
   
   try {
     // 優先使用已經 JOIN 的地址資訊（如果有的話）
-    // 檢查是否有任何 JOIN 的資料或 address_id
-    const hasJoinData = request.delivery_address !== undefined || 
-                        request.contact_person !== undefined || 
-                        request.contact_phone !== undefined;
+    // 注意：JOIN 的結果可能是 null（如果沒有匹配的地址），需要處理
+    console.log('檢查地址資訊 - address_id:', request.address_id, 'delivery_address:', request.delivery_address, 'contact_person:', request.contact_person, 'contact_phone:', request.contact_phone);
     
-    if (hasJoinData) {
-      // 優先使用 JOIN 的資料（即使為空字串也使用，因為空字串表示該欄位確實是空的）
-      if (request.delivery_address !== undefined) {
-        deliveryAddress = request.delivery_address || '';
-      }
-      if (request.contact_phone !== undefined) {
-        contactPhone = request.contact_phone || '';
-      }
-      if (request.contact_person !== undefined) {
-        contactPerson = request.contact_person || '';
-      }
-      console.log('使用 JOIN 的地址資訊:', { deliveryAddress, contactPhone, contactPerson, address_id: request.address_id });
-    }
-    
-    // 如果沒有 JOIN 的資料，但有 address_id，則查詢資料庫
+    // 如果有 address_id，優先從資料庫查詢（因為 JOIN 可能返回 null）
     if (request.address_id) {
-      // 只有在沒有 JOIN 資料，或者 JOIN 資料中某些欄位為 undefined 時才查詢
-      const needQuery = !hasJoinData || 
-                       request.delivery_address === undefined || 
-                       request.contact_phone === undefined || 
-                       request.contact_person === undefined;
-      
-      if (needQuery) {
-        const addressResult = await query(
-          'SELECT address, site_name, contact_person, contact_phone FROM addresses WHERE id = $1',
-          [request.address_id]
-        );
-        if (addressResult.rows.length > 0) {
-          // 只補充 undefined 的欄位（如果 JOIN 資料中沒有該欄位）
-          if (request.delivery_address === undefined) {
-            deliveryAddress = addressResult.rows[0].address || '';
-          }
-          if (request.contact_phone === undefined) {
-            contactPhone = addressResult.rows[0].contact_phone || '';
-          }
-          if (request.contact_person === undefined) {
-            contactPerson = addressResult.rows[0].contact_person || '';
-          }
-          // 確保 site_name 被設置到 request 對象中，這樣後續可以優先使用
-          if (addressResult.rows[0].site_name) {
-            request.site_name = addressResult.rows[0].site_name;
-          }
-          console.log('從資料庫查詢/補充地址資訊:', { deliveryAddress, contactPhone, contactPerson, site_name: addressResult.rows[0].site_name });
-        } else {
-          console.warn('找不到地址資訊，address_id:', request.address_id);
+      const addressResult = await query(
+        'SELECT address, site_name, contact_person, contact_phone FROM addresses WHERE id = $1',
+        [request.address_id]
+      );
+      if (addressResult.rows.length > 0) {
+        // 優先使用資料庫查詢的結果
+        deliveryAddress = addressResult.rows[0].address || '';
+        contactPhone = addressResult.rows[0].contact_phone || '';
+        contactPerson = addressResult.rows[0].contact_person || '';
+        // 確保 site_name 被設置到 request 對象中
+        if (addressResult.rows[0].site_name) {
+          request.site_name = addressResult.rows[0].site_name;
+        }
+        console.log('從資料庫查詢地址資訊:', { deliveryAddress, contactPhone, contactPerson, site_name: addressResult.rows[0].site_name, address_id: request.address_id });
+      } else {
+        console.warn('找不到地址資訊，address_id:', request.address_id);
+        // 如果資料庫查詢失敗，嘗試使用 JOIN 的資料（即使為 null）
+        if (request.delivery_address !== undefined && request.delivery_address !== null) {
+          deliveryAddress = request.delivery_address || '';
+        }
+        if (request.contact_phone !== undefined && request.contact_phone !== null) {
+          contactPhone = request.contact_phone || '';
+        }
+        if (request.contact_person !== undefined && request.contact_person !== null) {
+          contactPerson = request.contact_person || '';
         }
       }
     } else {
-      console.warn('沒有 address_id，無法取得地址資訊');
+      // 如果沒有 address_id，嘗試使用 JOIN 的資料
+      if (request.delivery_address !== undefined && request.delivery_address !== null) {
+        deliveryAddress = request.delivery_address || '';
+      }
+      if (request.contact_phone !== undefined && request.contact_phone !== null) {
+        contactPhone = request.contact_phone || '';
+      }
+      if (request.contact_person !== undefined && request.contact_person !== null) {
+        contactPerson = request.contact_person || '';
+      }
+      console.log('使用 JOIN 的地址資訊（無 address_id）:', { deliveryAddress, contactPhone, contactPerson });
     }
     // 如果沒有 address_id，不顯示地址資訊（保持為空字串）
   } catch (error) {

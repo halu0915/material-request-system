@@ -196,4 +196,3 @@ export const createTables = async (): Promise<void> => {
     throw error;
   }
 };
-

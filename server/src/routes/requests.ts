@@ -49,6 +49,69 @@ function generateFilename(request: any): string {
   return `${sitePrefix}叫料單-${dateStr}_(${categoryName}).xlsx`;
 }
 
+// Helper function to extract site name (工區) - 只從地址中提取工區，不包含詳細地址
+function extractSiteName(deliveryAddress?: string): string {
+  if (!deliveryAddress) return '';
+  
+  // 優先使用 " - " 分割（空格+破折號+空格）
+  const parts = deliveryAddress.split(' - ');
+  if (parts.length > 1 && parts[0].trim()) {
+    // 如果有 " - "，第一部分就是工區
+        u.email as user_email,
+        c.name as company_name,
+        c.tax_id as company_tax_id,
+        a.address as delivery_address,
+        a.site_name,
+        a.contact_person,
+        a.contact_phone,
+        COALESCE(SUM(mri.quantity), 0) as total_quantity,
+        STRING_AGG(DISTINCT m.name, ', ') as material_names
+  }
+  
+  // 如果沒有 " - "，嘗試用 "-" 分割（無空格）
+      LEFT JOIN companies c ON (mr.company_id IS NOT NULL AND mr.company_id::text ~ '^[0-9]+$' AND (mr.company_id::text)::integer = c.id)
+      LEFT JOIN addresses a ON (mr.address_id IS NOT NULL AND mr.address_id::text ~ '^[0-9]+$' AND (mr.address_id::text)::integer = a.id)
+      LEFT JOIN material_request_items mri ON mr.id = mri.request_id
+      LEFT JOIN materials m ON mri.material_id = m.id
+  const parts2 = deliveryAddress.split('-');
+      GROUP BY mr.id, cc.name, u.name, u.email, c.name, c.tax_id, a.address, a.site_name, a.contact_person, a.contact_phone
+  if (parts2.length > 1 && parts2[0].trim()) {
+    return parts2[0].trim();
+  }
+  
+  // 如果地址中沒有分隔符，嘗試從地址中提取常見的工區名稱
+  const commonSites = ['三總', '金山', '關西', '新竹', '台北', '台中', '高雄'];
+  for (const site of commonSites) {
+    if (deliveryAddress.includes(site)) {
+      return site;
+    }
+  }
+  
+  return '';
+}
+
+// Helper function to generate filename: 工區＋叫料單＋時間＿（工程類別）
+function generateFilename(request: any): string {
+  const createdDate = new Date(request.created_at);
+  const dateStr = `${createdDate.getFullYear()}${String(createdDate.getMonth() + 1).padStart(2, '0')}${String(createdDate.getDate()).padStart(2, '0')}`;
+  
+  // 提取工區（只使用工區，不包含地址）
+  const siteName = extractSiteName(request.delivery_address);
+        u.email as user_email,
+        c.name as company_name,
+        c.tax_id as company_tax_id,
+        a.address as delivery_address,
+        a.site_name,
+        a.contact_person,
+        a.contact_phone
+  const categoryName = request.construction_category_name || '未分類';
+  const sitePrefix = siteName ? `${siteName}-` : '';
+  
+      LEFT JOIN companies c ON (mr.company_id IS NOT NULL AND mr.company_id::text ~ '^[0-9]+$' AND (mr.company_id::text)::integer = c.id)
+      LEFT JOIN addresses a ON (mr.address_id IS NOT NULL AND mr.address_id::text ~ '^[0-9]+$' AND (mr.address_id::text)::integer = a.id)
+  return `${sitePrefix}叫料單-${dateStr}_(${categoryName}).xlsx`;
+}
+
 // Get all requests
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -82,12 +145,61 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     res.json({ requests: result.rows });
   } catch (error) {
     console.error('取得叫料單錯誤:', error);
-    res.status(500).json({ error: '取得叫料單失敗' });
+    const { construction_category_id, items, notes, company_id, address_id } = req.body;
   }
 });
 
 // Get single request
 router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+    // Handle company_id - if it's from environment variable (starts with "env_"), don't save to DB
+    // but we'll use it in Excel generation
+    let dbCompanyId = null;
+    let envCompanyInfo = null;
+    
+    if (company_id) {
+      if (typeof company_id === 'string' && company_id.startsWith('env_')) {
+        // This is an environment variable company, extract info from COMPANIES
+        const envIndex = parseInt(company_id.replace('env_', ''));
+        if (process.env.COMPANIES) {
+          try {
+            const companiesData = JSON.parse(process.env.COMPANIES);
+            const companiesArray = Array.isArray(companiesData) ? companiesData : [companiesData];
+            if (companiesArray[envIndex]) {
+              envCompanyInfo = {
+                name: companiesArray[envIndex].name || companiesArray[envIndex].company_name || '',
+                tax_id: companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || ''
+              };
+            }
+          } catch (error) {
+            console.warn('無法解析環境變數公司資訊:', error);
+          }
+        }
+        // Don't save env company ID to database
+        dbCompanyId = null;
+      } else {
+        // Database company ID - validate it's a valid integer
+        const companyIdNum = typeof company_id === 'string' ? parseInt(company_id) : company_id;
+        if (!isNaN(companyIdNum) && Number.isInteger(companyIdNum) && companyIdNum > 0) {
+          dbCompanyId = companyIdNum;
+        } else {
+          console.warn('無效的 company_id:', company_id, '將設為 null');
+          dbCompanyId = null;
+        }
+      }
+    }
+    
+    // Handle address_id - validate it's a valid integer
+    let dbAddressId = null;
+    if (address_id) {
+      const addressIdNum = typeof address_id === 'string' ? parseInt(address_id) : address_id;
+      if (!isNaN(addressIdNum) && Number.isInteger(addressIdNum) && addressIdNum > 0) {
+        dbAddressId = addressIdNum;
+      } else {
+        console.warn('無效的 address_id:', address_id, '將設為 null');
+        dbAddressId = null;
+      }
+    }
+
   try {
     const { id } = req.params;
 
@@ -101,9 +213,9 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
         c.name as company_name,
         c.tax_id as company_tax_id,
         a.address as delivery_address,
-        a.site_name,
-        a.contact_person,
-        a.contact_phone
+         (user_id, company_id, address_id, request_number, construction_category_id, notes, status, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 'pending', CURRENT_TIMESTAMP) RETURNING *`,
+        [req.user?.id, dbCompanyId, dbAddressId, requestNumber, construction_category_id, notes || null]
       FROM material_requests mr
       LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
       LEFT JOIN users u ON mr.user_id = u.id
@@ -129,15 +241,22 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
       LEFT JOIN material_categories mc ON m.material_category_id = mc.id
       WHERE mri.request_id = $1
       ORDER BY mc.name, m.name`,
+      
+      // If environment variable company was selected, override company info
+      if (envCompanyInfo) {
+        fullRequest.company_name = envCompanyInfo.name;
+        fullRequest.company_tax_id = envCompanyInfo.tax_id;
+      }
       [id]
     );
 
+      const filename = generateFilename(fullRequest);
     res.json({
       request: requestResult.rows[0],
       items: itemsResult.rows
     });
   } catch (error) {
-    console.error('取得叫料單錯誤:', error);
+        const cloudResult = await uploadToCloud(excelBuffer, filename);
     res.status(500).json({ error: '取得叫料單失敗' });
   }
 });
@@ -162,7 +281,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         const envIndex = parseInt(company_id.replace('env_', ''));
         if (process.env.COMPANIES) {
           try {
-            const companiesData = JSON.parse(process.env.COMPANIES);
+          excelBuffer,
+          filenamepaniesData = JSON.parse(process.env.COMPANIES);
             const companiesArray = Array.isArray(companiesData) ? companiesData : [companiesData];
             if (companiesArray[envIndex]) {
               envCompanyInfo = {
@@ -215,6 +335,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         `INSERT INTO material_requests 
          (user_id, company_id, address_id, request_number, construction_category_id, notes, status, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, 'pending', CURRENT_TIMESTAMP) RETURNING *`,
+    const { company_id } = req.query; // 可選的公司 ID 參數
         [req.user?.id, dbCompanyId, dbAddressId, requestNumber, construction_category_id, notes || null]
       );
 
@@ -222,10 +343,72 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
       // Create request items
       for (const item of items) {
+    // 如果提供了 company_id，覆蓋公司資訊
+    if (company_id) {
+      let selectedCompanyName = '';
+      let selectedCompanyTaxId = '';
+
+      const companyIdStr = String(company_id);
+      
+      if (companyIdStr.startsWith('env_')) {
+        // 環境變數公司
+        const envIndex = parseInt(companyIdStr.replace('env_', ''));
+        if (process.env.COMPANIES) {
+          try {
+            const companiesData = JSON.parse(process.env.COMPANIES);
+            const companiesArray = Array.isArray(companiesData) ? companiesData : [companiesData];
+            if (companiesArray[envIndex]) {
+              selectedCompanyName = companiesArray[envIndex].name || companiesArray[envIndex].company_name || '';
+              selectedCompanyTaxId = companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || '';
+              console.log('從環境變數獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, envIndex });
+            }
+          } catch (error) {
+            console.warn('無法解析環境變數公司資訊:', error);
+          }
+        }
+      } else {
+        // 數據庫公司
+        const companyIdNum = parseInt(companyIdStr);
+        if (!isNaN(companyIdNum)) {
+          try {
+            const companyResult = await query(
+              'SELECT name, tax_id FROM companies WHERE id = $1 AND user_id = $2',
+              [companyIdNum, req.user?.id]
+            );
+            if (companyResult.rows.length > 0) {
+              selectedCompanyName = companyResult.rows[0].name || '';
+              selectedCompanyTaxId = companyResult.rows[0].tax_id || '';
+              console.log('從數據庫獲取公司資訊:', { selectedCompanyName, selectedCompanyTaxId, companyIdNum });
+            } else {
+              console.warn('找不到公司，ID:', companyIdNum, '用戶ID:', req.user?.id);
+            }
+          } catch (error) {
+            console.error('查詢公司資訊失敗:', error);
+          }
+        } else {
+          console.warn('無效的公司 ID:', companyIdStr);
+        }
+      }
+
+      // 覆蓋公司資訊（只要有公司名稱就覆蓋）
+      if (selectedCompanyName) {
+        fullRequest.company_name = selectedCompanyName;
+        fullRequest.company_tax_id = selectedCompanyTaxId || '';
+        // 清除 company_id，確保 generateExcel 使用覆蓋的資訊
+        fullRequest.company_id = null;
+        console.log('已覆蓋公司資訊:', { company_name: fullRequest.company_name, company_tax_id: fullRequest.company_tax_id });
+      } else {
+        console.warn('無法獲取公司資訊，company_id:', company_id);
+      }
+    }
+
         await client.query(
           `INSERT INTO material_request_items 
+    // Generate filename: 工區＋叫料單＋時間＿（工程類別）
+    const filename = generateFilename(fullRequest);
+
            (request_id, material_id, quantity, unit, notes)
-           VALUES ($1, $2, $3, $4, $5)`,
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
           [
             request.id,
             item.material_id,
@@ -233,6 +416,31 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
             item.unit || null,
             item.notes || null
           ]
+// Delete material request
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if request exists and belongs to user
+    const checkResult = await query(
+      'SELECT id FROM material_requests WHERE id = $1 AND user_id = $2',
+      [id, req.user?.id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: '找不到叫料單' });
+    }
+
+    // Delete request (cascade will delete items due to ON DELETE CASCADE)
+    await query('DELETE FROM material_requests WHERE id = $1 AND user_id = $2', [id, req.user?.id]);
+
+    res.json({ message: '叫料單已刪除' });
+  } catch (error: any) {
+    console.error('刪除叫料單錯誤:', error);
+    res.status(500).json({ error: '刪除叫料單失敗' });
+  }
+});
+
         );
       }
 
@@ -240,10 +448,18 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       client.release();
 
       // Get full request data
-      const fullRequest = await getFullRequest(request.id);
+      u.email as user_email,
+      c.name as company_name,
+      c.tax_id as company_tax_id,
+      a.address as delivery_address,
+      a.site_name,
+      a.contact_person,
+      a.contact_phonewait getFullRequest(request.id);
       
       // If environment variable company was selected, override company info
       if (envCompanyInfo) {
+    LEFT JOIN companies c ON (mr.company_id IS NOT NULL AND mr.company_id::text ~ '^[0-9]+$' AND (mr.company_id::text)::integer = c.id)
+    LEFT JOIN addresses a ON (mr.address_id IS NOT NULL AND mr.address_id::text ~ '^[0-9]+$' AND (mr.address_id::text)::integer = a.id)
         fullRequest.company_name = envCompanyInfo.name;
         fullRequest.company_tax_id = envCompanyInfo.tax_id;
       }
@@ -275,7 +491,6 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
           'SELECT email, name FROM users WHERE id = $1',
           [req.user?.id]
         );
-        const user = userResult.rows[0];
 
         await sendEmail({
           to: user.email,
@@ -458,8 +673,8 @@ async function getFullRequest(requestId: number) {
     FROM material_requests mr
     LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
     LEFT JOIN users u ON mr.user_id = u.id
-    LEFT JOIN companies c ON (mr.company_id IS NOT NULL AND mr.company_id::text ~ '^[0-9]+$' AND (mr.company_id::text)::integer = c.id)
-    LEFT JOIN addresses a ON (mr.address_id IS NOT NULL AND mr.address_id::text ~ '^[0-9]+$' AND (mr.address_id::text)::integer = a.id)
+    LEFT JOIN companies c ON mr.company_id::text ~ '^[0-9]+$' AND mr.company_id::integer = c.id
+    LEFT JOIN addresses a ON mr.address_id::text ~ '^[0-9]+$' AND mr.address_id::integer = a.id
     WHERE mr.id = $1`,
     [requestId]
   );
@@ -491,3 +706,4 @@ async function getFullRequest(requestId: number) {
 }
 
 export default router;
+

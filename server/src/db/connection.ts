@@ -48,4 +48,3 @@ export const query = async (text: string, params?: any[]): Promise<any> => {
 export const getClient = async (): Promise<PoolClient> => {
   return await pool.connect();
 };
-
