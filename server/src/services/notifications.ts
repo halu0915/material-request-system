@@ -304,13 +304,18 @@ export async function generateExcel(request: any): Promise<Buffer> {
 
   let currentRow = 3; // 從第3行開始（前2行是公司資訊和統編，已取消空行）
   addInfoRow('叫料單號', request.request_number, currentRow++);
-  addInfoRow('建立日期', new Date(request.created_at).toLocaleString('zh-TW', { 
+  // 格式化建立日期為台灣時區（Asia/Taipei）
+  const createdDate = new Date(request.created_at);
+  const taiwanDateStr = createdDate.toLocaleString('zh-TW', { 
+    timeZone: 'Asia/Taipei',
     year: 'numeric', 
     month: '2-digit', 
     day: '2-digit', 
     hour: '2-digit', 
-    minute: '2-digit' 
-  }), currentRow++);
+    minute: '2-digit',
+    hour12: false
+  });
+  addInfoRow('建立日期', taiwanDateStr, currentRow++);
   // 申請人欄位已取消，待建立登入系統架構後再實作
   // addInfoRow('申請人', applicantName, currentRow++);
   // 工區資訊（必須顯示，即使為空）
