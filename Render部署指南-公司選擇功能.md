@@ -126,3 +126,4 @@ SMTP_FROM=noreply@materialrequest.com
 - ✅ 材料規格支持
 - ✅ 月統計自動計算
 
+

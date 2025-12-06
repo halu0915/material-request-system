@@ -57,10 +57,17 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         mr.*,
         cc.name as construction_category_name,
         u.name as user_name,
-        u.email as user_email
+        u.email as user_email,
+        c.name as company_name,
+        c.tax_id as company_tax_id,
+        a.address as delivery_address,
+        a.contact_person,
+        a.contact_phone
       FROM material_requests mr
       LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
       LEFT JOIN users u ON mr.user_id = u.id
+      LEFT JOIN companies c ON mr.company_id = c.id
+      LEFT JOIN addresses a ON mr.address_id = a.id
       WHERE mr.user_id = $1
       ORDER BY mr.created_at DESC`,
       [req.user?.id]
@@ -84,10 +91,17 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
         mr.*,
         cc.name as construction_category_name,
         u.name as user_name,
-        u.email as user_email
+        u.email as user_email,
+        c.name as company_name,
+        c.tax_id as company_tax_id,
+        a.address as delivery_address,
+        a.contact_person,
+        a.contact_phone
       FROM material_requests mr
       LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
       LEFT JOIN users u ON mr.user_id = u.id
+      LEFT JOIN companies c ON mr.company_id = c.id
+      LEFT JOIN addresses a ON mr.address_id = a.id
       WHERE mr.id = $1 AND mr.user_id = $2`,
       [id, req.user?.id]
     );

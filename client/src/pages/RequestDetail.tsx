@@ -133,30 +133,36 @@ export default function RequestDetail() {
 
           <div>
             <label className="block text-sm font-medium text-gray-500 mb-3">材料明細</label>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">材料類別</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">材料名稱</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">數量</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">單位</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">備註</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {items.map((item: any) => (
-                    <tr key={item.id}>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.material_category_name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.material_name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.quantity}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{item.unit || item.material_unit || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{item.notes || '-'}</td>
+            {items && items.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">材料類別</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">材料名稱</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">數量</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">單位</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">備註</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {items.map((item: any) => (
+                      <tr key={item.id}>
+                        <td className="px-4 py-3 text-sm text-gray-900">{item.material_category_name || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{item.material_name || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{item.quantity || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{item.unit || item.material_unit || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{item.notes || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                尚無材料明細
+              </div>
+            )}
           </div>
         </div>
       </div>

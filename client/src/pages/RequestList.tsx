@@ -36,6 +36,20 @@ export default function RequestList() {
 
   const requests = data?.requests || [];
 
+  // 提取工區名稱（從地址中）
+  const extractSiteName = (address?: string): string => {
+    if (!address) return '';
+    const parts = address.split(' - ');
+    if (parts.length > 1 && parts[0].trim()) {
+      return parts[0].trim();
+    }
+    const parts2 = address.split('-');
+    if (parts2.length > 1 && parts2[0].trim()) {
+      return parts2[0].trim();
+    }
+    return '';
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -76,6 +90,9 @@ export default function RequestList() {
                     叫料單號
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    工區
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     施工類別
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -90,14 +107,19 @@ export default function RequestList() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {requests.map((request: any) => (
-                  <tr key={request.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {request.request_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {request.construction_category_name}
-                    </td>
+                {requests.map((request: any) => {
+                  const siteName = extractSiteName(request.delivery_address);
+                  return (
+                    <tr key={request.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {request.request_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {siteName || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {request.construction_category_name}
+                      </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
