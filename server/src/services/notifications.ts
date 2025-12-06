@@ -81,12 +81,18 @@ export async function generateExcel(request: any): Promise<Buffer> {
     console.error('取得地址資訊失敗:', error);
   }
 
-  // Get site name (工區) - 從送貨地址提取工區名稱（不包含詳細地址）
-  // 地址格式通常是：工區 - 詳細地址
-  // 例如：三總 - 台北市內湖區成功路二段325號
-  // 提取後只使用工區部分（如：三總），不包含詳細地址
+  // Get site name (工區) - 優先使用 request.site_name，否則從送貨地址提取
   let siteName = '';
-  if (deliveryAddress) {
+  
+  // 優先使用 request 中已設置的 site_name（從 getFullRequest JOIN 的資料）
+  if (request.site_name) {
+    siteName = request.site_name;
+    console.log('使用 JOIN 的工區資訊:', { siteName });
+  } else if (deliveryAddress) {
+    // 如果沒有 site_name，從送貨地址提取工區名稱
+    // 地址格式通常是：工區 - 詳細地址
+    // 例如：三總 - 台北市內湖區成功路二段325號
+    // 提取後只使用工區部分（如：三總），不包含詳細地址
     // 優先使用 " - " 分割（空格+破折號+空格）
     const parts = deliveryAddress.split(' - ');
     if (parts.length > 1 && parts[0].trim()) {
@@ -108,10 +114,9 @@ export async function generateExcel(request: any): Promise<Buffer> {
         }
       }
     }
+    console.log('從地址提取工區資訊:', { siteName, deliveryAddress });
   }
-  
   // 如果還是沒有工區，工區欄位會是空的
-  // 這表示用戶需要設置格式正確的地址（工區 - 詳細地址）
 
   // Format date - 格式: YYYYMMDD HHMM
   const createdDate = new Date(request.created_at);
