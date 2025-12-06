@@ -298,10 +298,12 @@ export async function generateExcel(request: any): Promise<Buffer> {
     dataRow.height = 20;
   }
 
-  // Sheet 2: 月份統計 - 格式: YYYYMM (如 202511)
+  // Sheet 2: 月份統計 - 分頁名稱格式: 月份 (如 "11月" 或 "2025年11月")
   const currentMonth = createdDate.getMonth() + 1;
   const currentYear = createdDate.getFullYear();
-  const monthKey = `${currentYear}${String(currentMonth).padStart(2, '0')}`; // 如 "202511"
+  // 分頁名稱格式：月份 (如 "11月" 或 "2025年11月")
+  const monthKey = `${currentYear}${String(currentMonth).padStart(2, '0')}`; // 用於查詢的格式
+  const monthSheetName = `${currentYear}年${currentMonth}月`; // 分頁顯示名稱
   const monthStart = new Date(currentYear, currentMonth - 1, 1);
   const monthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59);
 
@@ -347,8 +349,8 @@ export async function generateExcel(request: any): Promise<Buffer> {
     ]);
   }
 
-  // Sheet 2: 月份統計
-  const monthlySheet = workbook.addWorksheet(monthKey, {
+  // Sheet 2: 月份統計 - 使用月份格式作為分頁名稱
+  const monthlySheet = workbook.addWorksheet(monthSheetName, {
     pageSetup: {
       paperSize: 9, // A4
       orientation: 'landscape',
