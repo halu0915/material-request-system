@@ -16,19 +16,10 @@ export async function generateExcel(request: any): Promise<Buffer> {
   let companyName = '';
   let companyTaxId = '';
   
-  console.log('公司資訊檢查:', {
-    company_name: request.company_name,
-    company_tax_id: request.company_tax_id,
-    company_id: request.company_id,
-    hasCompanyName: !!request.company_name,
-    hasCompanyTaxId: !!request.company_tax_id
-  });
-  
   // 優先使用選擇的公司資訊（從 getFullRequest JOIN 的資料）
   if (request.company_name && request.company_tax_id) {
     companyName = request.company_name;
     companyTaxId = request.company_tax_id;
-    console.log('使用 JOIN 的公司資訊:', { companyName, companyTaxId });
   } else if (request.company_id) {
     // 如果有 company_id 但沒有 JOIN 的資料，查詢公司資訊
     try {
@@ -39,7 +30,6 @@ export async function generateExcel(request: any): Promise<Buffer> {
       if (companyResult.rows.length > 0) {
         companyName = companyResult.rows[0].name || '';
         companyTaxId = companyResult.rows[0].tax_id || '';
-        console.log('使用 company_id 查詢的公司資訊:', { companyName, companyTaxId });
       }
     } catch (error) {
       console.warn('查詢公司資訊失敗:', error);
@@ -50,10 +40,7 @@ export async function generateExcel(request: any): Promise<Buffer> {
   if (!companyName || !companyTaxId) {
     companyName = process.env.COMPANY_NAME || '金鴻空調機電工程有限公司';
     companyTaxId = process.env.COMPANY_TAX_ID || '16272724';
-    console.log('使用環境變數或默認公司資訊:', { companyName, companyTaxId });
   }
-  
-  console.log('最終使用的公司資訊:', { companyName, companyTaxId });
 
   // Get address and contact info from request
   // 優先使用已經 JOIN 的地址資訊（如果 getFullRequest 已經 JOIN）
@@ -67,7 +54,6 @@ export async function generateExcel(request: any): Promise<Buffer> {
       deliveryAddress = request.delivery_address || '';
       contactPhone = request.contact_phone || '';
       contactPerson = request.contact_person || '';
-      console.log('使用 JOIN 的地址資訊:', { deliveryAddress, contactPhone, contactPerson });
     } else if (request.address_id) {
       // 如果沒有 JOIN 的資料，但有 address_id，則查詢地址
       const addressResult = await query(
@@ -78,20 +64,12 @@ export async function generateExcel(request: any): Promise<Buffer> {
         deliveryAddress = addressResult.rows[0].address || '';
         contactPhone = addressResult.rows[0].contact_phone || '';
         contactPerson = addressResult.rows[0].contact_person || '';
-        console.log('使用 address_id 查詢的地址資訊:', { deliveryAddress, contactPhone, contactPerson });
       }
-    } else {
-      // 如果沒有 address_id，不應該使用 fallback 地址
-      // 因為用戶可能沒有選擇地址，強制使用默認地址會造成混淆
-      // 只有在明確選擇了地址時才顯示地址資訊
-      console.log('沒有選擇地址（address_id 為 null），不顯示地址資訊');
-      // deliveryAddress, contactPhone, contactPerson 保持為空字串
     }
+    // 如果沒有 address_id，不顯示地址資訊（保持為空字串）
   } catch (error) {
     console.warn('取得地址資訊失敗:', error);
   }
-  
-  console.log('最終地址資訊:', { deliveryAddress, contactPhone, contactPerson, address_id: request.address_id });
 
   // Get site name (工區) - 從送貨地址提取
   // 地址格式通常是：工區 - 詳細地址
@@ -123,11 +101,6 @@ export async function generateExcel(request: any): Promise<Buffer> {
   
   // 如果還是沒有工區，工區欄位會是空的
   // 這表示用戶需要設置格式正確的地址（工區 - 詳細地址）
-  
-  console.log('工區提取結果:', { siteName, deliveryAddress, hasAddress: !!deliveryAddress });
-  
-  // 如果還是沒有，使用默認值或留空
-  // siteName 保持為空字串，讓用戶知道需要設置地址
 
   // Format date - 格式: YYYYMMDD HHMM
   const createdDate = new Date(request.created_at);

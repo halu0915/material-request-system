@@ -34,10 +34,13 @@ export const query = async (text: string, params?: any[]): Promise<any> => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('執行查詢', { text, duration, rows: res.rowCount });
+    // 只在開發環境或查詢時間過長時記錄日誌
+    if (process.env.NODE_ENV === 'development' || duration > 1000) {
+      console.log('執行查詢', { text: text.substring(0, 100), duration, rows: res.rowCount });
+    }
     return res;
   } catch (error) {
-    console.error('查詢錯誤', { text, error });
+    console.error('查詢錯誤', { text: text.substring(0, 100), error });
     throw error;
   }
 };

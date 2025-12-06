@@ -15,6 +15,7 @@ export default function RequestForm() {
   const queryClient = useQueryClient();
   const [constructionCategoryId, setConstructionCategoryId] = useState<number | ''>('');
   const [companyId, setCompanyId] = useState<number | string | ''>(''); // 可以是數字（數據庫）或字串（環境變數）
+  const [addressId, setAddressId] = useState<number | ''>(''); // 地址 ID
   const [items, setItems] = useState<RequestItem[]>([]);
   const [notes, setNotes] = useState('');
   const [selectedMaterial, setSelectedMaterial] = useState<number | ''>('');

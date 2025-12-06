@@ -7,6 +7,31 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
+// Helper function to generate filename: 工區＋叫料單＋時間＿（工程類別）
+function generateFilename(request: any): string {
+  const createdDate = new Date(request.created_at);
+  const dateStr = `${createdDate.getFullYear()}${String(createdDate.getMonth() + 1).padStart(2, '0')}${String(createdDate.getDate()).padStart(2, '0')}`;
+  
+  // 提取工區（從地址中）
+  let siteName = '';
+  if (request.delivery_address) {
+    const parts = request.delivery_address.split(' - ');
+    if (parts.length > 1 && parts[0].trim()) {
+      siteName = parts[0].trim();
+    } else {
+      const parts2 = request.delivery_address.split('-');
+      if (parts2.length > 1 && parts2[0].trim()) {
+        siteName = parts2[0].trim();
+      }
+    }
+  }
+  
+  const categoryName = request.construction_category_name || '未分類';
+  const sitePrefix = siteName ? `${siteName}-` : '';
+  
+  return `${sitePrefix}叫料單-${dateStr}_(${categoryName}).xlsx`;
+}
+
 // Get all requests
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -169,29 +194,6 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
       // Generate Excel
       const excelBuffer = await generateExcel(fullRequest);
-
-      // Generate filename: 工區＋叫料單＋時間＿（工程類別）
-      // 例如：三總-叫料單-20251201_(消防電).xlsx
-      const generateFilename = (request: any): string => {
-        const createdDate = new Date(request.created_at);
-        const dateStr = `${createdDate.getFullYear()}${String(createdDate.getMonth() + 1).padStart(2, '0')}${String(createdDate.getDate()).padStart(2, '0')}`;
-        
-        // 從送貨地址提取工區名稱
-        let siteName = '叫料單';
-        if (fullRequest.delivery_address) {
-          const parts = fullRequest.delivery_address.split(' - ');
-          if (parts.length > 0) {
-            siteName = parts[0].trim();
-          }
-        }
-        
-        // 使用施工類別
-        const category = request.construction_category_name || '工程';
-        
-        // 格式：工區-叫料單-日期_(類別).xlsx
-        return `${siteName}-叫料單-${dateStr}_(${category}).xlsx`;
-      };
-      
       const filename = generateFilename(fullRequest);
 
       // Upload to cloud
