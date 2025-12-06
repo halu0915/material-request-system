@@ -207,6 +207,20 @@ export default function RequestDetail() {
               <label className="block text-sm font-medium text-gray-500 mb-1">建立人</label>
               <p className="text-gray-900">{request.user_name || request.user_email}</p>
             </div>
+            {request.contact_person && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">聯絡人</label>
+                <p className="text-gray-900">{request.contact_person}</p>
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">聯繫電話</label>
+              <p className="text-gray-900">{request.contact_phone || '-'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">送貨地址</label>
+              <p className="text-gray-900">{request.delivery_address || '-'}</p>
+            </div>
           </div>
 
           {request.notes && (
