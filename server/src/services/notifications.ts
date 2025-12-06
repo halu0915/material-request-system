@@ -298,12 +298,11 @@ export async function generateExcel(request: any): Promise<Buffer> {
     dataRow.height = 20;
   }
 
-  // Sheet 2: 月份統計 - 分頁名稱格式: 月份 (如 "11月" 或 "2025年11月")
+  // Sheet 2: 月份統計 - 分頁名稱格式: 月份＋月統計 (如 "2025年11月統計")
   const currentMonth = createdDate.getMonth() + 1;
   const currentYear = createdDate.getFullYear();
-  // 分頁名稱格式：月份 (如 "11月" 或 "2025年11月")
-  const monthKey = `${currentYear}${String(currentMonth).padStart(2, '0')}`; // 用於查詢的格式
-  const monthSheetName = `${currentYear}年${currentMonth}月`; // 分頁顯示名稱
+  const monthKey = `${currentYear}${String(currentMonth).padStart(2, '0')}`; // 用於查詢的格式，如 "202511"
+  const monthSheetName = `${currentYear}年${currentMonth}月統計`; // 分頁顯示名稱，如 "2025年11月統計"
   const monthStart = new Date(currentYear, currentMonth - 1, 1);
   const monthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59);
 
