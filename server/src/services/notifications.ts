@@ -155,17 +155,23 @@ export async function generateExcel(request: any): Promise<Buffer> {
   const companyStyle: Partial<ExcelJS.Style> = {
     font: { name: '微軟正黑體', size: 16, bold: true },
     alignment: { vertical: 'middle', horizontal: 'center' },
-    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } } // 淺灰色背景
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } }, // 淺灰色背景
+    border: {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
+    }
   };
 
   const dataRowStyle: Partial<ExcelJS.Style> = {
     font: { name: '微軟正黑體', size: 11 },
     alignment: { vertical: 'middle', horizontal: 'left', wrapText: true },
     border: {
-      top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
     }
   };
 
@@ -174,23 +180,23 @@ export async function generateExcel(request: any): Promise<Buffer> {
     alignment: { vertical: 'middle', horizontal: 'left', wrapText: true },
     fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }, // 淺灰色背景
     border: {
-      top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
     }
   };
 
-  // 定義資訊區塊樣式
+  // 定義資訊區塊樣式（使用黑色邊框，確保格線清晰）
   const infoLabelStyle: Partial<ExcelJS.Style> = {
     font: { name: '微軟正黑體', size: 11, bold: true },
     alignment: { vertical: 'middle', horizontal: 'left' },
     fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } }, // 淺灰色背景
     border: {
-      top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
     }
   };
 
@@ -199,10 +205,10 @@ export async function generateExcel(request: any): Promise<Buffer> {
     alignment: { vertical: 'middle', horizontal: 'left' },
     fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } }, // 白色背景
     border: {
-      top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-      right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
     }
   };
 
@@ -211,14 +217,57 @@ export async function generateExcel(request: any): Promise<Buffer> {
   requestSheet.mergeCells(1, 1, 1, 8); // 合併第1行的第1欄到第8欄（8欄位格式）
   companyRow.getCell(1).style = companyStyle;
   companyRow.height = 30;
+  // 確保合併儲存格的所有邊框都顯示
+  for (let col = 1; col <= 8; col++) {
+    const cell = companyRow.getCell(col);
+    if (cell) {
+      cell.style = {
+        ...companyStyle,
+        border: {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
+        }
+      };
+    }
+  }
 
   const taxIdRow = requestSheet.addRow([`統編：${companyTaxId}`]);
   requestSheet.mergeCells(2, 1, 2, 8); // 合併第2行的第1欄到第8欄
   taxIdRow.getCell(1).style = companyStyle;
   taxIdRow.height = 25;
+  // 確保合併儲存格的所有邊框都顯示
+  for (let col = 1; col <= 8; col++) {
+    const cell = taxIdRow.getCell(col);
+    if (cell) {
+      cell.style = {
+        ...companyStyle,
+        border: {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
+        }
+      };
+    }
+  }
 
-  // 空行
-  requestSheet.addRow([]);
+  // 空行（添加邊框）
+  const emptyRow = requestSheet.addRow([]);
+  emptyRow.height = 10;
+  // 為空行的所有儲存格添加邊框
+  for (let col = 1; col <= 8; col++) {
+    const cell = emptyRow.getCell(col);
+    cell.style = {
+      border: {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
+      }
+    };
+  }
 
   // 添加叫料單基本資訊（兩欄格式：標籤 | 值）
   const addInfoRow = (label: string, value: string, startRow: number) => {
@@ -229,6 +278,22 @@ export async function generateExcel(request: any): Promise<Buffer> {
     requestSheet.mergeCells(startRow, 2, startRow, 8);
     row.getCell(2).style = infoValueStyle;
     row.height = 22;
+    
+    // 確保合併儲存格的所有邊框都顯示（第2-8欄）
+    for (let col = 2; col <= 8; col++) {
+      const cell = row.getCell(col);
+      if (cell) {
+        cell.style = {
+          ...infoValueStyle,
+          border: {
+            top: { style: 'thin', color: { argb: 'FF000000' } },
+            left: { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            right: { style: 'thin', color: { argb: 'FF000000' } }
+          }
+        };
+      }
+    }
   };
 
   let currentRow = 4; // 從第4行開始（前3行是公司資訊和空行）
@@ -252,8 +317,21 @@ export async function generateExcel(request: any): Promise<Buffer> {
   addInfoRow('送貨地址', deliveryAddress || '', currentRow++);
   addInfoRow('狀態', request.status, currentRow++);
 
-  // 空行
-  requestSheet.addRow([]);
+  // 空行（添加邊框）
+  const emptyRow2 = requestSheet.addRow([]);
+  emptyRow2.height = 10;
+  // 為空行的所有儲存格添加邊框
+  for (let col = 1; col <= 8; col++) {
+    const cell = emptyRow2.getCell(col);
+    cell.style = {
+      border: {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
+      }
+    };
+  }
   currentRow++;
 
   // 添加材料明細表頭（8欄位格式，符合圖片）
@@ -335,10 +413,10 @@ export async function generateExcel(request: any): Promise<Buffer> {
           wrapText: true
         },
         border: {
-          top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-          left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-          bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-          right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
         }
       };
       
@@ -391,10 +469,10 @@ export async function generateExcel(request: any): Promise<Buffer> {
         font: { name: '微軟正黑體', size: 11, color: { argb: 'FF000000' }, bold: false },
         alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
         border: {
-          top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-          left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-          bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-          right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
         }
       };
       console.log('A13 儲存格值:', firstCell.value, 'siteName:', siteName, '類型:', typeof firstCell.value);
