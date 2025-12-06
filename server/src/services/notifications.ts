@@ -282,7 +282,7 @@ export async function generateExcel(request: any): Promise<Buffer> {
     }
   };
 
-  let currentRow = 4; // 從第4行開始（前3行是公司資訊和空行）
+  let currentRow = 3; // 從第3行開始（前2行是公司資訊和統編，已取消空行）
   addInfoRow('叫料單號', request.request_number, currentRow++);
   addInfoRow('建立日期', new Date(request.created_at).toLocaleString('zh-TW', { 
     year: 'numeric', 
