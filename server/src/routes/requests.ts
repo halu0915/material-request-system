@@ -100,6 +100,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
         c.name as company_name,
         c.tax_id as company_tax_id,
         a.address as delivery_address,
+        a.site_name,
         a.contact_person,
         a.contact_phone
       FROM material_requests mr
@@ -372,6 +373,7 @@ async function getFullRequest(requestId: number) {
       c.name as company_name,
       c.tax_id as company_tax_id,
       a.address as delivery_address,
+      a.site_name,
       a.contact_person,
       a.contact_phone
     FROM material_requests mr
