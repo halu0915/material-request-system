@@ -39,6 +39,38 @@ export default function RequestDetail() {
     }
   };
 
+  const handleDownloadExcel = async () => {
+    if (!id) return;
+    try {
+      const response = await api.get(`/api/requests/${id}/excel`, {
+        responseType: 'blob'
+      });
+      
+      // 從 Content-Disposition header 獲取文件名，或使用默認名稱
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `叫料單-${id}.xlsx`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1].replace(/['"]/g, ''));
+        }
+      }
+      
+      // 創建下載連結
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('下載 Excel 失敗:', error);
+      alert('下載 Excel 失敗，請稍後再試');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -86,13 +118,12 @@ export default function RequestDetail() {
           ← 返回列表
         </Link>
         <div className="flex gap-3">
-          <a
-            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/requests/${id}/excel`}
+          <button
+            onClick={handleDownloadExcel}
             className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-            download
           >
             下載 Excel
-          </a>
+          </button>
           <button
             onClick={handleDelete}
             disabled={deleteRequest.isPending}

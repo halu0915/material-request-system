@@ -34,6 +34,37 @@ export default function RequestList() {
     }
   };
 
+  const handleDownloadExcel = async (requestId: number, requestNumber: string) => {
+    try {
+      const response = await api.get(`/api/requests/${requestId}/excel`, {
+        responseType: 'blob'
+      });
+      
+      // 從 Content-Disposition header 獲取文件名，或使用默認名稱
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `${requestNumber}.xlsx`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1].replace(/['"]/g, ''));
+        }
+      }
+      
+      // 創建下載連結
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('下載 Excel 失敗:', error);
+      alert('下載 Excel 失敗，請稍後再試');
+    }
+  };
+
   const requests = data?.requests || [];
 
   // 提取工區名稱（從地址中）
@@ -141,13 +172,12 @@ export default function RequestList() {
                       >
                         查看
                       </Link>
-                      <a
-                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/requests/${request.id}/excel`}
+                      <button
+                        onClick={() => handleDownloadExcel(request.id, request.request_number)}
                         className="text-green-600 hover:text-green-900 mr-4"
-                        download
                       >
                         下載 Excel
-                      </a>
+                      </button>
                       <button
                         onClick={() => handleDelete(request.id, request.request_number)}
                         disabled={deleteRequest.isPending}
