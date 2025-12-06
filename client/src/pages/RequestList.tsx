@@ -152,7 +152,7 @@ export default function RequestList() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    叫料單號
+                    單號
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     工區
@@ -161,10 +161,10 @@ export default function RequestList() {
                     施工類別
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    狀態
+                    材料名稱
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    建立日期
+                    數量
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     操作
@@ -174,6 +174,14 @@ export default function RequestList() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {requests.map((request: any) => {
                   const siteName = extractSiteName(request.delivery_address);
+                  // 處理材料名稱：如果有多個，顯示前幾個，超過的用"等"
+                  const materialNames = request.material_names || '';
+                  const materialNamesDisplay = materialNames 
+                    ? (materialNames.length > 30 ? materialNames.substring(0, 30) + '...' : materialNames)
+                    : '-';
+                  // 處理數量：顯示總數量
+                  const totalQuantity = request.total_quantity || 0;
+                  
                   return (
                     <tr key={request.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -185,43 +193,36 @@ export default function RequestList() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {request.construction_category_name}
                       </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        request.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {request.status === 'pending' ? '待處理' :
-                         request.status === 'completed' ? '已完成' :
-                         request.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(request.created_at).toLocaleString('zh-TW')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link
-                        to={`/requests/${request.id}`}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
-                      >
-                        查看
-                      </Link>
-                      <button
-                        onClick={() => handleDownloadExcel(request.id, request.request_number)}
-                        className="text-green-600 hover:text-green-900 mr-4"
-                      >
-                        下載 Excel
-                      </button>
-                      <button
-                        onClick={() => handleDelete(request.id, request.request_number)}
-                        disabled={deleteRequest.isPending}
-                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                      >
-                        {deleteRequest.isPending ? '刪除中...' : '刪除'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {materialNamesDisplay}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {totalQuantity}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <Link
+                          to={`/requests/${request.id}`}
+                          className="text-blue-600 hover:text-blue-900 mr-4"
+                        >
+                          查看
+                        </Link>
+                        <button
+                          onClick={() => handleDownloadExcel(request.id, request.request_number)}
+                          className="text-green-600 hover:text-green-900 mr-4"
+                        >
+                          下載 Excel
+                        </button>
+                        <button
+                          onClick={() => handleDelete(request.id, request.request_number)}
+                          disabled={deleteRequest.isPending}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                        >
+                          {deleteRequest.isPending ? '刪除中...' : '刪除'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

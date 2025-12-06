@@ -62,13 +62,18 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         c.tax_id as company_tax_id,
         a.address as delivery_address,
         a.contact_person,
-        a.contact_phone
+        a.contact_phone,
+        COALESCE(SUM(mri.quantity), 0) as total_quantity,
+        STRING_AGG(DISTINCT m.name, ', ') as material_names
       FROM material_requests mr
       LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
       LEFT JOIN users u ON mr.user_id = u.id
       LEFT JOIN companies c ON mr.company_id = c.id
       LEFT JOIN addresses a ON mr.address_id = a.id
+      LEFT JOIN material_request_items mri ON mr.id = mri.request_id
+      LEFT JOIN materials m ON mri.material_id = m.id
       WHERE mr.user_id = $1
+      GROUP BY mr.id, cc.name, u.name, u.email, c.name, c.tax_id, a.address, a.contact_person, a.contact_phone
       ORDER BY mr.created_at DESC`,
       [req.user?.id]
     );
