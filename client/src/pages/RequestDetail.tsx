@@ -60,6 +60,22 @@ export default function RequestDetail() {
 
   const { request, items } = data;
 
+  // 提取工區名稱（從地址中）
+  const extractSiteName = (address?: string): string => {
+    if (!address) return '';
+    const parts = address.split(' - ');
+    if (parts.length > 1 && parts[0].trim()) {
+      return parts[0].trim();
+    }
+    const parts2 = address.split('-');
+    if (parts2.length > 1 && parts2[0].trim()) {
+      return parts2[0].trim();
+    }
+    return '';
+  };
+
+  const siteName = extractSiteName(request.delivery_address);
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex justify-between items-center">
@@ -109,6 +125,10 @@ export default function RequestDetail() {
                  request.status === 'completed' ? '已完成' :
                  request.status}
               </span>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">工區</label>
+              <p className="text-gray-900">{siteName || '-'}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500 mb-1">施工類別</label>
