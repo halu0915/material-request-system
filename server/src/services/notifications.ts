@@ -112,6 +112,8 @@ export async function generateExcel(request: any): Promise<Buffer> {
   // 如果還是沒有工區，工區欄位會是空的
   // 這表示用戶需要設置格式正確的地址（工區 - 詳細地址）
   
+  console.log('工區提取結果:', { siteName, deliveryAddress, hasAddress: !!deliveryAddress });
+  
   // 如果還是沒有，使用默認值或留空
   // siteName 保持為空字串，讓用戶知道需要設置地址
 
