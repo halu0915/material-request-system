@@ -289,28 +289,7 @@ router.get('/:id/excel', authenticateToken, async (req: AuthRequest, res: Respon
     const excelBuffer = await generateExcel(fullRequest);
 
     // Generate filename: 工區＋叫料單＋時間＿（工程類別）
-    const createdDate = new Date(fullRequest.created_at);
-    const dateStr = `${createdDate.getFullYear()}${String(createdDate.getMonth() + 1).padStart(2, '0')}${String(createdDate.getDate()).padStart(2, '0')}`;
-    
-    // 從送貨地址提取工區名稱
-    let siteName = '叫料單';
-    try {
-      const addressResult = await query(
-        'SELECT address FROM addresses WHERE user_id = $1 AND is_default = true LIMIT 1',
-        [fullRequest.user_id]
-      );
-      if (addressResult.rows.length > 0 && addressResult.rows[0].address) {
-        const parts = addressResult.rows[0].address.split(' - ');
-        if (parts.length > 0) {
-          siteName = parts[0].trim();
-        }
-      }
-    } catch (error) {
-      console.warn('取得工區名稱失敗:', error);
-    }
-    
-    const category = fullRequest.construction_category_name || '工程';
-    const filename = `${siteName}-叫料單-${dateStr}_(${category}).xlsx`;
+    const filename = generateFilename(fullRequest);
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
