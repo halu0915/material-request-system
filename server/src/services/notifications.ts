@@ -42,15 +42,38 @@ export async function generateExcel(request: any): Promise<Buffer> {
     console.warn('取得地址資訊失敗:', error);
   }
 
-  // Get site name (工區) - can be extracted from address or use default
-  // For now, extract from address if it contains "三總" or similar, otherwise use first part
+  // Get site name (工區) - 從送貨地址提取
+  // 地址格式通常是：工區 - 詳細地址
+  // 例如：三總 - 台北市內湖區成功路二段325號
   let siteName = '';
   if (deliveryAddress) {
+    // 嘗試用 " - " 分割
     const parts = deliveryAddress.split(' - ');
-    if (parts.length > 0) {
+    if (parts.length > 0 && parts[0].trim()) {
       siteName = parts[0].trim();
+    } else {
+      // 如果沒有 " - "，嘗試用 "-" 分割
+      const parts2 = deliveryAddress.split('-');
+      if (parts2.length > 0 && parts2[0].trim()) {
+        siteName = parts2[0].trim();
+      }
     }
   }
+  
+  // 如果還是沒有工區，嘗試從地址中提取常見的工區名稱
+  if (!siteName && deliveryAddress) {
+    // 檢查是否包含常見工區名稱
+    const commonSites = ['三總', '金山', '關西', '新竹', '台北', '台中', '高雄'];
+    for (const site of commonSites) {
+      if (deliveryAddress.includes(site)) {
+        siteName = site;
+        break;
+      }
+    }
+  }
+  
+  // 如果還是沒有，使用默認值或留空
+  // siteName 保持為空字串，讓用戶知道需要設置地址
 
   // Format date - 格式: YYYYMMDD HHMM
   const createdDate = new Date(request.created_at);
