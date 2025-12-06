@@ -69,8 +69,8 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       FROM material_requests mr
       LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
       LEFT JOIN users u ON mr.user_id = u.id
-      LEFT JOIN companies c ON mr.company_id::text ~ '^[0-9]+$' AND mr.company_id::integer = c.id
-      LEFT JOIN addresses a ON mr.address_id::text ~ '^[0-9]+$' AND mr.address_id::integer = a.id
+      LEFT JOIN companies c ON (mr.company_id IS NOT NULL AND mr.company_id::text ~ '^[0-9]+$' AND (mr.company_id::text)::integer = c.id)
+      LEFT JOIN addresses a ON (mr.address_id IS NOT NULL AND mr.address_id::text ~ '^[0-9]+$' AND (mr.address_id::text)::integer = a.id)
       LEFT JOIN material_request_items mri ON mr.id = mri.request_id
       LEFT JOIN materials m ON mri.material_id = m.id
       WHERE mr.user_id = $1
@@ -107,8 +107,8 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
       FROM material_requests mr
       LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
       LEFT JOIN users u ON mr.user_id = u.id
-      LEFT JOIN companies c ON mr.company_id::text ~ '^[0-9]+$' AND mr.company_id::integer = c.id
-      LEFT JOIN addresses a ON mr.address_id::text ~ '^[0-9]+$' AND mr.address_id::integer = a.id
+      LEFT JOIN companies c ON (mr.company_id IS NOT NULL AND mr.company_id::text ~ '^[0-9]+$' AND (mr.company_id::text)::integer = c.id)
+      LEFT JOIN addresses a ON (mr.address_id IS NOT NULL AND mr.address_id::text ~ '^[0-9]+$' AND (mr.address_id::text)::integer = a.id)
       WHERE mr.id = $1 AND mr.user_id = $2`,
       [id, req.user?.id]
     );
