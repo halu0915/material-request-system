@@ -147,6 +147,14 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { construction_category_id, items, notes, company_id, address_id } = req.body;
 
+    console.log('建立叫料單 - 接收到的資料:', { 
+      construction_category_id, 
+      items_count: items?.length, 
+      company_id, 
+      address_id,
+      notes 
+    });
+
     if (!construction_category_id || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: '施工類別和材料項目必填' });
     }
@@ -157,9 +165,11 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     let envCompanyInfo = null;
     
     if (company_id) {
+      console.log('處理 company_id:', company_id, '類型:', typeof company_id);
       if (typeof company_id === 'string' && company_id.startsWith('env_')) {
         // This is an environment variable company, extract info from COMPANIES
         const envIndex = parseInt(company_id.replace('env_', ''));
+        console.log('環境變數公司索引:', envIndex);
         if (process.env.COMPANIES) {
           try {
             const companiesData = JSON.parse(process.env.COMPANIES);
@@ -169,6 +179,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
                 name: companiesArray[envIndex].name || companiesArray[envIndex].company_name || '',
                 tax_id: companiesArray[envIndex].tax_id || companiesArray[envIndex].company_tax_id || ''
               };
+              console.log('從環境變數獲取公司資訊:', envCompanyInfo);
             }
           } catch (error) {
             console.warn('無法解析環境變數公司資訊:', error);
@@ -181,23 +192,30 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         const companyIdNum = typeof company_id === 'string' ? parseInt(company_id) : company_id;
         if (!isNaN(companyIdNum) && Number.isInteger(companyIdNum) && companyIdNum > 0) {
           dbCompanyId = companyIdNum;
+          console.log('數據庫公司 ID:', dbCompanyId);
         } else {
           console.warn('無效的 company_id:', company_id, '將設為 null');
           dbCompanyId = null;
         }
       }
+    } else {
+      console.log('未提供 company_id');
     }
     
     // Handle address_id - validate it's a valid integer
     let dbAddressId = null;
     if (address_id) {
+      console.log('處理 address_id:', address_id, '類型:', typeof address_id);
       const addressIdNum = typeof address_id === 'string' ? parseInt(address_id) : address_id;
       if (!isNaN(addressIdNum) && Number.isInteger(addressIdNum) && addressIdNum > 0) {
         dbAddressId = addressIdNum;
+        console.log('地址 ID:', dbAddressId);
       } else {
         console.warn('無效的 address_id:', address_id, '將設為 null');
         dbAddressId = null;
       }
+    } else {
+      console.log('未提供 address_id');
     }
 
     // Generate request number
@@ -211,6 +229,13 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       await client.query('BEGIN');
 
       // Create request
+      console.log('準備插入資料庫:', { 
+        user_id: req.user?.id, 
+        company_id: dbCompanyId, 
+        address_id: dbAddressId, 
+        request_number: requestNumber 
+      });
+      
       const requestResult = await client.query(
         `INSERT INTO material_requests 
          (user_id, company_id, address_id, request_number, construction_category_id, notes, status, created_at)
@@ -219,6 +244,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       );
 
       const request = requestResult.rows[0];
+      console.log('叫料單建立成功，ID:', request.id, 'company_id:', request.company_id, 'address_id:', request.address_id);
 
       // Create request items
       for (const item of items) {
@@ -241,11 +267,36 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
       // Get full request data
       const fullRequest = await getFullRequest(request.id);
+      console.log('完整叫料單資料（JOIN 後）:', {
+        id: fullRequest?.id,
+        company_id: fullRequest?.company_id,
+        company_name: fullRequest?.company_name,
+        company_tax_id: fullRequest?.company_tax_id,
+        address_id: fullRequest?.address_id,
+        delivery_address: fullRequest?.delivery_address,
+        site_name: fullRequest?.site_name,
+        contact_person: fullRequest?.contact_person,
+        contact_phone: fullRequest?.contact_phone
+      });
       
       // If environment variable company was selected, override company info
       if (envCompanyInfo) {
         fullRequest.company_name = envCompanyInfo.name;
         fullRequest.company_tax_id = envCompanyInfo.tax_id;
+        // 標記這是環境變數公司，以便前端識別
+        fullRequest.company_is_from_env = true;
+        console.log('覆蓋環境變數公司資訊:', envCompanyInfo);
+      }
+      
+      // 如果沒有公司資訊，檢查是否有預設環境變數公司
+      if (!fullRequest.company_name && !envCompanyInfo && process.env.COMPANY_NAME) {
+        fullRequest.company_name = process.env.COMPANY_NAME;
+        fullRequest.company_tax_id = process.env.COMPANY_TAX_ID || '';
+        fullRequest.company_is_from_env = true;
+        console.log('使用預設環境變數公司:', {
+          name: fullRequest.company_name,
+          tax_id: fullRequest.company_tax_id
+        });
       }
 
       // Generate Excel
@@ -458,8 +509,8 @@ async function getFullRequest(requestId: number) {
     FROM material_requests mr
     LEFT JOIN construction_categories cc ON mr.construction_category_id = cc.id
     LEFT JOIN users u ON mr.user_id = u.id
-    LEFT JOIN companies c ON mr.company_id::text ~ '^[0-9]+$' AND mr.company_id::integer = c.id
-    LEFT JOIN addresses a ON mr.address_id::text ~ '^[0-9]+$' AND mr.address_id::integer = a.id
+    LEFT JOIN companies c ON (mr.company_id IS NOT NULL AND mr.company_id::text ~ '^[0-9]+$' AND (mr.company_id::text)::integer = c.id)
+    LEFT JOIN addresses a ON (mr.address_id IS NOT NULL AND mr.address_id::text ~ '^[0-9]+$' AND (mr.address_id::text)::integer = a.id)
     WHERE mr.id = $1`,
     [requestId]
   );

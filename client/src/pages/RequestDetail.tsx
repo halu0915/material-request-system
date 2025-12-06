@@ -175,7 +175,8 @@ export default function RequestDetail() {
     return '';
   };
 
-  const siteName = extractSiteName(request.delivery_address);
+  // 優先使用 request.site_name，否則從地址提取
+  const siteName = request.site_name || extractSiteName(request.delivery_address);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -226,6 +227,18 @@ export default function RequestDetail() {
                  request.status}
               </span>
             </div>
+            {request.company_name && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">公司名稱</label>
+                <p className="text-gray-900">{request.company_name}</p>
+              </div>
+            )}
+            {request.company_tax_id && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">統一編號</label>
+                <p className="text-gray-900">{request.company_tax_id}</p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-500 mb-1">工區</label>
               <p className="text-gray-900">{siteName || '-'}</p>
@@ -242,12 +255,10 @@ export default function RequestDetail() {
               <label className="block text-sm font-medium text-gray-500 mb-1">建立人</label>
               <p className="text-gray-900">{request.user_name || request.user_email}</p>
             </div>
-            {request.contact_person && (
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">聯絡人</label>
-                <p className="text-gray-900">{request.contact_person}</p>
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">聯絡人</label>
+              <p className="text-gray-900">{request.contact_person || '-'}</p>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-500 mb-1">聯繫電話</label>
               <p className="text-gray-900">{request.contact_phone || '-'}</p>
